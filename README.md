@@ -1,4 +1,6 @@
-# L1 Testing Suite For HAL Video Decoder
+# NOTE: This release is intended for internal development and has not undergone testing or compilation
+
+## L1 Testing Suite For HAL AV Clock
 
 ## Build Steps
 
@@ -11,7 +13,7 @@ Here outline the simplest steps are
 ```bash
 git clone -b develop 'ssh://git@github.com/rdk-e/linux_binder_idl.git'
 
-cde linux_binder_idl
+cd linux_binder_idl
 
 ./build-linux-binder-aidl.sh 64
 ```
