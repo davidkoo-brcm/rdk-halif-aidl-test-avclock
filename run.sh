@@ -16,14 +16,14 @@ servicemanager_pid=$!
 # Need to wait some time for the service to be ready
 sleep 2
 
-echo "Eexecute [AVClockService]"
-${RUN_DIR}/AVClockService &
+echo "Eexecute [EmulateAVClockService]"
+${RUN_DIR}/EmulateAVClockService &
 AVClockService_pid=$!
 # Need to wait some time for the service to be ready
 sleep 2
 
-echo "Eexecute [L1_avclock]"
-${RUN_DIR}/L1_avclock -p profiles/hfp-avclock.yaml
+echo "Eexecute [vts_avclock]"
+${RUN_DIR}/vts_avclock -p profiles/hfp-avclock.yaml
 
 # cleanup
 kill -9 $servicemanager_pid $AVClockService_pid

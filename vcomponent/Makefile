@@ -143,7 +143,10 @@ $(EMULATE_SERVICE_BIN): $(EMULATE_SERVICE_BIN_SRC:%.cpp=%.o)
 		$(filter %.o, $^) -o $@ \
 		$(EMULATE_SERVICE_LD_LIBS) \
 		-lpthread \
-		-l$(AVCLOCK_AIDL_LIB_NAME)
+		-l$(AVCLOCK_AIDL_LIB_NAME) \
+		-l$(AUDIOSINK_AIDL_LIB_NAME) \
+		-l$(VIDEOSINK_AIDL_LIB_NAME)
+
 
 # TODO: to be compile out of source tree
 %.o: %.cpp
