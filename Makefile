@@ -5,6 +5,7 @@ TARGET_EXEC := vts_avclock
 
 ROOT_DIR := $(CURDIR)
 SRC_DIRS := $(ROOT_DIR)/src
+SRC_DIRS += $(ROOT_DIR)/test
 BIN_DIR := $(ROOT_DIR)/build/bin
 LIB_DIR := $(ROOT_DIR)/build/$(TARGET)/lib
 BUILD_DIR := $(ROOT_DIR)/build/$(TARGET)/obj
@@ -15,7 +16,7 @@ INC_DIRS += $(ROOT_DIR)/src
 
 XLDFLAGS := -L$(ROOT_DIR)/build/usr/lib
 XLDFLAGS += -Wl,-rpath-link=$(ROOT_DIR)/build/usr/lib
-XLDFLAGS += -lbinder -lutils
+XLDFLAGS += -lssl -lcrypto -lbinder -lutils
 XLDFLAGS += -lavclockaidl
 XLDFLAGS += -laudiosinkaidl
 XLDFLAGS += -lvideosinkaidl

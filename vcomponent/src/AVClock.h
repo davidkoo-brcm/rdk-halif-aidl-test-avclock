@@ -34,6 +34,8 @@
 #include <utils/StrongPointer.h>
 #include <vector>
 #include <time.h>
+#include <android/log.h>
+
 
 namespace com {
     namespace rdk {
