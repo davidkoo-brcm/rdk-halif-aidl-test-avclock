@@ -1,20 +1,20 @@
-/*
- * If not stated otherwise in this file or this component's LICENSE
- * file the following copyright and licenses apply:
+/**
+ *  If not stated otherwise in this file or this component's LICENSE
+ *  file the following copyright and licenses apply:
  *
- * Copyright 2024 RDK Management
+ *  Copyright 2025 RDK Management
  *
- * Licensed under the Apache License, Version 2.0 (the License);
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ *  Licensed under the Apache License, Version 2.0 (the License);
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *  http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an AS IS BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an AS IS BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
 
 /**
@@ -64,6 +64,7 @@
 #include <ut_kvp_profile.h>
 #include <ut.h>
 #include <ut_log.h>
+#include <ut_gtest.h>
 #include <ut_control_plane.h>
 #include <binder/IServiceManager.h>
 #include <binder/ProcessState.h>
@@ -682,6 +683,304 @@ class AVClockControllerListener : public BnAVClockControllerListener {
         status = avClockController->getSupplementaryAudioSink(&supplementaryAudioSinkId); \
         UT_LOG_INFO("Result getSupplementaryAudioSink(OUT:supplementaryAudioSinkId[%d]), status:[isOK:%s, exception:%s]", \
                     supplementaryAudioSinkId.value, UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
+    } while (0)
+
+#define AVCLOCK_SET_VIDEO_SINK_SUCCESS(avClock, avClockController, videoSinkId, expectedResult) \
+    do { \
+        ::android::binder::Status status; \
+        bool _aidl_return; \
+        UT_LOG_INFO("Calling setVideoSink(IN:videoSinkId[%d], OUT:_aidl_return[])", videoSinkId.value); \
+        status = avClockController->setVideoSink(videoSinkId, &_aidl_return); \
+        UT_LOG_INFO("Result setVideoSink(IN:videoSinkId[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+                    videoSinkId.value, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_EQUAL(_aidl_return, expectedResult); \
+    } while (0)
+
+#define AVCLOCK_SET_VIDEO_SINK_FAILURE_INVALID_ID(avClock, avClockController, videoSinkId) \
+    do { \
+        ::android::binder::Status status; \
+        bool _aidl_return; \
+        UT_LOG_INFO("Calling setVideoSink(IN:videoSinkId[%d], OUT:_aidl_return[])", videoSinkId.value); \
+        status = avClockController->setVideoSink(videoSinkId, &_aidl_return); \
+        UT_LOG_INFO("Result setVideoSink(IN:videoSinkId[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+                    videoSinkId.value, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_FALSE(_aidl_return); \
+    } while (0)
+
+#define AVCLOCK_SET_VIDEO_SINK_FAILURE_STATE(avClock, avClockController, videoSinkId) \
+    do { \
+        ::android::binder::Status status; \
+        bool _aidl_return; \
+        UT_LOG_INFO("Calling setVideoSink(IN:videoSinkId[%d], OUT:_aidl_return[])", videoSinkId.value); \
+        status = avClockController->setVideoSink(videoSinkId, &_aidl_return); \
+        UT_LOG_INFO("Result setVideoSink(IN:videoSinkId[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+                    videoSinkId.value, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
+        UT_ASSERT_TRUE(_aidl_return); \
+    } while (0)
+
+#define AVCLOCK_GET_VIDEO_SINK_SUCCESS(avClock, avClockController, expectedVideoSinkId) \
+    do { \
+        ::android::binder::Status status; \
+        com::rdk::hal::videosink::IVideoSink::Id videoSinkId; \
+        UT_LOG_INFO("Calling getVideoSink(OUT:videoSinkId[])"); \
+        status = avClockController->getVideoSink(&videoSinkId); \
+        UT_LOG_INFO("Result getVideoSink(OUT:videoSinkId[%d]), status:[isOK:%s, exception:%s]", \
+                    videoSinkId.value, UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_EQUAL(videoSinkId.value, expectedVideoSinkId.value); \
+    } while (0)
+
+#define AVCLOCK_GET_VIDEO_SINK_FAILURE_STATE(avClock, avClockController) \
+    do { \
+        ::android::binder::Status status; \
+        com::rdk::hal::videosink::IVideoSink::Id videoSinkId; \
+        UT_LOG_INFO("Calling getVideoSink(OUT:videoSinkId[])"); \
+        status = avClockController->getVideoSink(&videoSinkId); \
+        UT_LOG_INFO("Result getVideoSink(OUT:videoSinkId[%d]), status:[isOK:%s, exception:%s]", \
+                    videoSinkId.value, UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
+    } while (0)
+
+
+#define AVCLOCK_SET_CLOCK_MODE_SUCCESS(avClock, avClockController, clockMode, expectedResult) \
+    do { \
+        ::android::binder::Status status; \
+        bool _aidl_return; \
+        UT_LOG_INFO("Calling setClockMode(IN:clockMode[%d], OUT:_aidl_return[])", static_cast<int>(clockMode)); \
+        status = avClockController->setClockMode(clockMode, &_aidl_return); \
+        UT_LOG_INFO("Result setClockMode(IN:clockMode[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+                    static_cast<int>(clockMode), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_EQUAL(_aidl_return, expectedResult); \
+    } while (0)
+
+#define AVCLOCK_SET_CLOCK_MODE_FAILURE_INVALID_MODE(avClock, avClockController, clockMode) \
+    do { \
+        ::android::binder::Status status; \
+        bool _aidl_return; \
+        UT_LOG_INFO("Calling setClockMode(IN:clockMode[%d], OUT:_aidl_return[])", static_cast<int>(clockMode)); \
+        status = avClockController->setClockMode(clockMode, &_aidl_return); \
+        UT_LOG_INFO("Result setClockMode(IN:clockMode[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+                    static_cast<int>(clockMode), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_FALSE(_aidl_return); \
+    } while (0)
+
+#define AVCLOCK_SET_CLOCK_MODE_FAILURE_STATE(avClock, avClockController, clockMode) \
+    do { \
+        ::android::binder::Status status; \
+        bool _aidl_return; \
+        UT_LOG_INFO("Calling setClockMode(IN:clockMode[%d], OUT:_aidl_return[])", static_cast<int>(clockMode)); \
+        status = avClockController->setClockMode(clockMode, &_aidl_return); \
+        UT_LOG_INFO("Result setClockMode(IN:clockMode[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+                    static_cast<int>(clockMode), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
+        UT_ASSERT_FALSE(_aidl_return); \
+    } while (0)
+
+#define AVCLOCK_GET_CLOCK_MODE_SUCCESS(avClock, avClockController, expectedClockMode) \
+    do { \
+        ::android::binder::Status status; \
+        com::rdk::hal::avclock::ClockMode clockMode; \
+        UT_LOG_INFO("Calling getClockMode(OUT:clockMode[])"); \
+        status = avClockController->getClockMode(&clockMode); \
+        UT_LOG_INFO("Result getClockMode(OUT:clockMode[%d]), status:[isOK:%s, exception:%s]", \
+                    static_cast<int>(clockMode), UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_EQUAL(static_cast<int>(clockMode), static_cast<int>(expectedClockMode)); \
+    } while (0)
+
+#define AVCLOCK_GET_CLOCK_MODE_FAILURE_STATE(avClock, avClockController) \
+    do { \
+        ::android::binder::Status status; \
+        com::rdk::hal::avclock::ClockMode clockMode; \
+        UT_LOG_INFO("Calling getClockMode(OUT:clockMode[])"); \
+        status = avClockController->getClockMode(&clockMode); \
+        UT_LOG_INFO("Result getClockMode(OUT:clockMode[%d]), status:[isOK:%s, exception:%s]", \
+                    static_cast<int>(clockMode), UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
+    } while (0)
+
+#define AVCLOCK_NOTIFY_PCR_SAMPLE_SUCCESS(avClock, avClockController, pcrTimeNs, sampleTimestampNs, expectedResult) \
+    do { \
+        ::android::binder::Status status; \
+        bool _aidl_return; \
+        UT_LOG_INFO("Calling notifyPCRSample(IN:pcrTimeNs[%lld], IN:sampleTimestampNs[%lld], OUT:_aidl_return[])", \
+                    static_cast<long long>(pcrTimeNs), static_cast<long long>(sampleTimestampNs)); \
+        status = avClockController->notifyPCRSample(pcrTimeNs, sampleTimestampNs, &_aidl_return); \
+        UT_LOG_INFO("Result notifyPCRSample(IN:pcrTimeNs[%lld], IN:sampleTimestampNs[%lld], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+                    static_cast<long long>(pcrTimeNs), static_cast<long long>(sampleTimestampNs), \
+                    UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_EQUAL(_aidl_return, expectedResult); \
+    } while (0)
+
+#define AVCLOCK_NOTIFY_PCR_SAMPLE_FAILURE_INVALID_PARAMS(avClock, avClockController, pcrTimeNs, sampleTimestampNs) \
+    do { \
+        ::android::binder::Status status; \
+        bool _aidl_return; \
+        UT_LOG_INFO("Calling notifyPCRSample(IN:pcrTimeNs[%lld], IN:sampleTimestampNs[%lld], OUT:_aidl_return[])", \
+                    static_cast<long long>(pcrTimeNs), static_cast<long long>(sampleTimestampNs)); \
+        status = avClockController->notifyPCRSample(pcrTimeNs, sampleTimestampNs, &_aidl_return); \
+        UT_LOG_INFO("Result notifyPCRSample(IN:pcrTimeNs[%lld], IN:sampleTimestampNs[%lld], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+                    static_cast<long long>(pcrTimeNs), static_cast<long long>(sampleTimestampNs), \
+                    UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_FALSE(_aidl_return); \
+    } while (0)
+
+#define AVCLOCK_NOTIFY_PCR_SAMPLE_FAILURE_STATE_OR_MODE(avClock, avClockController, pcrTimeNs, sampleTimestampNs) \
+    do { \
+        ::android::binder::Status status; \
+        bool _aidl_return; \
+        UT_LOG_INFO("Calling notifyPCRSample(IN:pcrTimeNs[%lld], IN:sampleTimestampNs[%lld], OUT:_aidl_return[])", \
+                    static_cast<long long>(pcrTimeNs), static_cast<long long>(sampleTimestampNs)); \
+        status = avClockController->notifyPCRSample(pcrTimeNs, sampleTimestampNs, &_aidl_return); \
+        UT_LOG_INFO("Result notifyPCRSample(IN:pcrTimeNs[%lld], IN:sampleTimestampNs[%lld], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+                    static_cast<long long>(pcrTimeNs), static_cast<long long>(sampleTimestampNs), \
+                    UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
+        UT_ASSERT_TRUE(_aidl_return); \
+    } while (0)
+
+#define AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, expectedClockTimeNs) \
+    do { \
+        ::android::binder::Status status; \
+        com::rdk::hal::avclock::ClockTime clockTime; \
+        UT_LOG_INFO("Calling getCurrentClockTime(OUT:clockTime[])"); \
+        status = avClockController->getCurrentClockTime(&clockTime); \
+        UT_LOG_INFO("Result getCurrentClockTime(OUT:clockTime[clockTimeNs=%lld, sampleTimestampNs=%lld]), status:[isOK:%s, exception:%s]", \
+                    static_cast<long long>(clockTime.clockTimeNs), static_cast<long long>(clockTime.sampleTimestampNs), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_TRUE(clockTime.clockTimeNs >= 0); \
+        UT_ASSERT_TRUE(clockTime.sampleTimestampNs >= 0); \
+    } while (0)
+
+#define AVCLOCK_GET_CURRENT_CLOCK_TIME_FAILURE_STATE(avClock, avClockController) \
+    do { \
+        ::android::binder::Status status; \
+        com::rdk::hal::avclock::ClockTime clockTime; \
+        UT_LOG_INFO("Calling getCurrentClockTime(OUT:clockTime[])"); \
+        status = avClockController->getCurrentClockTime(&clockTime); \
+        UT_LOG_INFO("Result getCurrentClockTime(OUT:clockTime[clockTimeNs=%lld, sampleTimestampNs=%lld]), status:[isOK:%s, exception:%s]", \
+                    static_cast<long long>(clockTime.clockTimeNs), static_cast<long long>(clockTime.sampleTimestampNs), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
+    } while (0)
+
+#define AVCLOCK_SET_PLAYBACK_RATE_SUCCESS(avClock, avClockController, rate, expectedResult) \
+    do { \
+        ::android::binder::Status status; \
+        bool _aidl_return; \
+        UT_LOG_INFO("Calling setPlaybackRate(IN:rate[%.2f], OUT:_aidl_return[])", rate); \
+        status = avClockController->setPlaybackRate(rate, &_aidl_return); \
+        UT_LOG_INFO("Result setPlaybackRate(IN:rate[%.2f], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+                    rate, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_EQUAL(_aidl_return, expectedResult); \
+    } while (0)
+
+#define AVCLOCK_SET_PLAYBACK_RATE_FAILURE_INVALID_RATE(avClock, avClockController, rate) \
+    do { \
+        ::android::binder::Status status; \
+        bool _aidl_return; \
+        UT_LOG_INFO("Calling setPlaybackRate(IN:rate[%.2f], OUT:_aidl_return[])", rate); \
+        status = avClockController->setPlaybackRate(rate, &_aidl_return); \
+        UT_LOG_INFO("Result setPlaybackRate(IN:rate[%.2f], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+                    rate, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_FALSE(_aidl_return); \
+    } while (0)
+
+#define AVCLOCK_SET_PLAYBACK_RATE_FAILURE_STATE_OR_MODE(avClock, avClockController, rate) \
+    do { \
+        ::android::binder::Status status; \
+        bool _aidl_return; \
+        UT_LOG_INFO("Calling setPlaybackRate(IN:rate[%.2f], OUT:_aidl_return[])", rate); \
+        status = avClockController->setPlaybackRate(rate, &_aidl_return); \
+        UT_LOG_INFO("Result setPlaybackRate(IN:rate[%.2f], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+                    rate, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
+        UT_ASSERT_FALSE(_aidl_return); \
+    } while (0)
+
+#define AVCLOCK_GET_PLAYBACK_RATE_SUCCESS(avClock, avClockController, expectedRate) \
+    do { \
+        ::android::binder::Status status; \
+        double rate; \
+        UT_LOG_INFO("Calling getPlaybackRate(OUT:rate[])"); \
+        status = avClockController->getPlaybackRate(&rate); \
+        UT_LOG_INFO("Result getPlaybackRate(OUT:rate[%.2f]), status:[isOK:%s, exception:%s]", \
+                    rate, UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_DOUBLE_EQUAL(rate, expectedRate,0); \
+    } while (0)
+
+#define AVCLOCK_GET_PLAYBACK_RATE_FAILURE_STATE_OR_MODE(avClock, avClockController) \
+    do { \
+        ::android::binder::Status status; \
+        double rate; \
+        UT_LOG_INFO("Calling getPlaybackRate(OUT:rate[])"); \
+        status = avClockController->getPlaybackRate(&rate); \
+        UT_LOG_INFO("Result getPlaybackRate(OUT:rate[%.2f]), status:[isOK:%s, exception:%s]", \
+                    rate, UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \

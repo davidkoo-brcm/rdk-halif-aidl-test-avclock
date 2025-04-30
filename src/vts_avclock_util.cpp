@@ -17,6 +17,47 @@
  * limitations under the License.
  */
 
+/**
+ * @addtogroup HPK Hardware Porting Kit
+ * @{
+ * @par The Hardware Porting Kit
+ * HPK is the next evolution of the well-defined Hardware Abstraction Layer
+ * (HAL), but augmented with more comprehensive documentation and test suites
+ * that OEM or SOC vendors can use to self-certify their ports before taking
+ * them to RDKM for validation or to an operator for final integration and
+ * deployment.
+ */
+
+/**
+ * @addtogroup AV_CLOCK AV Clock Module
+ * @{
+ */
+
+/**
+ * @addtogroup AV_CLOCK_HALTEST AV Clock HAL Tests
+ * @{
+ */
+
+/**
+ * @defgroup AV_CLOCK_HALTEST_UTIL AV Clock HAL Tests helper functions Header File
+ * @{
+ * @parblock
+ *
+ * ### Common functions/macros required for the AV clock module :
+ *
+ * Common functions/macros required for the AV clock module.
+ *
+ * **Pre-Conditions:** None @n
+ * **Dependencies:** None @n
+ *
+ * @endparblock
+ */
+
+/**
+ * @file vts_avclock_util.c
+ *
+ */
+
 #include "vts_avclock.h"
 
 extern sp<IAVClockManager> gAVClockManagerService;
@@ -89,3 +130,8 @@ bool vts_avclock_helper_validatePropertyValue(int avClockId, const std::optional
     return true;
 }
 #endif
+
+/** @} */ // End of AV_CLOCK_HALTEST_UTIL
+/** @} */ // End of AV_CLOCK_HALTEST
+/** @} */ // End of AV_CLOCK
+/** @} */ // End of HPK

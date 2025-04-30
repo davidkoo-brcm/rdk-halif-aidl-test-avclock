@@ -1,29 +1,64 @@
 #!/bin/bash
 
 DEV_BINDER='/dev/binder'
-RUN_DIR=`realpath $(dirname $0)`
+RUN_DIR=$(realpath "$(dirname "$0")")
 
-if [ ! -w $DEV_BINDER ]; then
-	echo "No permission to access $DEV_BINDER, consider execute this as root"
-	exit 1
+# Check if the script has write permission to the binder device
+if [ ! -w "$DEV_BINDER" ]; then
+    echo "No permission to access $DEV_BINDER, consider executing this as root"
+    exit 1
 fi
 
-export LD_LIBRARY_PATH=$RUN_DIR:$LD_LIBRARY_PATH
+# Set LD_LIBRARY_PATH to include the script's directory
+export LD_LIBRARY_PATH="$RUN_DIR:$LD_LIBRARY_PATH"
 
-echo "Eexecute [servicemanager]"
-${RUN_DIR}/servicemanager &
-servicemanager_pid=$!
-# Need to wait some time for the service to be ready
-sleep 2
+# Check if servicemanager is already running
+if pidof servicemanager > /dev/null; then
+    echo "Service 'servicemanager' is already running"
+    servicemanager_pid=$(pidof servicemanager)
+else
+    echo "Executing [servicemanager]"
+    "${RUN_DIR}/servicemanager" &
+    servicemanager_pid=$!
+    # Wait for the service to be ready
+    sleep 2
+    # Verify if servicemanager started successfully
+    if ! ps -p "$servicemanager_pid" > /dev/null; then
+        echo "Failed to start servicemanager"
+        exit 1
+    fi
+fi
 
-echo "Eexecute [EmulateAVClockService]"
-${RUN_DIR}/EmulateAVClockService &
-AVClockService_pid=$!
-# Need to wait some time for the service to be ready
-sleep 2
+# Prompt user to start EmulateAVClockService
+echo "Do you want to start the mock service [EmulateAVClockService]? (y/n)"
+read -r user_choice
+case "$user_choice" in
+    [Yy]*)
+        echo "Executing [EmulateAVClockService]"
+        "${RUN_DIR}/EmulateAVClockService" &
+        AVClockService_pid=$!
+        # Wait for the service to be ready
+        sleep 2
+        # Verify if EmulateAVClockService started successfully
+        if ! ps -p "$AVClockService_pid" > /dev/null; then
+            echo "Failed to start EmulateAVClockService"
+            # Clean up servicemanager if it was started by this script
+            if [ -n "$servicemanager_pid" ] && ps -p "$servicemanager_pid" > /dev/null; then
+                kill -9 "$servicemanager_pid"
+            fi
+            exit 1
+        fi
+        ;;
+    [Nn]*)
+        echo "Skipping [EmulateAVClockService]"
+        AVClockService_pid=""
+        ;;
+    *)
+        echo "Invalid input. Please enter 'y' or 'n'. Skipping [EmulateAVClockService]"
+        AVClockService_pid=""
+        ;;
+esac
 
-echo "Eexecute [vts_avclock]"
-${RUN_DIR}/vts_avclock -p profiles/hfp-avclock.yaml
-
-# cleanup
-kill -9 $servicemanager_pid $AVClockService_pid
+# Execute vts_avclock with the specified profile
+echo "Executing [vts_avclock]"
+${RUN_DIR}/vts_avclock $@ 

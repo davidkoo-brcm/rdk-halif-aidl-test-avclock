@@ -461,8 +461,8 @@ namespace com {
                     *_aidl_return = true;
                     return android::binder::Status::ok();
                 }
-                
-                android::binder::Status AVClockController::getClockMode(  ClockMode* _aidl_return  ) 
+
+                android::binder::Status AVClockController::getClockMode(  ClockMode* _aidl_return  )
                 {
                     if(this->mParentClock->getState() != State::READY && this->mParentClock->getState() != State::STARTED)
                     {
@@ -471,7 +471,7 @@ namespace com {
                     *_aidl_return = this->mClockMode;
                     return android::binder::Status::ok();
                 }
-                
+
                 android::binder::Status AVClockController::notifyPCRSample(  int64_t pcrTimeNs, int64_t sampleTimestampNs, bool* _aidl_return  ) 
                 {
                     if(this->mParentClock->getState() != State::STARTED && this->mClockMode != ClockMode::PCR)
@@ -489,7 +489,7 @@ namespace com {
                     return android::binder::Status::ok();
                 }
 
-                android::binder::Status AVClockController::getCurrentClockTime(  ClockTime* _aidl_return  ) 
+                android::binder::Status AVClockController::getCurrentClockTime(  ClockTime* _aidl_return  )
                 {
                     if(this->mParentClock->getState() != State::STARTED)
                     {
