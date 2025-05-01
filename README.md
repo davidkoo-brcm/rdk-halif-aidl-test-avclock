@@ -23,11 +23,11 @@ cd linux_binder_idl
 Clone and build the test suite:
 
 ```bash
-git clone git@github.com:rdkcentral/rdk-halif-binder-test-avbuffer.git
+git clone git@github.com:rdkcentral/rdk-halif-binder-test-avclock.git
 ```
 
 ```bash
-cd rdk-halif-binder-test-avbuffer
+cd rdk-halif-binder-test-avclock
 ```
 
 Addition environment variables can be used:
@@ -54,11 +54,11 @@ Run the build script:
 
 The build.sh script:
 
-- Clones the rdk-halif-aidl repository and UT-Core framework.
+- Clones the `rdk-halif-aidl` repository and UT-Core framework.
 
 - Compiles the test suite.
 
-- Generates binaries in the build/bin directory.
+- Generates binaries in the `build/bin` directory.
 
 Example directory structure :
 
