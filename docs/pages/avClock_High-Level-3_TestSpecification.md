@@ -42,15 +42,21 @@ TBD
 
 ## L3 Test Specification
 Key Notes:
-Pre-Requirements and Post-Requirements apply to all L3 tests.
+Pre-Requirements Helpers and Post-Requirements Helpers apply to all L3 tests.
 
-|Requirement|Description|HAL APIs|
-|-----------|-----------|--------|
-|Pre-Requirements|<ul><li>Read supported AV Clock Id's using `IAVClockManager` class</li><li>Loop through supported AV Clock Id's</li><li>Register event listeners using `registerEventListener`</li><li>`open` AV Clock instance and verify the state using `getState` or `onStateChanged` state should be in `READY`</li><li>set Audio Sink using setAudioSink verify using getAudioSink</li><li>set Video Sink using setVideoSink verify using getVideoSink</li></ul>|<ul><li>IAVClockManager - getAVClockIds, getAVClock</li><li>IAVClock - open, registerEventListener, getState</li><li>IAVClockController - setAudioSink, getAudioSink, setVideoSink, getVideoSink</li><li>IAVClockEventListener - onStateChanged</li></ul>|
+|Pre-Requirement Helpers|Description|HAL APIs|Purpose Of Function|
+|-----------------------|-----------|--------|-------------------|
+|Get AVClock Ids|<ul><li>Read supported AV Clock Id's using `IAVClockManager` class</li></ul>|
+<ul><li>IAVClockManager - getAVClockIds, getAVClock</li></ul>|<ul><li>Function returns an array of Clock Ids</li></ul>|
+|Initialize AVClock|<ul><li>Register event listeners using `registerEventListener`</li></ul><li>`open` AV Clock instance and verify the state using `getState` or `onStateChanged` state should be in `READY`</li></ul>|<ul><li>IAVClock - open, registerEventListener, getState</li><li>IAVClockEventListener - onStateChanged</li></ul>|
+|Configure AV Components|<ul><li>Open , Start the Audio Decoder check the status of audio decoder should be in `STARTED` state</li><li>Open , Start the Audio Decoder check the status of audio decoder should be in `STARTED` state</li><li>Open , Start the Audio Sink check the status of audio decoder should be in `STARTED` state</li><li>Set Audio Sink using setAudioSink verify using getAudioSink</li><li>Set Video Sink using setVideoSink verify using getVideoSink</li></ul>|
+<ul><li>IAudioDecoder - open, getState</li><li>IAudioDecoderController - start</li><li>IVideoDecoder - open, getState</li><li>IAudioDecoderController - start</li><li>IAudioSink - open, getState</li><li>IAudioSinkController - start</li><li>IAVClockController - setAudioSink, getAudioSink, setVideoSink, getVideoSink</li></ul>|
+|Start Stop Playback|<ul><li>Start and Stops the specified AV Stream</li></ul>|
+<ul><li>None</li></ul>|<ul><li>Function Starts and Stops the playback based on the inputs provided from the caller</li></ul>|
 
-|Requirement|Description|HAL APIs|
-|-----------|-----------|--------|
-|Post-Requirements|<ul><li>Stop and Close the AV Clock instance using `stop`,`close` check state should be in `CLOSED` using `getState` or `onStateChanged`</li><li>Unregister event listeners using `unregisterEventListener`</li></ul>|<ul><li>IAVClockController - stop</li><li>IAVClock  - close, getState, unregisterEventListener</li><li>IAVClockEventListener - onStateChanged</li></ul>|
+|Post-Requirement Helpers|Description|HAL APIs|Purpose Of Function|
+|------------------------|-----------|--------|-------------------|
+|Stop Close AVClock|<ul><li>Stop and Close the AV Clock instance using `stop`,`close` check state should be in `CLOSED` using `getState` or `onStateChanged`</li><li>Unregister event listeners using `unregisterEventListener`</li></ul>|<ul><li>IAVClockController - stop</li><li>IAVClock  - close, getState, unregisterEventListener</li><li>IAVClockEventListener - onStateChanged</li></ul>|
 
 
 |Test|Description|HAL APIs|
