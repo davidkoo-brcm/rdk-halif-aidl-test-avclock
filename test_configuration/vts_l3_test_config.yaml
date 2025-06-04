@@ -8,4 +8,6 @@ IAVClockManager:
           PTS:
             - 0
             - 191999997
+          elapsedtime: 2
           threshold: 0.5
+          speed: 1.0
