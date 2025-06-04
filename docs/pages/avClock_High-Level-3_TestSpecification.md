@@ -38,7 +38,7 @@ The AV Clock HAL allows the application to specify which video sink and audio si
 
 ## Test Frame Specifications
 
-- Test Config File - (https://github.com/rdkcentral/rdk-halif-binder-test-avclock/blob/feature/gh8_avclock_l3_hld/test_configuration/vts_l3_test_config.yaml)
+- Test Config File - [Test Config File](https://github.com/rdkcentral/rdk-halif-binder-test-avclock/blob/feature/gh8_avclock_l3_hld/test_configuration/vts_l3_test_config.yaml)
 
 ## L3 Test Specification
 ## Key Notes:
