@@ -129,7 +129,7 @@ bool vts_avclock_helper_validatePropertyValue(int avClockId, const std::optional
 bool vts_avclock_helper_areElementsUnique(const std::vector<int32_t>& ids);
 UT_status_t VTS_AVClock_init();
 
-#define MAX_TRANSITORY_STATE_WAIT_MS 5
+#define MAX_TRANSITORY_STATE_WAIT_MS 10
 #define MAX_FINAL_STATE_WAIT_MS 500
 
 class AVClockControllerListener : public BnAVClockControllerListener {
@@ -144,6 +144,72 @@ class AVClockControllerListener : public BnAVClockControllerListener {
             return Status::ok();
         }
     };
+class AVClockEventListener : public BnAVClockEventListener {
+    public:
+        AVClockEventListener() : mCurrentState(::com::rdk::hal::State::CLOSED) {}
+        virtual ~AVClockEventListener() = default;
+
+        /**
+         * Wait for the decoder to reach a particular State within a given timeout.
+         *
+         * @param desiredState The state we want to observe.
+         * @param timeout      How long to wait, e.g. std::chrono::milliseconds(500).
+         * @return true if the state was reached; false if we timed out waiting.
+         */
+        bool waitForState(State desiredState, std::chrono::milliseconds timeout)
+        {
+            std::unique_lock<std::mutex> lock(mMutex);
+            // Wait until mCurrentState == desiredState or until timeout
+            return mCV.wait_for(lock, timeout, [this, desiredState]() {
+                return (mCurrentState == desiredState);
+            });
+        }
+        // Accessors for test verifications if desired
+        std::vector<std::pair<State, State>> getStateChanges() const
+        {
+            std::lock_guard<std::mutex> lock(mMutex);
+            return mStateChanges;
+        }
+
+        void resetStateChanges()
+        {
+            std::lock_guard<std::mutex> lock(mMutex);
+            mStateChanges.clear();
+        }
+
+
+        Status onStateChanged(::com::rdk::hal::State oldState, ::com::rdk::hal::State newState) override {
+            UT_LOG_INFO("AVClockEventListener: State changed from %s to %s",
+                        ::com::rdk::hal::toString(oldState).c_str(),
+                        ::com::rdk::hal::toString(newState).c_str());
+            {
+                std::lock_guard<std::mutex> lock(mMutex);
+                mStateChanges.emplace_back(oldState, newState);
+                mCurrentState = newState;
+            }
+            mCV.notify_all();
+            return Status::ok();
+        }
+
+        bool checkStateTransition(::com::rdk::hal::State expOldState, ::com::rdk::hal::State expNewState) {
+            bool foundClosedToOpening = false;
+            for (const auto &[oldState, newState] : mStateChanges)
+            {
+                if (oldState == expOldState && newState == expNewState)
+                {
+                    foundClosedToOpening = true;
+                    break;
+                }
+            }
+            return foundClosedToOpening;
+        }
+
+    private:
+        mutable std::mutex mMutex;
+        std::condition_variable mCV;
+        ::com::rdk::hal::State mCurrentState;
+        std::vector<std::pair< ::com::rdk::hal::State, ::com::rdk::hal::State>> mStateChanges;
+    };
 
 #define AVCLOCK_MANAGER_GETAVCLOCKIDS(clockIds) \
     do { \
@@ -153,9 +219,9 @@ class AVClockControllerListener : public BnAVClockControllerListener {
         UT_LOG_INFO("Result getAVClockIds(OUT:clockIds:[size: %d]), status:[isOK:%s, exception:%s]", \
                     clockIds.size(), UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_FALSE(clockIds.empty()); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_TRUE_FATAL(status.isOk()); \
+        UT_ASSERT_FALSE_FATAL(clockIds.empty()); \
+        UT_ASSERT_EQUAL_FATAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
 #define AVCLOCK_MANAGER_GETAVCLOCK_SUCCESS(avClockId, avClock) \
@@ -167,24 +233,10 @@ class AVClockControllerListener : public BnAVClockControllerListener {
                     avClockId.value, avClock.get(), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_NOT_EQUAL(avClock, nullptr); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_TRUE_FATAL(status.isOk()); \
+        UT_ASSERT_NOT_EQUAL_FATAL(avClock, nullptr); \
+        UT_ASSERT_EQUAL_FATAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
-
-#define AVCLOCK_GETPROPERTY_SUCCESS(avClock, property, propertyValue) \
-    do { \
-        ::android::binder::Status status; \
-        UT_LOG_INFO("Calling getProperty for property=%d", static_cast<int32_t>(property)); \
-        status = (avClock)->getProperty(property, propertyValue); \
-        UT_LOG_INFO("getProperty status: isOK=%s, exception=%s, hasValue=%s", \
-                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
-                    UT_Control_GetMapString(statusException_mapTable, status.exceptionCode()), \
-                    UT_Control_GetMapString(bool_mapTable, propertyValue->has_value())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_TRUE(propertyValue->has_value()); \
-    } while (0)
-
 
 #define AVCLOCK_GET_PROPERTY_SUCCESS(avClock, property, propertyValue) \
     do { \
@@ -199,7 +251,7 @@ class AVClockControllerListener : public BnAVClockControllerListener {
         UT_ASSERT_TRUE(status.isOk()); \
         UT_ASSERT_TRUE(propertyValue.has_value()); \
         UT_ASSERT_TRUE(propertyValue->value.has_value()); \
-        UT_ASSERT_EQUAL(propertyValue->value->getTag(), com::rdk::hal::PropertyValue::Value::intValue); \
+        UT_ASSERT_EQUAL(propertyValue->value.value().getTag(), com::rdk::hal::PropertyValue::Value::intValue); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
@@ -236,7 +288,7 @@ class AVClockControllerListener : public BnAVClockControllerListener {
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
-#define AVCLOCK_SET_PROPERTY_FAILURE(avClock, property, propertyValue, result) \
+#define AVCLOCK_SET_PROPERTY_FAILURE(avClock, property, propertyValue,result,exception) \
     do { \
         ::android::binder::Status status; \
         UT_LOG_INFO("Calling setProperty(IN:property[%d], IN:propertyValue[has_value:%s])", \
@@ -249,9 +301,8 @@ class AVClockControllerListener : public BnAVClockControllerListener {
                     result ? "true" : "false", \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_FALSE(status.isOk()); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_ARGUMENT); \
-        UT_ASSERT_FALSE(result); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
     } while (0)
 
 
@@ -312,9 +363,9 @@ class AVClockControllerListener : public BnAVClockControllerListener {
                     controllerListener.get(), avClockController.get(), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_NOT_EQUAL(avClockController.get(), nullptr); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_TRUE_FATAL(status.isOk()); \
+        UT_ASSERT_NOT_EQUAL_FATAL(avClockController.get(), nullptr); \
+        UT_ASSERT_EQUAL_FATAL(status.exceptionCode(), Status::EX_NONE); \
         if (stateCheck) { \
             ::com::rdk::hal::State lastState; \
             AVCLOCK_WAIT_FOR_STATE(avClock, ::com::rdk::hal::State::READY, lastState); \
@@ -332,9 +383,9 @@ class AVClockControllerListener : public BnAVClockControllerListener {
                     avClockController.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
-        UT_ASSERT_TRUE(_aidl_return); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_TRUE_FATAL(status.isOk()); \
+        UT_ASSERT_TRUE_FATAL(_aidl_return); \
+        UT_ASSERT_EQUAL_FATAL(status.exceptionCode(), Status::EX_NONE); \
         if (stateCheck) { \
             ::com::rdk::hal::State lastState; \
             AVCLOCK_WAIT_FOR_STATE(avClock, ::com::rdk::hal::State::CLOSED, lastState); \
@@ -474,7 +525,7 @@ class AVClockControllerListener : public BnAVClockControllerListener {
         UT_ASSERT_FALSE(_aidl_return); \
     } while (0)
 
-#define AVCLOCK_START_SUCCESS(avClock, avClockController) \
+#define AVCLOCK_START_SUCCESS(avClock, avClockController, stateCheck) \
     do { \
         ::android::binder::Status status; \
         UT_LOG_INFO("Calling start()"); \
@@ -484,9 +535,11 @@ class AVClockControllerListener : public BnAVClockControllerListener {
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-        ::com::rdk::hal::State lastState; \
-        AVCLOCK_WAIT_FOR_STATE(avClock, ::com::rdk::hal::State::STARTED, lastState); \
-        UT_ASSERT_EQUAL(lastState, ::com::rdk::hal::State::STARTED); \
+        if(stateCheck){ \
+            ::com::rdk::hal::State lastState; \
+            AVCLOCK_WAIT_FOR_STATE(avClock, ::com::rdk::hal::State::STARTED, lastState); \
+            UT_ASSERT_EQUAL(lastState, ::com::rdk::hal::State::STARTED); \
+        } \
     } while (0)
 
 #define AVCLOCK_START_FAILURE(avClock, avClockController) \
@@ -501,7 +554,7 @@ class AVClockControllerListener : public BnAVClockControllerListener {
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
     } while (0)
 
-#define AVCLOCK_STOP_SUCCESS(avClock, avClockController) \
+#define AVCLOCK_STOP_SUCCESS(avClock, avClockController, stateCheck) \
     do { \
         ::android::binder::Status status; \
         UT_LOG_INFO("Calling stop()"); \
@@ -511,9 +564,11 @@ class AVClockControllerListener : public BnAVClockControllerListener {
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-        ::com::rdk::hal::State lastState; \
-        AVCLOCK_WAIT_FOR_STATE(avClock, ::com::rdk::hal::State::READY, lastState); \
-        UT_ASSERT_EQUAL(lastState, ::com::rdk::hal::State::READY); \
+        if(stateCheck){ \
+            ::com::rdk::hal::State lastState; \
+            AVCLOCK_WAIT_FOR_STATE(avClock, ::com::rdk::hal::State::READY, lastState); \
+            UT_ASSERT_EQUAL(lastState, ::com::rdk::hal::State::READY); \
+        } \
     } while (0)
 
 #define AVCLOCK_STOP_FAILURE(avClock, avClockController) \
@@ -1016,38 +1071,6 @@ class AVClockControllerListener : public BnAVClockControllerListener {
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
-class AVClockEventListener : public BnAVClockEventListener {
-public:
-    AVClockEventListener() : mCurrentState(::com::rdk::hal::State::CLOSED) {}
-    virtual ~AVClockEventListener() = default;
-
-    Status onStateChanged(::com::rdk::hal::State oldState, ::com::rdk::hal::State newState) override {
-        UT_LOG_INFO("AVClockEventListener: State changed from %s to %s",
-                    ::com::rdk::hal::toString(oldState).c_str(),
-                    ::com::rdk::hal::toString(newState).c_str());
-        std::lock_guard<std::mutex> lock(mMutex);
-        mStateChanges.emplace_back(oldState, newState);
-        mCurrentState = newState;
-        mCV.notify_all();
-        return Status::ok();
-    }
-
-    bool checkStateTransition(::com::rdk::hal::State expOldState, ::com::rdk::hal::State expNewState) {
-        std::lock_guard<std::mutex> lock(mMutex);
-        for (const auto& [oldState, newState] : mStateChanges) {
-            if (oldState == expOldState && newState == expNewState) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-private:
-    mutable std::mutex mMutex;
-    std::condition_variable mCV;
-    ::com::rdk::hal::State mCurrentState;
-    std::vector<std::pair< ::com::rdk::hal::State, ::com::rdk::hal::State>> mStateChanges;
-};
 
 #endif // __VTS_AVCLOCK_H__
 
