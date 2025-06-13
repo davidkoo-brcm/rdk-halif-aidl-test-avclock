@@ -15,6 +15,8 @@ git clone -b develop 'ssh://git@github.com/rdk-e/linux_binder_idl.git'
 
 cd linux_binder_idl
 
+sc docker run rdk-kirkstone /bin/bash
+
 ./build-linux-binder-aidl.sh 64
 ```
 
