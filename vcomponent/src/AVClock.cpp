@@ -476,6 +476,7 @@ namespace com {
 
                 android::binder::Status AVClockController::notifyPCRSample(  int64_t pcrTimeNs, int64_t sampleTimestampNs, bool* _aidl_return  )
                 {
+                    *_aidl_return = false;
                     if(this->mParentClock->getState() != State::STARTED || this->mClockMode != ClockMode::PCR)
                     {
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
@@ -520,6 +521,7 @@ namespace com {
 
                 android::binder::Status AVClockController::setPlaybackRate(  double rate, bool* _aidl_return  )
                 {
+                    *_aidl_return = false;
                     if(this->mParentClock->getState() != State::READY && this->mParentClock->getState() != State::STARTED)
                     {
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);

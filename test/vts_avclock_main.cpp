@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 
     UT_LOG_INFO("==========================================================================");
     UT_LOG_INFO("\t AIDL HALIF Version: \033[0;32m%s\033[0m",RDK_HALIF_AIDL_VERSION);
-    UT_LOG_INFO("\t Video Decoder HALIF Test Version: \033[0;32m%s\033[0m",HALIF_TEST_TAG_VERSION);
+    UT_LOG_INFO("\t AV Clock HALIF Test Version: \033[0;32m%s\033[0m",HALIF_TEST_TAG_VERSION);
     UT_LOG_INFO("==========================================================================");
 
     if(VTS_AVClock_init()!=UT_STATUS_OK)
