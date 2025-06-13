@@ -75,6 +75,8 @@ public:
             mClockIds = ids;
         }
 
+        android::ProcessState::self()->startThreadPool();
+
         for (auto& clkId : mClockIds)
         {
             sp<AVClockEventListener> listener = new AVClockEventListener();
