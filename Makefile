@@ -57,6 +57,8 @@ XLDFLAGS += -lvideosinkaidl
 
 # required for std::optional
 CXXFLAGS += -std=c++17
+CXXFLAGS += -Wall -Wformat -Werror=format
+$(info CXXFLAGS: $(CXXFLAGS))
 
 UT_CORE_DIR := $(CURDIR)/ut/ut-core
 
@@ -74,7 +76,7 @@ export CXXFLAGS
 all: $(TARGET_EXEC)
 
 $(TARGET_EXEC):
-	make -C $(UT_CORE_DIR) -j $(shell nproc) TARGET=$(TARGET) VARIANT=$(VARIANT)
+	make -C $(UT_CORE_DIR) -j $(shell nproc) TARGET=$(TARGET) VARIANT=$(VARIANT) CXXFLAGS="$(CXXFLAGS)"
 
 clean:
 	make -C $(UT_CORE_DIR) -j TARGET=$(TARGET) VARIANT=$(VARIANT) clean
