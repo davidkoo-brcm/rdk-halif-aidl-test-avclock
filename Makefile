@@ -76,7 +76,7 @@ export CXXFLAGS
 all: $(TARGET_EXEC)
 
 $(TARGET_EXEC):
-	make -C $(UT_CORE_DIR) -j $(shell nproc) TARGET=$(TARGET) VARIANT=$(VARIANT) CXXFLAGS="$(CXXFLAGS)"
+	make -C $(UT_CORE_DIR) -j $(shell nproc) TARGET=$(TARGET) VARIANT=$(VARIANT)
 
 clean:
 	make -C $(UT_CORE_DIR) -j TARGET=$(TARGET) VARIANT=$(VARIANT) clean
