@@ -57,6 +57,8 @@ XLDFLAGS += -lvideosinkaidl
 
 # required for std::optional
 CXXFLAGS += -std=c++17
+CXXFLAGS += -Wall -Wformat -Werror=format
+$(info CXXFLAGS: $(CXXFLAGS))
 
 UT_CORE_DIR := $(CURDIR)/ut/ut-core
 

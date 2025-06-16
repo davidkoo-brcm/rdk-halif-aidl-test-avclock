@@ -241,7 +241,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_GET_PROPERTY_SUCCESS(avClock, property, propertyValue) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling getProperty(IN:property[%s], OUT:propertyValue[])"); \
+        UT_LOG_INFO("Calling getProperty(IN:property[%s], OUT:propertyValue[])",com::rdk::hal::avclock::toString(property).c_str()); \
         status = avClock->getProperty(property, &propertyValue); \
         UT_LOG_INFO("Result getProperty(IN:property[%s], OUT:propertyValue[has_value:%s]), status:[isOK:%s, exception:%s]", \
                     com::rdk::hal::avclock::toString(property).c_str(), \
@@ -258,10 +258,10 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_GET_PROPERTY_FAILURE(avClock, property, propertyValue) \
     do { \
         ::android::binder::Status status; \
-        UT_LOG_INFO("Calling getProperty(IN:property[%d], OUT:propertyValue[])"); \
+        UT_LOG_INFO("Calling getProperty(IN:property[%s], OUT:propertyValue[])",com::rdk::hal::avclock::toString(property).c_str()); \
         status = avClock->getProperty(property, &propertyValue); \
-        UT_LOG_INFO("Result getProperty(IN:property[%d], OUT:propertyValue[has_value:%s]), status:[isOK:%s, exception:%s]", \
-                    property, \
+        UT_LOG_INFO("Result getProperty(IN:property[%s], OUT:propertyValue[has_value:%s]), status:[isOK:%s, exception:%s]", \
+                    com::rdk::hal::avclock::toString(property).c_str(), \
                     propertyValue.has_value() ? "true" : "false", \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
