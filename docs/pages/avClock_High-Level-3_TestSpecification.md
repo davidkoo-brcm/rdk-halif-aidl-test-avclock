@@ -36,67 +36,336 @@ The audio and video sinks that are linked by an AV Clock form a sync group which
 
 The AV Clock HAL allows the application to specify which video sink and audio sink(s) are linked in the sync group.
 
-## Test Frame Specifications
+## Test Streams Specification
 
 - Test Config File - [Test Config File](https://github.com/rdkcentral/rdk-halif-binder-test-avclock/blob/feature/gh8_avclock_l3_hld/test_configuration/vts_l3_test_config.yaml)
 
 ## L3 Test Specification
-## Key Notes:
-Pre-Requirements Helpers and Post-Requirements Helpers apply to all L3 tests.
 
+### Prerequisites
 
-|Pre-Requirement Helpers|Description|HAL APIs|Paramerters|Function Purpose|
-|-----------------------|-----------|--------|-----------|----------------|
-|get_l3_AVClockProperty|<ul><li>get AV Clock property using `getProperty`</li></ul>|<ul><li>IAVClock - getProperty</li></ul>|<li><ul>In Param - Property property</li></ul>|<ul><li>Function get the property of the AV Clock and return the satus</li></ul>|
-|get_l3_Identifiers|<ul><li>Read supported AV Clock Id's using `IAVClockManager` class</li><li>Read supported Audio Decoder Id's using `IAudioDecoderManager` class</li><li>Read supported Audio Sink Id's using `IAudioSinkManager` class</li><li>Read supported Video Decoder Id's using `IVideoDecoderManager` class</li><li>Read supported Video Sink Id's using `IVideoSinkManager` class</li></ul>|<ul><li>IAVClockManager - getAVClockIds, getAVClock</li><li>IAudioDecoderManager - getAudioDecoderIds</li><li>IAudioSinkManager - getAudioSinkIds</li><li>IVideoDecoderManager - getVideoDecoderIds</li><li>IVideoSinkManager - getVideoSinkIds</li></ul>|<ul><li>Out Param - IAVClock.Id[], IAudioDecoder.Id[], IAudioSink.Id[], IVideoDecoder.Id[], IVideoSink.Id[]</li></ul>|<ul><li>Function returns an array of AVClock, Audio Decoder, Audio Sink, Video Decoder, Video Sink Ids</li></ul>|
-|init_l3_AVClock_Instance|<ul><li>Register event listeners using `registerEventListener`</li><li>Open AV Clock instance using `open`  and verify the state using `getState` or `onStateChanged` state should be in `READY`</li><li>Set the clock mode using `setClockMode` and verify the clock mode using `getClockMode`</li><li>Get the clock mode using `getClockMode`</li><li>Start the AV Clock instace using `start` check AVClock instace should be in `STARTED` state using `getState`</li></ul>|<ul><li>IAVClock - open, registerEventListener, getState</li><li>IAVClockEventListener - onStateChanged</li><li>IAVClockController - setClockMode,getClockMode</li><li>IAVClockController - start</li></ul>|<li><ul>In Params - IAVClockEventListener avClockEventListener , IAVClockControllerListener avClockControllerListener, ClockMode clockMode </li></ul>|<li><ul>Function register event listener ,set, get and verifies clock , open the AVClock instance ,start the AVClock instance  and return the status</li></ul>|
-|start_l3_AudioDecoder|<ul><li>Register event listeners using `registerEventListener`</li><li>Open , Start the Audio Decoder check the status of audio using  `open` , `start` check decoder should be in `STARTED` state using `getState`</li></ul>|<ul><li>IAudioDecoder - registerEventListener, open, getState</li><li>IAudioDecoderController - start</li></ul>|<ul><li>In params -  Codec codec, boolean secure, IAudioDecoderControllerListener audioDecoderControllerListener</li></ul>|<ul><li>Function open , start specified Audio Decoder and return the status</li></ul>|
-|decode_l3_AudioBuffer|<ul><li>Decoded , encoded audio buffer using `decodeBuffer`</li></ul>|<ul><li>IAudioDecoderController - decodeBuffer</li></ul>|<ul><li>In params - long nsPresentationTime, long bufferHandle, int trimStartNs, int trimEndNs</li></ul>|<ul><li>Function decodes encoded Audio Buffer and return the status</li></ul>|
-|start_l3_VideoDecoder|<ul><li>Register event listeners using `registerEventListener`</li><li>Open , Start the Video Decoder using `open`, `start` check the status of video decoder should be in `STARTED` state using `getState`</li></ul>|</ul><li>IVideoDecoder - registerEventListener, open, getState</li><li>IVideoDecoderController - start</li>|<ul><li>In params -  Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li></ul>|<ul><li>Function open , start specified Video Decoder and return the status</li></ul>|
-|decode_l3_VideoBuffer|<ul><li>Decoded , encoded video buffer using `decodeBuffer`</li></ul>|<ul><li>IVideoDecoderController - decodeBuffer</li></ul>|<ul><li>In params - long nsPresentationTime, long bufferHandle</li></ul>|<ul><li>Function decodes encoded Video Buffer and return the status</li></ul>|
-|set_l3_VideoDecoderProperty|<ul><li>Set video decoder property using `setProperty` and verify using `getProperty`</li></ul>|<ul><li>IVideoDecoder - getProperty</li><li>IVideoDecoderController - setProperty</li></ul>|<ul><li>In params - Property property, PropertyValue propertyValue</li></ul>|<ul><li>Function sets the property and return the status</li></ul>|
-|init_l3_AudioSink_Instance|<ul><li>Register event listeners using `registerEventListener`</li><li>Open AudioSink instance using `open`  and verify the state using `getState` or `onStateChanged` state should be in `READY`</li><li>Start the Audio Sink using `start` check the status of audio sink should be in `STARTED` state using `getState`</li><li>Set Audio Sink using `setAudioSink`verify using `getAudioSink`</li></ul>|<ul><li>IAudioSink - open, registerEventListener, getState</li><li>IAudioSinkEventListener -  start, onStateChanged</li></ul>|<li><ul>In Params - IAudioSinkEventListener auidoSinkEventListener , IAudioSinkControllerListener audioSinkControllerListener, ContentType contentType, IAudioSink.Id audioSinkId</li></ul>|<li><ul>Function register event listener , open , start ,set the AudioSink instance and retrun the status</li></ul>|
-|queue_l3_AudioFrames_Buffers|<ul><li>Queue audio frames  using  `queueAudioFrame`</li></ul>|<ul><li>IAudioSinkController - queueAudioFrame</li></ul>|<ul><li>In params -  long nsPresentationTime, long bufferHandle, FrameMetadata metadata</li></ul>|<ul><li>Function Queue specified audio frames and return the status</li></ul>|
-|set_l3_SupplementaryAudioSink|<ul><li>Set Audio Sink using `setSupplementaryAudioSink`verify using `getSupplementaryAudioSink`</li></ul>|<ul><li>IAVClockController - setSupplementaryAudioSink, getSupplementaryAudioSink</li></ul>|<ul><li>In Params - IAudioSink.Id supplementaryAudioSinkId</li></ul>|<ul><li>Function set supplementary audio sink and return the status</li></ul>|
-|init_l3_VideoSink_Instance|<ul><li>Register event listeners using `registerEventListener`</li><li>Open VideoSink instance using `open`  and verify the state using `getState` or `onStateChanged` state should be in `READY`</li><li>Start the Video Sink using `start` check the status of video sink should be in `STARTED` state using `getState`</li><li>Set Video Sink using `setVideoSink` and verify using `getVideoSink`</li></ul>|<ul><li>IVideoSink - open, registerEventListener, getState</li><li>IVideoSinkEventListener - start, onStateChanged</li><li>IVideoSinkController - setVideoSink</li></ul>|<li><ul>In Params - IVideoSinkEventListener videoSinkEventListener , IVideoSinkControllerListener videoSinkControllerListener, IVideoSink.Id videosinkSinkId</li></ul>|<li><ul>Function register event listener , open , start, set the VideoSink instance and retrun the status</li></ul>|
-|queue_l3_VideoFrames_Buffers|<ul><li>Queue video frames  using  `queueVideoFrame`</li></ul>|<ul><li>IVideoSinkController - queueVideoFrame</li></ul>|<ul><li>In params -  long nsPresentationTime, long frameBufferHandle, FrameMetadata metadata</li></ul>|<ul><li>Function Queue specified video frames and return the status</li></ul>|
-|notify_l3_PCRSample|<ul><li>Notify PCR sample to AV Clock using `notifyPCRSample`</li></ul>|<ul><li>IAVClockController - notifyPCRSample</li></ul>|<ul><li>In Params - long pcrTimeNs, long sampleTimestampNs</li></ul>|<ul><li>Function notifies PCR sample to AV Clock and return the status</li></ul>|
-|set_l3_PlayBackRate|<ul><li>Set play back rate using `setPlaybackRate` and verify using `getPlaybackRate`</li></ul>|<ul><li>IAVClockController - setPlaybackRate</li></ul>|<ul><li>In Params - double rate</li></ul>|<ul><li>Function sets play back rate and return the status</li></ul>|
-|verify_l3_Current_ClockTime|<ul><li>Wait until clock prime notification arrives</li><li>Get the current clock time using `getCurrentClockTime` and verify its in range with tolerance values</li></ul>|<ul><li>IAVClockController - getCurrentClockTime</li></ul>|<ul><li>In Param- start_pts , elapsedtime, threshold, speed</li></ul>|<ul><li>Function get, calculates the current clock time based on the start_pts, elapsedtime, threshold, speed and verifies its in range</li></ul>|
+#### AV Buffer
 
-|Post-Requirement Helpers|Description|HAL APIs|Parameters|Fucntion Purpose|
-|------------------------|-----------|--------|----------|----------------|
-|stop_close_l3_AudioDecoder|<ul><li>Stop the Audio Decoders using `stop` and check the state should be in `READY` using `getState`</li><li>Close the Audio Decoders using `close` and check the state should be in `CLOSED` using `getState`</li><li>Unregister event listeners using `unregisterEventListener`</li></ul>|<ul><li>IAudioDecoder - close, getState, unregisterEventListener</li><li>IAudioDecoderController - stop</li></ul>|<ul><li>IN Params - IAudioDecoderController audioDecoderController</li></ul>|<ul><li>Function carry out stopping , closing the Audio Decoder instance and return the status</li></ul>|
-|stop_close_l3_VideoDecoder|<ul><li>Stop the Video Decoders using `stop` and check the state should be in `READY` using `getState`</li><li>Close the Video Decoders using `close` and check the state should be in `CLOSED` using `getState`</li><li>Unregister event listeners using `unregisterEventListener`</li></ul>|<ul><li>IVideoDecoder - close, getState, unregisterEventListener</li><li>IVideoDecoderController - stop</li></ul>|<ul><li>IN Params - IVideoDecoderController videoDecoderController</li></ul>|<ul><li>Function carry stopping , closing the Video Decoder instance and return the status</li></ul>|
-|deinit_l3_AudioSink|<ul><li>Unset Audio Sink using `setAudioSink` to  `IAudioSink.Id.UNDEFINED` verify using `getAudioSink` should be `IAudioSink.Id.UNDEFINED`</li><li>Stop Audio Sink using `stop` and check the state should be in `READY` using `getState`</li><li>Close the Audio Sink using `close` and check the state should be in `CLOSED` using `getState`</li><li>Unregister event listeners using `unregisterEventListener`</li></ul>|<ul><li>IAVClockController - setAudioSink, getAudioSink</li><li>IAudioSink - close, getState, unregisterEventListener</li><li>IAudioSinkController - stop</li></ul>|<ul><li>IN Params - IAudioSink.Id audioSinkId, IAudioSinkController audioSinkController</li></ul>|<ul><li>Function carry unsetting, stop and close the Audio Sink instance and return the status</li></ul>|
-|deinit_l3_VideoSink|<ul><li>Set Video Sink using `setVideoSink` to  `IVideoSink.Id.UNDEFINED` verify using `getVideoSink` should be `IVideoSink.Id.UNDEFINED`</li><li>Stop  using `stop`, and check the status should be in `READY` state using `getState` or `onStateChange`</li><li>Close Video Sink using `close` and check the state should be in `CLOSED` using `getState`</li><li>Unregister event listeners using `unregisterEventListener`</li></ul>|<ul><li>IAVClockController - setVideoSink, getVideoSink</li><li>IVideoSinkController - stop</li><li>IVideoSink -  close, getState, unregisterEventListener</li></ul>|<ul><li>IN Params - IVideoSink.Id videosinkSinkId, IVideoSinkController videoSinkController</li></ul>|<ul><li>Function carry out unsetting , stop , closing the Video Sink instance and return the status</li></ul>|
-|deinit_l3_AVClock|<ul><li>Stop Audio Sink using stop and check the state should be in `READY` using `getState`</li><li>Close AV Clock instance , check state should be in `CLOSED` using `getState` or `onStateChanged`</li><li>Unregister event listeners using `unregisterEventListener`</li></ul>|<ul><li>IAVClock - close, getState, unregisterEventListener</li><li>IAVClockEventListener - onStateChanged</li></ul>|<ul><li>In Params - IAVClockController avClockController</ul>|<li><ul>Function should stop, clock, unregister AVClock instance and return the status</li></ul>|
+Audio frames , Video frames are supplied to the Audio Decoder , Video Decoder  during testing on AV Clock, which necessitates a pre-validated AVBuffer module. Therefore, the AVBuffer must successfully pass VTS L1, L2, and L3 testing before being used in the Audio Decoder tests.
 
-|Test|Description|Test Purpose|
-|----|-----------|------------|
-|Prime Clock with Clock Mode Auto non tunnel (Audio Frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, IAudioSink.Id[], NULL, NULL to get AVClock , AudioSink Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Loop through the Audio Sink Ids</li><li>Call init_l3_AudioSink_Instance() with arguments auidoSinkEventListener , audioSinkControllerListener, contentType, audioSinkId</li><li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_AudioFrames_Buffers() with arguments nsPresentationTime, bufferHandle, metadata</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_AudioSink() with arguments audioSinkId, audioSinkController</li><li>Call deinit_l3_AVClock() with arguments avClockController</li></ul>|<ul><li>Function Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock time is matches or in the tolerance range of audio frames</li></ul>|
-|Prime Clock with Clock Mode Auto non tunnel(Video Frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, NULL, IVideoSink.Id[], NULL to get the AVClock , VideoSink Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Loop through the Video Sink Ids</li><li>Call init_l3_VideoSink_Instance() with arguments videoSinkEventListener ,videoSinkControllerListener, videosinkSinkId</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_VideoFrames_Buffers() with arguments nsPresentationTime, frameBufferHandle, metadata</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_VideoSink() with arguments videoSinkId, videoSinkController</li><li>Call deinit_l3_AVClock() with arguments avClockController</li></ul>|<ul><li>Function Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock time is matches or in the tolerance range of video frames</li></ul>|
-|Prime Clock with Clock Mode AUDIO_MASTER non tunnel(Audio Frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, IAudioSink.Id[], NULL, NULL to get AVClock , AudioSink Ids</li><li>Loop through the AVClock Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Loop through the Audio Sink Ids</li><li>Loop through the Audio Sink Ids</li><li>Call init_l3_AudioSink_Instance() with arguments auidoSinkEventListener , audioSinkControllerListener, contentType, audioSinkId</li><li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_AudioFrames_Buffers() with arguments nsPresentationTime, bufferHandle, metadata</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_AudioSink() with arguments audioSinkId, audioSinkController</li><li>Call deinit_l3_AVClock() with arguments avClockController</li></ul>|<ul><li>Function Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock time is matches or in the tolerance range of audio frames</li></ul>|
-|Prime Clock with Clock Mode VIDEO_MASTER non tunnel(Video Frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, NULL, IVideoSink.Id[], NULL to get the AVClock , VideoSink Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Loop through the Video Sink Ids</li><li>Call init_l3_VideoSink_Instance() with arguments videoSinkEventListener ,videoSinkControllerListener, videosinkSinkId</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_VideoFrames_Buffers() with arguments nsPresentationTime, frameBufferHandle, metadata</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_VideoSink() with arguments videoSinkId, videoSinkController</li><li>Call deinit_l3_AVClock() with arguments avClockController</li></ul>|<ul><li>Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock time is matches or in the tolerance range of video frames</li></ul>|
-|Prime Clock with Clock Mode AUDIO_MASTER non tunnel(Video Frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, NULL, IVideoSink.Id[], NULL to get the AVClock , VideoSink Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Loop through the Video Sink Ids</li><li>Call init_l3_VideoSink_Instance() with arguments videoSinkEventListener ,videoSinkControllerListener, videosinkSinkId</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_VideoFrames_Buffers() with arguments nsPresentationTime, frameBufferHandle, metadata</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_VideoSink() with arguments videoSinkId, videoSinkController</li><li>Call deinit_l3_AVClock() with arguments avClockController</li></ul>|<ul><li>Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock should not prime</li></ul>|
-|Prime Clock with Clock Mode VIDEO_MASTER non tunnel(Video Frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, IAudioSink.Id[], NULL, NULL to get AVClock , AudioSink Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Loop through the Audio Sink Ids</li><li>Call init_l3_AudioSink_Instance() with arguments auidoSinkEventListener , audioSinkControllerListener, contentType, audioSinkId</li><li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_AudioFrames_Buffers() with arguments nsPresentationTime, bufferHandle, metadata</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_AudioSink() with arguments audioSinkId, audioSinkController</li><li>Call deinit_l3_AVClock() with arguments avClockController</li></ul>|<ul><li>Function Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock should not prime</li></ul>|
-|Prime Clock with Clock Mode PCR (PCR Samples)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, NULL, NULL, NULL to get AVClock Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Loop through the available PCR Frames from the vts_l3_test_config.yaml file</li><li>Call notify_l3_PCRSample() with arguments long pcrTimeNs, long sampleTimestampNs</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_AVClock() with arguments avClockController</li></ul>|<ul><li>Function Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock time is matches or in the tolerance range of PCR samples</li></ul>|
-|Prime Clock with Clock Mode Auto non tunnel (Sink Audio frames first and then Video frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], IAudioSink.Id[], NULL, IVideoSink.Id[], NULL to get AVClock , AudioSink, VideoSink Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Create two threads</li><li>In one thread - Loop through the Audio Sink Ids</li><li>Call init_l3_AudioSink_Instance() with arguments auidoSinkEventListener , audioSinkControllerListener, contentType, audioSinkId</li><li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_AudioFrames_Buffers() with arguments nsPresentationTime, bufferHandle, metadata</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_AudioSink() with arguments audioSinkId, audioSinkController</li></ul><li>In another thread - Loop through the Video Sink Ids</li><li>Call init_l3_VideoSink_Instance() with arguments videoSinkEventListener ,videoSinkControllerListener, videosinkSinkId</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_VideoFrames_Buffers() with arguments  nsPresentationTime, frameBufferHandle, metadata</li><li>Call verify_l3_Current_ClockTime() with arguments start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_VideoSink() with arguments videoSinkId, videoSinkController</li><li>Call deinit_l3_AVClock() with arguments avClockController in main thread</li></ul>|<ul><li>Function Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock time is matches or in the tolerance range of audio frames</li></ul>|
-|Prime Clock with Clock Mode Auto non tunnel (Sink Video frames first and then Audio frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], IAudioSink.Id[], NULL, IVideoSink.Id[], NULL to get AVClock , AudioSink, VideoSink Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Create two threads</li><li>In one thread - Loop through the Video Sink Ids</li><li>Call init_l3_VideoSink_Instance() with arguments videoSinkEventListener ,videoSinkControllerListener, videosinkSinkId</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_VideoFrames_Buffers() with arguments  nsPresentationTime, frameBufferHandle, metadata</li><li>Call verify_l3_Current_ClockTime() with arguments start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_VideoSink() with arguments videoSinkId, videoSinkController</li><li>In another thread - Loop through the Audio Sink Ids</li><li>Call init_l3_AudioSink_Instance() with arguments auidoSinkEventListener , audioSinkControllerListener, contentType, audioSinkId</li><li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_AudioFrames_Buffers() with arguments nsPresentationTime, bufferHandle, metadata</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_AudioSink() with arguments audioSinkId, audioSinkController</li><li>Call deinit_l3_AVClock() with arguments avClockController in main thread</li></ul>|<ul><li>Function Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock time is matches or in the tolerance range of video frames</li></ul>|
-|Prime Clock with Clock Mode Auto Tunnel Mode (Audio Frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, IAudioDecoder.Id[], NULL, NULL to get AVClock , AudioDecoder Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Loop through the Audio Decoder Ids</li><li>Call start_l3_AudioDecoder() with arguments Codec codec, boolean secure, IAudioDecoderControllerListener audioDecoderControllerListener</li><li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call decode_l3_AudioBuffer() with arguments nsPresentationTime, bufferHandle, trimStartNs, trimEndNs</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_AVClock() with arguments avClockController</li></ul>|<ul><li>Function Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock time is matches or in the tolerance range of audio frames</li></ul>|
-|Prime Clock with Clock Mode Auto Tunnel Mode(Video Frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, NULL, NULL, IVideoDecoder.Id[] to get AVClock , VideoDecoder Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Loop through the Video Decoder Ids</li><li>Call set_l3_VideoDecoderProperty() to configure tunnel mode with argument Property property, PropertyValue propertyValue</li><li>Call start_l3_VideoDecoder() with arguments Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call decode_l3_VideoBuffer() with arguments Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_AVClock() with arguments avClockController</li></ul>|<ul><li>Function Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock time is matches or in the tolerance range of video frames</li></ul>|
-|Prime Clock with Clock Mode AUDIO_MASTER Tunnel Mode(Audio Frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, IAudioDecoder.Id[], NULL, NULL to get AVClock , AudioDecoder Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Loop through the Audio Decoder Ids</li><li>Call start_l3_AudioDecoder() with arguments Codec codec, boolean secure, IAudioDecoderControllerListener audioDecoderControllerListener</li><li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call decode_l3_AudioBuffer() with arguments nsPresentationTime, bufferHandle, trimStartNs, trimEndNs</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call stop_close_l3_AudioDecoder() with arguments audioDecoderController</li><li>Call deinit_l3_AVClock() with arguments avClockController</li></ul>|<ul><li>Function Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock time is matches or in the tolerance range of audio frames</li></ul>|
-|Prime Clock with Clock Mode VIDEO_MASTER Tunnel Mode(Video Frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, NULL, NULL, IVideoDecoder.Id[] to get AVClock , VideoDecoder Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Loop through the Video Decoder Ids</li><li>Call set_l3_VideoDecoderProperty() to configure tunnel mode with argument Property property, PropertyValue propertyValue</li><li>Call start_l3_VideoDecoder() with arguments Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call decode_l3_VideoBuffer() with arguments Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call stop_close_l3_VideoDecoder() with argument videoDecoderController</li><li>Call deinit_l3_AVClock() with arguments avClockController</li></ul>|<ul><li>Function Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock time is matches or in the tolerance range of video frames</li></ul>|
-|Prime Clock with Clock Mode VIDEO_MASTER Tunnel Mode(Audio Frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, IAudioDecoder.Id[], NULL, NULL to get AVClock , AudioDecoder Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Loop through the Audio Decoder Ids</li><li>Call start_l3_AudioDecoder() with arguments Codec codec, boolean secure, IAudioDecoderControllerListener audioDecoderControllerListener</li><li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call decode_l3_AudioBuffer() with arguments nsPresentationTime, bufferHandle, trimStartNs, trimEndNs</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call stop_close_l3_AudioDecoder() with arguments audioDecoderController</li><li>Call deinit_l3_AVClock() with arguments avClockController</li></ul>|<ul><li>Function Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock should not prime</li></ul>|
-|Prime Clock with Clock Mode AUDIO_MASTER Tunnel Mode(Video Frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, NULL, NULL, IVideoDecoder.Id[] to get AVClock , VideoDecoder Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Loop through the Video Decoder Ids</li><li>Call set_l3_VideoDecoderProperty() to configure tunnel mode with argument Property property, PropertyValue propertyValue</li><li>Call start_l3_VideoDecoder() with arguments Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call decode_l3_VideoBuffer() with arguments Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_AVClock() with arguments avClockController</li></ul>|<ul><li>Function Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock should not prime</li></ul>|
-|Prime Clock with Clock Mode Auto Tunnel Mode (Decode Audio frames first and then Video frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, IAudioDecoder.Id[], NULL, IVideoDecoder.Id[] to get AVClock , AudioDecoder, VideoDecoder Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Create two threads</li><li>In one thread - Loop through the Audio Decoder Ids</li><li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call decode_l3_AudioBuffer() with arguments nsPresentationTime, bufferHandle, trimStartNs, trimEndNs</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call stop_close_l3_AudioDecoder() with arguments audioDecoderController</li></ul><li>In another thread - Loop through the Video Decoder Ids</li><li>Call set_l3_VideoDecoderProperty() to configure tunnel mode with argument Property property, PropertyValue propertyValue</li><li>Call start_l3_VideoDecoder() with arguments Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call decode_l3_VideoBuffer() with arguments Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call stop_close_l3_VideoDecoder() with argument videoDecoderController</li><li>Call deinit_l3_AVClock() with arguments avClockController in main thread</li></ul>|<ul><li>Function Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock time is matches or in the tolerance range of audio frames</li></ul>|
-|Prime Clock with Clock Mode Auto Tunnel Mode (Decode Video frames first and then Audio frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, IAudioDecoder.Id[], NULL, IVideoDecoder.Id[] to get AVClock , AudioDecoder, VideoDecoder Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>In one thread - Loop through the Video Decoder Ids</li><li>Call set_l3_VideoDecoderProperty() to configure tunnel mode with argument Property property, PropertyValue propertyValue</li><li>Call start_l3_VideoDecoder() with arguments Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call decode_l3_VideoBuffer() with arguments Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call stop_close_l3_VideoDecoder() with argument videoDecoderController</li><li>In another thread - Loop through the Audio Decoder Ids</li><li>Call start_l3_AudioDecoder() with arguments Codec codec, boolean secure, IAudioDecoderControllerListener audioDecoderControllerListener</li><li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call decode_l3_AudioBuffer() with arguments nsPresentationTime, bufferHandle, trimStartNs, trimEndNs</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call stop_close_l3_AudioDecoder() with arguments audioDecoderController</li><li>Call deinit_l3_AVClock() with arguments avClockController in main thread </li></ul>|<ul><li>Function Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock time is matches or in the tolerance range of video frames</li></ul>|
-|Set Play Back Rate to Half Speed with Rate 0.5 (AV frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, IAudioSink.Id[], NULL, NULL to get AVClock , AudioSink Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Call set_l3_PlayBackRate with argument double rate</li><li>Create two threads</li><li>In one thread - Loop through the Audio Sink Ids</li><li>Call init_l3_AudioSink_Instance() with arguments auidoSinkEventListener , audioSinkControllerListener, contentType, audioSinkId</li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_AudioFrames_Buffers() with arguments nsPresentationTime, bufferHandle, metadata</li><li>Wait unitl clock prime notification</li><li>Call verify_l3_Current_ClockTime() with arguments start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_AudioSink() with arguments audioSinkId, audioSinkController</li></ul><li>In another thread - Loop through the Video Sink Ids</li><li>Call init_l3_VideoSink_Instance() with arguments videoSinkEventListener ,videoSinkControllerListener, videosinkSinkId</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_VideoFrames_Buffers() with arguments  long nsPresentationTime, long frameBufferHandle, FrameMetadata metadata</li><li>Call verify_l3_Current_ClockTime() with arguments start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_VideoSink() with arguments videoSinkId, videoSinkController</li><li>Call deinit_l3_AVClock() with arguments avClockController in main thread</li></ul>|<ul><li>Function sets and verifies the normal playback rate and checks the current clock time is with in the tolerance range</li></ul>|
-|Set Play Back Rate to Pause with Rate 0.0 (AV frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, IAudioSink.Id[], NULL, NULL to get AVClock , AudioSink Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Call set_l3_PlayBackRate with argument double rate</li><li>Create two threads</li><li>In one thread - Loop through the Audio Sink Ids</li><li>Call init_l3_AudioSink_Instance() with arguments auidoSinkEventListener , audioSinkControllerListener, contentType, audioSinkId</li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_AudioFrames_Buffers() with arguments nsPresentationTime, bufferHandle, metadata</li><li>Wait unitl clock prime notification</li><li>Call verify_l3_Current_ClockTime() with arguments start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_AudioSink() with arguments audioSinkId, audioSinkController</li></ul><li>In another thread - Loop through the Video Sink Ids</li><li>Call init_l3_VideoSink_Instance() with arguments videoSinkEventListener ,videoSinkControllerListener, videosinkSinkId</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_VideoFrames_Buffers() with arguments  long nsPresentationTime, long frameBufferHandle, FrameMetadata metadata</li><li>Call verify_l3_Current_ClockTime() with arguments start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_VideoSink() with arguments videoSinkId, videoSinkController</li><li>Call deinit_l3_AVClock() with arguments avClockController in main thread</li></ul>|<ul><li>Function sets and verifies the playback rate and  the current clock time is with in the tolerance range</li></ul>|
-|Set Play Back Rate to Normal with Rate 1.0 (AV frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, IAudioSink.Id[], NULL, NULL to get AVClock , AudioSink Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Call set_l3_PlayBackRate with argument double rate</li><li>Create two threads</li><li>In one thread - Loop through the Audio Sink Ids</li><li>Call init_l3_AudioSink_Instance() with arguments auidoSinkEventListener , audioSinkControllerListener, contentType, audioSinkId</li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_AudioFrames_Buffers() with arguments nsPresentationTime, bufferHandle, metadata</li><li>Wait unitl clock prime notification</li><li>Call verify_l3_Current_ClockTime() with arguments start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_AudioSink() with arguments audioSinkId, audioSinkController</li></ul><li>In another thread - Loop through the Video Sink Ids</li><li>Call init_l3_VideoSink_Instance() with arguments videoSinkEventListener ,videoSinkControllerListener, videosinkSinkId</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_VideoFrames_Buffers() with arguments  long nsPresentationTime, long frameBufferHandle, FrameMetadata metadata</li><li>Call verify_l3_Current_ClockTime() with arguments start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_VideoSink() with arguments videoSinkId, videoSinkController</li><li>Call deinit_l3_AVClock() with arguments avClockController in main thread</li></ul>|<ul><li>Function sets and verifies the normal playback rate and  the current clock time is with in the tolerance range</li></ul>|
-|Set Play Back Rate to Fast Forward 2.0 (AV frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, IAudioSink.Id[], NULL, NULL to get AVClock , AudioSink Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Call set_l3_PlayBackRate with argument double rate</li><li>Create two threads</li><li>In one thread - Loop through the Audio Sink Ids</li><li>Call init_l3_AudioSink_Instance() with arguments auidoSinkEventListener , audioSinkControllerListener, contentType, audioSinkId</li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_AudioFrames_Buffers() with arguments nsPresentationTime, bufferHandle, metadata</li><li>Wait unitl clock prime notification</li><li>Call verify_l3_Current_ClockTime() with arguments start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_AudioSink() with arguments audioSinkId, audioSinkController</li></ul><li>In another thread - Loop through the Video Sink Ids</li><li>Call init_l3_VideoSink_Instance() with arguments videoSinkEventListener ,videoSinkControllerListener, videosinkSinkId</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_VideoFrames_Buffers() with arguments  long nsPresentationTime, long frameBufferHandle, FrameMetadata metadata</li><li>Call verify_l3_Current_ClockTime() with arguments start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_VideoSink() with arguments videoSinkId, videoSinkController</li><li>Call deinit_l3_AVClock() with arguments avClockController in main thread</li><li>Call set_l3_PlayBackRate with argument double rate</li><li>Create two threads</li><li>In one thread - Loop through the Audio Sink Ids</li><li>Call init_l3_AudioSink_Instance() with arguments auidoSinkEventListener , audioSinkControllerListener, contentType, audioSinkId</li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_AudioFrames_Buffers() with arguments nsPresentationTime, bufferHandle, metadata</li><li>Wait unitl clock prime notification</li><li>Call verify_l3_Current_ClockTime() with arguments start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_AudioSink() with arguments audioSinkId, audioSinkController</li></ul><li>In another thread - Loop through the Video Sink Ids</li><li>Call init_l3_VideoSink_Instance() with arguments videoSinkEventListener ,videoSinkControllerListener, videosinkSinkId</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_VideoFrames_Buffers() with arguments  long nsPresentationTime, long frameBufferHandle, FrameMetadata metadata</li><li>Call verify_l3_Current_ClockTime() with arguments start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_VideoSink() with arguments videoSinkId, videoSinkController</li><li>Call deinit_l3_AVClock() with arguments avClockController in main thread</li></ul>|<ul><li>Function sets and verifies the normal playback rate and  the current clock time is with in the tolerance range</li></ul>|
-|Prime Clock with Supplementary Audio Sink In Auto Mode non tunnel (Audio Frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, IAudioSink.Id[], NULL, NULL to get AVClock , AudioSink Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Loop through the Audio Sink Ids</li><li>Call init_l3_AudioSink_Instance() with arguments auidoSinkEventListener , audioSinkControllerListener, contentType, audioSinkId</li><li>Call set_l3_SupplementaryAudioSink() with argument IAudioSink.Id supplementaryAudioSinkId</li><li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call queue_l3_AudioFrames_Buffers() with arguments long nsPresentationTime, long bufferHandle, FrameMetadata metadata</li><li>Wait unitl clock prime notification</li><li>Call verify_l3_Current_ClockTime() with arguments start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li></ul>|<ul><li>Function Gets the current AV Clock time (i.e. getCurrentClockTime) and verifies the clock time is matches or in the tolerance range of audio frames</li></ul>|
-|AV Re Sync Events Count (AV Frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, IAudioDecoder.Id[], NULL, IVideoDecoder.Id[] to get AVClock , AudioDecoder, VideoDecoder Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>In one thread - Loop through the Video Decoder Ids</li><li>Call set_l3_VideoDecoderProperty() to configure tunnel mode with argument Property property, PropertyValue propertyValue</li><li>Call start_l3_VideoDecoder() with arguments Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call decode_l3_VideoBuffer() with arguments Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li><li>Call get_l3_AVClockProperty() with argument Property property</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call stop_close_l3_VideoDecoder() with argument videoDecoderController</li><li>In another thread - Loop through the Audio Decoder Ids</li><li>Call start_l3_AudioDecoder() with arguments Codec codec, boolean secure, IAudioDecoderControllerListener audioDecoderControllerListener</li><li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call decode_l3_AudioBuffer() with arguments nsPresentationTime, bufferHandle, trimStartNs, trimEndNs</li><li>Call get_l3_AVClockProperty() with argument Property property</li></li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call stop_close_l3_AudioDecoder() with arguments audioDecoderController</li><li>Call deinit_l3_AVClock() with arguments avClockController in main thread </li></ul>|<ul><li>Function get the current clock time and metric AV Re Sync Events Count and verifies the same whether the current clock time is with in the tolerance range</li></ul>|
-|AV Sync Accuracy (AV Frames)|<ul><li>Call get_l3_Identifiers() with argument IAVClock.Id[], NULL, IAudioDecoder.Id[], NULL, IVideoDecoder.Id[] to get AVClock , AudioDecoder, VideoDecoder Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>In one thread - Loop through the Video Decoder Ids</li><li>Call set_l3_VideoDecoderProperty() to configure tunnel mode with argument Property property, PropertyValue propertyValue</li><li>Call start_l3_VideoDecoder() with arguments Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call decode_l3_VideoBuffer() with arguments Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li><li>Call get_l3_AVClockProperty() with argument Property property</li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call stop_close_l3_VideoDecoder() with argument videoDecoderController</li><li>In another thread - Loop through the Audio Decoder Ids</li><li>Call start_l3_AudioDecoder() with arguments Codec codec, boolean secure, IAudioDecoderControllerListener audioDecoderControllerListener</li><li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call decode_l3_AudioBuffer() with arguments nsPresentationTime, bufferHandle, trimStartNs, trimEndNs</li><li>Call get_l3_AVClockProperty() with argument Property property</li></li><li>Call verify_l3_Current_ClockTime() with arguments  start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call stop_close_l3_AudioDecoder() with arguments audioDecoderController</li><li>Call deinit_l3_AVClock() with arguments avClockController in main thread </li></ul>|<ul><li>Function get the current clock time and metric AV Sync Accuracy in MS and verifies the same whether the current clock time is with in the tolerance range</li></ul>|
-|Prime Clock Concurrent Audio non tunnel (Audio Frames)|<ul><li>Create two threads</li><li>Call get_l3_Identifiers() with argument IAVClock.Id[], IAudioSink.Id[], IAudioDecoder.Id[], NULL, NULL  to get AVClock , AudioDecoder, AudioSink Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Loop through the Audio Decoder Ids</li><li>Call start_l3_AudioDecoder() with arguments Codec codec, boolean secure, IAudioDecoderControllerListener audioDecoderControllerListener</li><li>Loop through the available Audio Frames from the vts_l3_test_config.yaml file</li><li>Call decode_l3_AudioBuffer() with arguments long nsPresentationTime, long bufferHandle, int trimStartNs, int trimEndNs</li><li>Loop through the Audio Sink Ids</li><li>Call init_l3_AudioSink_Instance() with arguments auidoSinkEventListener , audioSinkControllerListener, contentType, audioSinkId</li><li>Call queue_l3_AudioFrames_Buffers() with arguments long nsPresentationTime, long frameBufferHandle, FrameMetadata metadata</li><li>Call verify_l3_Current_ClockTime() with arguments start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_AudioSink() with arguments audioSinkId, audioSinkController</li><li>Call stop_close_l3_AudioDecoder() with arguments audioDecoderController</li><li>Call deinit_l3_AVClock() with arguments avClockController</li></ul>|<ul><li>Function get the current clock time of two threads and verifies the same whether the current clock time is with in the tolerance range of audio frames</li></ul>|
-|Prime Clock Concurrent Video non tunnel(Video Frames)|<ul><li>Create two threads</li><li>Call get_l3_Identifiers() with argument IAVClock.Id[], IAudioSink.Id[], IAudioDecoder.Id[], NULL, NULL  to get AVClock , AudioDecoder, AudioSink Ids</li><li>Loop through the AVClock Ids</li><li>Call init_l3_AVClock_Instance() with arguments avClockEventListener , avClockControllerListener, clockMode</li><li>Loop through the Video Decoder Ids</li><li>Call set_l3_VideoDecoderProperty() to configure non tunnel mode with argument Property property, PropertyValue propertyValue</li><li>Call start_l3_VideoDecoder() with arguments Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li><li>Loop through the available Video Frames from the vts_l3_test_config.yaml file</li><li>Call decode_l3_VideoBuffer() with arguments Codec codec, boolean secure, IVideoDecoderControllerListener VideoDecoderControllerListener</li><li>Loop through the Video Sink Ids</li><li>Call init_l3_VideoSink_Instance() with arguments videoSinkEventListener ,videoSinkControllerListener, videosinkSinkId</li>Call queue_l3_VideoFrames_Buffers() with arguments long nsPresentationTime, long frameBufferHandle, FrameMetadata metadata<li>Call verify_l3_Current_ClockTime() with arguments start_pts , elapsedtime, threshold, speed from the vts_l3_test_config.yaml file</li><li>Call deinit_l3_VideoSink() with arguments videoSinkId, videoSinkController</li><li>Call stop_close_l3_VideoDecoder() with argument videoDecoderController</li><li>Call deinit_l3_AVClock() with arguments avClockController</li></ul>|<ul><li>Function get the current clock time of video frames of concurrent and verifies the same whether the current clock time is with in the tolerance range of video frames</li></ul>|
+### Audio Decoder 
+
+Audio frames are supplied to the Audio Decoder for both tunnel , non-tunnel mode during testing on AV Clock, which necessitates a pre-validated Audio Decoder module. Therefore, the AudioDecoder must successfully pass VTS L1, L2, and L3 testing before being used in the AV Clock tests.
+
+### Video Decoder
+
+Video frames are supplied to the Video Decoder for both tunnel, non-tunnel mode during testing on AV Clock, which necessitates a pre-validated Video Decoder module. Therefore, the VideoDecoder must successfully pass VTS L1, L2, and L3 testing before being used in the AV Clock tests.
+
+### Audio Sink
+
+Decoded Audio frames are supplied to the Audio Sink during testing for non tunnel cases, which necessitates a pre-validated Audio Sink module. Therefore, the AudioSink must successfully pass VTS L1, L2, and L3 testing before being used in the AV Clock tests.
+
+### Video Sink
+
+Decoded Video frames are supplied to the Video Sink during testing for non tunnel cases, which necessitates a pre-validated Video Sink module. Therefore, the VideoSink must successfully pass VTS L1, L2, and L3 testing before being used in the AV Clock tests.
+
+### Feature List
+
+VTS L3 validates all the AV Clock features in both sequential and concurrent  modes (if the platform supports multiple AV Clock instances) as represented below.
+
+#### Sequential Clocking
+
+The Sequential AV Clock test evaluates each AV Clock individually in tunnel and non tunnel mode, one after another, to ensure functional correctness across all supported features. This approach helps isolate issues and verify that every AV Clock instance performs as expected in a standalone environment.
+
+### Non Tunnel Audio Stream
+
+```mermaid
+block-beta
+    block:1
+        AudioStream("Audio Stream") space AVBuffer("AVBuffer") space AudioDecoder("AudioDecoder") space AudioSink("AudioSink") space AVClock("AV Clock")  Output("Output")
+        AudioStream --> AVBuffer
+        AVBuffer --> AudioDecoder
+        AudioDecoder --> AudioSink
+        AudioSink --> AVClock
+        AVClock --> Output
+    end
+```
+### Non Tunnel Video Stream
+
+```mermaid
+block-beta
+    block:1
+        VideoStream("Video Stream") space AVBuffer("AVBuffer") space VideoDecoder("VideoDecoder") space VideoSink("VideoSink") space AVClock("AV Clock")  Output("Output")
+        VideoStream --> AVBuffer
+        AVBuffer --> VideoDecoder
+        VideoDecoder --> VideoSink
+        VideoSink --> AVClock
+        AVClock --> Output
+    end
+```
+
+### Tunnel Audio Stream
+
+```mermaid
+block-beta
+    block:1
+        AudioStream("Audio Stream") space AVBuffer("AVBuffer") space AudioDecoder("AudioDecoder") space AVClock("AV Clock")  Output("Output")
+        AudioStream --> AVBuffer
+        AVBuffer --> AudioDecoder
+        AudioDecoder --> AVClock
+        AVClock --> Output
+    end
+```
+### Tunnel Video Stream
+
+```mermaid
+block-beta
+    block:1
+        VideoStream("Video Stream") space AVBuffer("AVBuffer") space VideoDecoder("VideoDecoder") space AVClock("AV Clock")  Output("Output")
+        VideoStream --> AVBuffer
+        AVBuffer --> VideoDecoder
+        VideoDecoder --> AVClock
+        AVClock --> Output
+    end
+```
+
+#### Concurrent Decoding
+
+The Concurrent Clocking test assesses the system's ability to handle multiple AV Clock operating simultaneously, each configured with different supported features. This test is designed to validate the robustness, resource management, and feature compatibility of the platform under concurrent load, and is applicable only if the platform supports multiple AV Clock instances.
+
+### Non Tunnel Audio Stream
+```mermaid
+block-beta
+columns 1
+    block:1
+        AudioStream_1("Audio Stream") space AVBuffer_1("AVBuffer") space AudioDecoder_1("AudioDecoder_1") space AudioSink_1("AudioSink") space AVClock_1("AVClock_1") Output_1("Output")
+        AudioStream_1 --> AVBuffer_1
+        AVBuffer_1 --> AudioDecoder_1
+        AudioDecoder_1 --> AudioSink_1
+        AudioSink_1 --> AVClock_1
+        AVClock_1 --> Output_1
+    end
+    space
+    block:2
+        AudioStream_2("Audio Stream") space AVBuffer_2("AVBuffer") space AudioDecoder_2("AudioDecoder_2") space AudioSink_2("AudioSink_2") space AVClock_2("AVClock_2") Output_1("Output")
+        AudioStream_2 --> AVBuffer_2
+        AVBuffer_2 --> AudioDecoder_2
+        AudioDecoder_2 --> AudioSink_2
+        AudioSink_2 --> AVClock_2
+        AVClock_2 --> Output_2
+    end
+    space
+    block:N
+        AudioStream_N("Audio Stream") space AVBuffer_N("AVBuffer") space AudioDecoder_N("AudioDecoder_N") space AudioSink_N("AudioSink_N") space AVClock_N("AVClock_N") Output_N("Output")
+        AudioStream_N --> AVBuffer_N
+        AVBuffer_N --> AudioDecoder_N
+        AudioDecoder_N--> AudioSink_N
+        AudioSink_N --> AVClock_N
+        AVClock_N --> Output_N
+    end
+```
+
+### Tunnel Audio Stream
+```mermaid
+block-beta
+columns 1
+    block:1
+        AudioStream_1("Audio Stream") space AVBuffer_1("AVBuffer") space AudioDecoder_1("AudioDecoder_1") space AVClock_1("AVClock_1") Output_1("Output")
+        AudioStream_1 --> AVBuffer_1
+        AVBuffer_1 --> AudioDecoder_1
+        AudioDecoder_1 --> AVClock_1
+        AVClock_1 --> Output_1
+    end
+    space
+    block:2
+        AudioStream_2("Audio Stream") space AVBuffer_2("AVBuffer") space AudioDecoder_2("AudioDecoder_2") space AVClock_2("AVClock_2") Output_1("Output")
+        AudioStream_2 --> AVBuffer_2
+        AVBuffer_2 --> AudioDecoder_2
+        AudioDecoder_2 --> AVClock_2
+        AVClock_2 --> Output_2
+    end
+    space
+    block:N
+        AudioStream_N("Audio Stream") space AVBuffer_N("AVBuffer") space AudioDecoder_N("AudioDecoder_N") space AVClock_N("AVClock_N") Output_N("Output")
+        AudioStream_N --> AVBuffer_N
+        AVBuffer_N --> AudioDecoder_N
+        AudioDecoder_N--> AVClock_N
+        AVClock_N --> Output_N
+    end
+```
+
+### Non Tunnel Video Stream
+```mermaid
+block-beta
+columns 1
+    block:1
+        VideoStream_1("Video Stream") space AVBuffer_1("AVBuffer") space VideoDecoder_1("VideoDecoder_1") space VideoSink_1("VideoSink") space AVClock_1("AVClock_1") Output_1("Output")
+        VideoStream_1 --> AVBuffer_1
+        AVBuffer_1 --> VideoDecoder_1
+        VideoDecoder_1 --> VideoSink_1
+        VideoSink_1 --> AVClock_1
+        AVClock_1 --> Output_1
+    end
+    space
+    block:2
+        VideoStream_2("Video Stream") space AVBuffer_2("AVBuffer") space VideoDecoder_2("VideoDecoder_2") space VideoSink_2("VideoSink_2") space AVClock_2("AVClock_2") Output_1("Output")
+        VideoStream_2 --> AVBuffer_2
+        AVBuffer_2 --> VideoDecoder_2
+        VideoDecoder_2 --> VideoSink_2
+        VideoSink_2 --> AVClock_2
+        AVClock_2 --> Output_2
+    end
+    space
+    block:N
+        VideoStream_N("Video Stream") space AVBuffer_N("AVBuffer") space VideoDecoder_N("VideoDecoder_N") space VideoSink_N("VideoSink_N") space AVClock_N("AVClock_N") Output_N("Output")
+        VideoStream_N --> AVBuffer_N
+        AVBuffer_N --> VideoDecoder_N
+        VideoDecoder_N--> VideoSink_N
+        VideoSink_N --> AVClock_N
+        AVClock_N --> Output_N
+    end
+```
+
+### Non Tunnel Video Stream
+```mermaid
+block-beta
+columns 1
+    block:1
+        VideoStream_1("Video Stream") space AVBuffer_1("AVBuffer") space VideoDecoder_1("VideoDecoder_1") space AVClock_1("AVClock_1") Output_1("Output")
+        VideoStream_1 --> AVBuffer_1
+        AVBuffer_1 --> VideoDecoder_1
+        VideoDecoder_1 --> AVClock_1
+        AVClock_1 --> Output_1
+    end
+    space
+    block:2
+        VideoStream_2("Video Stream") space AVBuffer_2("AVBuffer") space VideoDecoder_2("VideoDecoder_2") space AVClock_2("AVClock_2") Output_1("Output")
+        VideoStream_2 --> AVBuffer_2
+        AVBuffer_2 --> VideoDecoder_2
+        VideoDecoder_2 --> AVClock_2
+        AVClock_2 --> Output_2
+    end
+    space
+    block:N
+        VideoStream_N("Video Stream") space AVBuffer_N("AVBuffer") space VideoDecoder_N("VideoDecoder_N") space AVClock_N("AVClock_N") Output_N("Output")
+        VideoStream_N --> AVBuffer_N
+        AVBuffer_N --> VideoDecoder_N
+        VideoDecoder_N--> AVClock_N
+        AVClock_N --> Output_N
+    end
+```
+
+The following table outlines the core features validated in the L3 test phase
+
+|#|Testing Feature|Description|
+|-|---------------|-----------|
+|1|Tunnel/Non-Tunnel|Checks the Behavior of  the AV Clock in tunnel and non tunnel mode.In tunnel mode and non tunel mode the AV Clock Primes the clock of the frames provided|
+|2|Secure and Non-Secure|AV Clock should prime the clock for secure and non secure frames provided|
+|3|AUTO|Clock mode AUTO is the default clock mode after a call to `open()`|
+|4|PCR|Clock mode PCR Use PCR samples as the clock source as provided in successive calls to `notifyPCRSample()`|
+|5|AUDIO_MASTER|Clock mode AUDIO_MASTER  uses the audio source as the clock master|
+|6|VIDEO_MASTER|Clock mode VIDEO_MASTER  uses the video source as the clock master|
+|7|Audio Only|Test primes the clock for the audio only streams based on the PTS supplied|
+|8|Video Only|Test primes the clock for the video only streams based on the PTS supplied|
+|9|Process Audio before Video|Test primes the clock for the audio frames passed before video frames based on the PTS supplied|
+|10|Process Video before Audio|Test primes the clock for the video frames passed before audio frames based on the PTS supplied|
+|11|Play Back Rate|Test Sets the playback rate for the AV Clock like `0.0` for mute, `1.0` for normal speed and `2.0` for fast forward|
+|12|Concurrent Prime Clock|If platform supports multiple AV Clock instances, test executes multiple AV Clock instances simultaneously, Priming clock based on the PTS supplied|
+
+### Test Cases
+
+The table below summarizes the L3 test cases executed using various audio stream formats and configurations. These tests are also executed in a multi-process environment:
+
+|#|Test|Tunnel|Secure|Auto|PCR|AudioMaster|VideoMaster|AudioOnly|VideoOnly|AudioBeforeVideo|VideoBeforeAudio|PlayBackRate|Concurrency|
+|-|----|------|------|----|---|-----------|-----------|---------|---------|----------------|----------------|------------|-----------|
+|1|PrimeClock_Sequential_NonTunnel_NonSecure_AutoAudioOnly|✘|✘|✔|✘|✘|✘|✔|✘|✘|✘|✘|✘|
+|2|PrimeClock_Sequential_NonTunnel_NonSecure_AutoVideoOnly|✘|✘|✔|✘|✘|✘|✘|✔|✘|✘|✘|✘|
+|3|PrimeClock_Sequential_NonTunnel_NonSecure_AudioMasterAudioOnly|✘|✘|✘|✘|✔|✘|✔|✘|✘|✘|✘|✘|
+|4|PrimeClock_Sequential_NonTunnel_NonSecure_VideoMasterVideoOnly|✘|✘|✘|✘|✘|✔|✘|✔|✘|✘|✘|✘|
+|5|PrimeClock_Sequential_NonTunnel_NonSecure_AudioMasterVideoOnly|✘|✘|✘|✘|✔|✘|✘|✔|✘|✘|✘|✘|
+|6|PrimeClock_Sequential_NonTunnel_NonSecure_VideoMasterAudioOnly|✘|✘|✘|✘|✘|✔|✔|✘|✘|✘|✘|✘|
+|7|PrimeClock_Sequential_NonTunnel_NonSecure_PCRMode|✘|✘|✘|✔|✘|✘|✘|✘|✘|✘|✘|✘|
+|8|PrimeClock_Sequential_NonTunnel_NonSecure_AutoAudioBeforeVideo|✘|✘|✔|✘|✘|✘|✘|✘|✔|✘|✘|✘|
+|9|PrimeClock_Sequential_NonTunnel_NonSecure_AutoVideoBeforeAudio|✘|✘|✔|✘|✘|✘|✘|✘|✘|✔|✘|✘|
+|10|PrimeClock_Sequential_NonTunnel_NonSecure_SetPlayRateNormalSpeed|✘|✘|✘|✘|✘|✘|✘|✘|✘|✘|✔|✘|
+|11|PrimeClock_Sequential_NonTunnel_NonSecure_SetPlayRatePause|✘|✘|✘|✘|✘|✘|✘|✘|✘|✘|✔|✘|
+|12|PrimeClock_Sequential_NonTunnel_NonSecure_SetPlayRateFastForward|✘|✘|✘|✘|✘|✘|✘|✘|✘|✘|✔|✘|
+|13|PrimeClock_Sequential_NonTunnel_Secure_AutoAudioOnly|✘|✔|✔|✘|✘|✘|✔|✘|✘|✘|✘|✘|
+|14|PrimeClock_Sequential_NonTunnel_Secure_AutoVideoOnly|✘|✔|✔|✘|✘|✘|✘|✔|✘|✘|✘|✘|
+|15|PrimeClock_Sequential_NonTunnel_Secure_AudioMasterAudioOnly|✘|✔|✘|✘|✔|✘|✔|✘|✘|✘|✘|✘|
+|16|PrimeClock_Sequential_NonTunnel_Secure_VideoMasterVideoOnly|✘|✔|✘|✘|✘|✔|✘|✔|✘|✘|✘|✘|
+|17|PrimeClock_Sequential_NonTunnel_Secure_AudioMasterVideoOnly|✘|✔|✘|✘|✔|✘|✘|✔|✘|✘|✘|✘|
+|18|PrimeClock_Sequential_NonTunnel_Secure_VideoMasterAudioOnly|✘|✔|✘|✘|✘|✔|✔|✘|✘|✘|✘|✘|
+|19|PrimeClock_Sequential_NonTunnel_Secure_PCRMode|✘|✔|✘|✔|✘|✘|✘|✘|✘|✘|✘|✘|
+|20|PrimeClock_Sequential_NonTunnel_Secure_AutoAudioBeforeVideo|✘|✔|✔|✘|✘|✘|✘|✘|✔|✘|✘|✘|
+|21|PrimeClock_Sequential_NonTunnel_Secure_AutoVideoBeforeAudio|✘|✔|✔|✘|✘|✘|✘|✘|✘|✔|✘|✘|
+|22|PrimeClock_Sequential_NonTunnel_Secure_SetPlayRateNormalSpeed|✘|✔|✘|✘|✘|✘|✘|✘|✘|✘|✔|✘|
+|23|PrimeClock_Sequential_NonTunnel_Secure_SetPlayRatePause|✘|✔|✘|✘|✘|✘|✘|✘|✘|✘|✔|✘|
+|24|PrimeClock_Sequential_NonTunnel_Secure_SetPlayRateFastForward|✘|✔|✘|✘|✘|✘|✘|✘|✘|✘|✔|✘|
+|25|PrimeClock_Sequential_Tunnel_NonSecure_AutoAudioOnly|✔|✘|✔|✘|✘|✘|✔|✘|✘|✘|✘|✘|
+|26|PrimeClock_Sequential_Tunnel_NonSecure_AutoVideoOnly|✔|✘|✔|✘|✘|✘|✘|✔|✘|✘|✘|✘|
+|27|PrimeClock_Sequential_Tunnel_NonSecure_AudioMasterAudioOnly|✔|✘|✘|✘|✔|✘|✔|✘|✘|✘|✘|✘|
+|28|PrimeClock_Sequential_Tunnel_NonSecure_VideoMasterVideoOnly|✔|✘|✘|✘|✘|✔|✘|✔|✘|✘|✘|✘|
+|29|PrimeClock_Sequential_Tunnel_NonSecure_AudioMasterVideoOnly|✔|✘|✘|✘|✔|✘|✘|✔|✘|✘|✘|✘|
+|30|PrimeClock_Sequential_Tunnel_NonSecure_VideoMasterAudioOnly|✔|✘|✘|✘|✘|✔|✔|✘|✘|✘|✘|✘|
+|31|PrimeClock_Sequential_Tunnel_NonSecure_PCRMode|✔|✘|✘|✔|✘|✘|✘|✘|✘|✘|✘|✘|
+|32|PrimeClock_Sequential_Tunnel_NonSecure_AutoAudioBeforeVideo|✔|✘|✔|✘|✘|✘|✘|✘|✔|✘|✘|✘|
+|33|PrimeClock_Sequential_Tunnel_NonSecure_AutoVideoBeforeAudio|✔|✘|✔|✘|✘|✘|✘|✘|✘|✔|✘|✘|
+|34|PrimeClock_Sequential_Tunnel_NonSecure_SetPlayRateNormalSpeed|✔|✘|✘|✘|✘|✘|✘|✘|✘|✘|✔|✘|
+|35|PrimeClock_Sequential_Tunnel_NonSecure_SetPlayRatePause|✔|✘|✘|✘|✘|✘|✘|✘|✘|✘|✔|✘|
+|36|PrimeClock_Sequential_Tunnel_NonSecure_SetPlayRateFastForward|✔|✘|✘|✘|✘|✘|✘|✘|✘|✘|✔|✘|
+|37|PrimeClock_Sequential_Tunnel_Secure_AutoAudioOnly|✔|✔|✔|✘|✘|✘|✔|✘|✘|✘|✘|✘|
+|38|PrimeClock_Sequential_Tunnel_Secure_AutoVideoOnly|✔|✔|✔|✘|✘|✘|✘|✔|✘|✘|✘|✘|
+|39|PrimeClock_Sequential_Tunnel_Secure_AudioMasterAudioOnly|✔|✔|✘|✘|✔|✘|✔|✘|✘|✘|✘|✘|
+|40|PrimeClock_Sequential_Tunnel_Secure_VideoMasterVideoOnly|✔|✔|✘|✘|✘|✔|✘|✔|✘|✘|✘|✘|
+|41|PrimeClock_Sequential_Tunnel_Secure_AudioMasterVideoOnly|✔|✔|✘|✘|✔|✘|✘|✔|✘|✘|✘|✘|
+|42|PrimeClock_Sequential_Tunnel_Secure_VideoMasterAudioOnly|✔|✔|✘|✘|✘|✔|✔|✘|✘|✘|✘|✘|
+|43|PrimeClock_Sequential_Tunnel_Secure_PCRMode|✔|✔|✘|✔|✘|✘|✘|✘|✘|✘|✘|✘|
+|44|PrimeClock_Sequential_Tunnel_Secure_AutoAudioBeforeVideo|✔|✔|✔|✘|✘|✘|✘|✘|✔|✘|✘|✘|
+|45|PrimeClock_Sequential_Tunnel_Secure_AutoVideoBeforeAudio|✔|✔|✔|✘|✘|✘|✘|✘|✘|✔|✘|✘|
+|46|PrimeClock_Sequential_Tunnel_Secure_SetPlayRateNormalSpeed|✔|✔|✘|✘|✘|✘|✘|✘|✘|✘|✔|✘|
+|47|PrimeClock_Sequential_Tunnel_Secure_SetPlayRatePause|✔|✔|✘|✘|✘|✘|✘|✘|✘|✘|✔|✘|
+|48|PrimeClock_Sequential_Tunnel_Secure_SetPlayRateFastForward|✔|✔|✘|✘|✘|✘|✘|✘|✘|✘|✔|✘|
+|49|PrimeClock_Concurrent_NonTunnel_NonSecure_AutoAudioOnly|✘|✘|✔|✘|✘|✘|✔|✘|✘|✘|✘|✔|
+|50|PrimeClock_Concurrent_NonTunnel_NonSecure_AutoVideoOnly|✘|✘|✔|✘|✘|✘|✘|✔|✘|✘|✘|✔|
+|51|PrimeClock_Concurrent_NonTunnel_NonSecure_AudioMasterAudioOnly|✘|✘|✘|✘|✔|✘|✔|✘|✘|✘|✘|✔|
+|52|PrimeClock_Concurrent_NonTunnel_NonSecure_VideoMasterVideoOnly|✘|✘|✘|✘|✘|✔|✘|✔|✘|✘|✘|✔|
+|53|PrimeClock_Concurrent_NonTunnel_NonSecure_AudioMasterVideoOnly|✘|✘|✘|✘|✔|✘|✘|✔|✘|✘|✘|✔|
+|54|PrimeClock_Concurrent_NonTunnel_NonSecure_VideoMasterAudioOnly|✘|✘|✘|✘|✘|✔|✔|✘|✘|✘|✘|✔|
+|55|PrimeClock_Concurrent_NonTunnel_NonSecure_PCRMode|✘|✘|✘|✔|✘|✘|✘|✘|✘|✘|✘|✔|
+|56|PrimeClock_Concurrent_NonTunnel_NonSecure_AutoAudioBeforeVideo|✘|✘|✔|✘|✘|✘|✘|✘|✔|✘|✘|✔|
+|57|PrimeClock_Concurrent_NonTunnel_NonSecure_AutoVideoBeforeAudio|✘|✘|✔|✘|✘|✘|✘|✘|✘|✔|✘|✔|
+|58|PrimeClock_Concurrent_NonTunnel_NonSecure_SetPlayRateNormalSpeed|✘|✘|✘|✘|✘|✘|✘|✘|✘|✘|✔|✔|
+|59|PrimeClock_Concurrent_NonTunnel_NonSecure_SetPlayRatePause|✘|✘|✘|✘|✘|✘|✘|✘|✘|✘|✔|✔|
+|60|PrimeClock_Concurrent_NonTunnel_NonSecure_SetPlayRateFastForward|✘|✘|✘|✘|✘|✘|✘|✘|✘|✘|✔|✔|
+|61|PrimeClock_Concurrent_NonTunnel_Secure_AutoAudioOnly|✘|✔|✔|✘|✘|✘|✔|✘|✘|✘|✘|✔|
+|62|PrimeClock_Concurrent_NonTunnel_Secure_AutoVideoOnly|✘|✔|✔|✘|✘|✘|✘|✔|✘|✘|✘|✔|
+|63|PrimeClock_Concurrent_NonTunnel_Secure_AudioMasterAudioOnly|✘|✔|✘|✘|✔|✘|✔|✘|✘|✘|✘|✔|
+|64|PrimeClock_Concurrent_NonTunnel_Secure_VideoMasterVideoOnly|✘|✔|✘|✘|✘|✔|✘|✔|✘|✘|✘|✔|
+|65|PrimeClock_Concurrent_NonTunnel_Secure_AudioMasterVideoOnly|✘|✔|✘|✘|✔|✘|✘|✔|✘|✘|✘|✔|
+|66|PrimeClock_Concurrent_NonTunnel_Secure_VideoMasterAudioOnly|✘|✔|✘|✘|✘|✔|✔|✘|✘|✘|✘|✔|
+|67|PrimeClock_Concurrent_NonTunnel_Secure_PCRMode|✘|✔|✘|✔|✘|✘|✘|✘|✘|✘|✘|✔|
+|68|PrimeClock_Concurrent_NonTunnel_Secure_AutoAudioBeforeVideo|✘|✔|✔|✘|✘|✘|✘|✘|✔|✘|✘|✔|
+|69|PrimeClock_Concurrent_NonTunnel_Secure_AutoVideoBeforeAudio|✘|✔|✔|✘|✘|✘|✘|✘|✘|✔|✘|✔|
+|70|PrimeClock_Concurrent_NonTunnel_Secure_SetPlayRateNormalSpeed|✘|✔|✘|✘|✘|✘|✘|✘|✘|✘|✔|✔|
+|71|PrimeClock_Concurrent_NonTunnel_Secure_SetPlayRatePause|✘|✔|✘|✘|✘|✘|✘|✘|✘|✘|✔|✔|
+|72|PrimeClock_Concurrent_NonTunnel_Secure_SetPlayRateFastForward|✘|✔|✘|✘|✘|✘|✘|✘|✘|✘|✔|✔|
+|73|PrimeClock_Concurrent_Tunnel_NonSecure_AutoAudioOnly|✔|✘|✔|✘|✘|✘|✔|✘|✘|✘|✘|✔|
+|74|PrimeClock_Concurrent_Tunnel_NonSecure_AutoVideoOnly|✔|✘|✔|✘|✘|✘|✘|✔|✘|✘|✘|✔|
+|75|PrimeClock_Concurrent_Tunnel_NonSecure_AudioMasterAudioOnly|✔|✘|✘|✘|✔|✘|✔|✘|✘|✘|✘|✔|
+|76|PrimeClock_Concurrent_Tunnel_NonSecure_VideoMasterVideoOnly|✔|✘|✘|✘|✘|✔|✘|✔|✘|✘|✘|✔|
+|77|PrimeClock_Concurrent_Tunnel_NonSecure_AudioMasterVideoOnly|✔|✘|✘|✘|✔|✘|✘|✔|✘|✘|✘|✔|
+|78|PrimeClock_Concurrent_Tunnel_NonSecure_VideoMasterAudioOnly|✔|✘|✘|✘|✘|✔|✔|✘|✘|✘|✘|✔|
+|79|PrimeClock_Concurrent_Tunnel_NonSecure_PCRMode|✔|✘|✘|✔|✘|✘|✘|✘|✘|✘|✘|✔|
+|80|PrimeClock_Concurrent_Tunnel_NonSecure_AutoAudioBeforeVideo|✔|✘|✔|✘|✘|✘|✘|✘|✔|✘|✘|✔|
+|81|PrimeClock_Concurrent_Tunnel_NonSecure_AutoVideoBeforeAudio|✔|✘|✔|✘|✘|✘|✘|✘|✘|✔|✘|✔|
+|82|PrimeClock_Concurrent_Tunnel_NonSecure_SetPlayRateNormalSpeed|✔|✘|✘|✘|✘|✘|✘|✘|✘|✘|✔|✔|
+|83|PrimeClock_Concurrent_Tunnel_NonSecure_SetPlayRatePause|✔|✘|✘|✘|✘|✘|✘|✘|✘|✘|✔|✔|
+|84|PrimeClock_Concurrent_Tunnel_NonSecure_SetPlayRateFastForward|✔|✘|✘|✘|✘|✘|✘|✘|✘|✘|✔|✔|
+|85|PrimeClock_Concurrent_Tunnel_Secure_AutoAudioOnly|✔|✔|✔|✘|✘|✘|✔|✘|✘|✘|✘|✔|
+|86|PrimeClock_Concurrent_Tunnel_Secure_AutoVideoOnly|✔|✔|✔|✘|✘|✘|✘|✔|✘|✘|✘|✔|
+|87|PrimeClock_Concurrent_Tunnel_Secure_AudioMasterAudioOnly|✔|✔|✘|✘|✔|✘|✔|✘|✘|✘|✘|✔|
+|88|PrimeClock_Concurrent_Tunnel_Secure_VideoMasterVideoOnly|✔|✔|✘|✘|✘|✔|✘|✔|✘|✘|✘|✔|
+|89|PrimeClock_Concurrent_Tunnel_Secure_AudioMasterVideoOnly|✔|✔|✘|✘|✔|✘|✘|✔|✘|✘|✘|✔|
+|90|PrimeClock_Concurrent_Tunnel_Secure_VideoMasterAudioOnly|✔|✔|✘|✘|✘|✔|✔|✘|✘|✘|✘|✔|
+|91|PrimeClock_Concurrent_Tunnel_Secure_PCRMode|✔|✔|✘|✔|✘|✘|✘|✘|✘|✘|✘|✔|
+|92|PrimeClock_Concurrent_Tunnel_Secure_AutoAudioBeforeVideo|✔|✔|✔|✘|✘|✘|✘|✘|✔|✘|✘|✔|
+|93|PrimeClock_Concurrent_Tunnel_Secure_AutoVideoBeforeAudio|✔|✔|✔|✘|✘|✘|✘|✘|✘|✔|✘|✔|
+|94|PrimeClock_Concurrent_Tunnel_Secure_SetPlayRateNormalSpeed|✔|✔|✘|✘|✘|✘|✘|✘|✘|✘|✔|✔|
+|95|PrimeClock_Concurrent_Tunnel_Secure_SetPlayRatePause|✔|✔|✘|✘|✘|✘|✘|✘|✘|✘|✔|✔|
+|96|PrimeClock_Concurrent_Tunnel_Secure_SetPlayRateFastForward|✔|✔|✘|✘|✘|✘|✘|✘|✘|✘|✔|✔|
