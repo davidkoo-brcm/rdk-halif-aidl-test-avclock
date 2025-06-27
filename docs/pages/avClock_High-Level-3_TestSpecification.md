@@ -68,11 +68,11 @@ Decoded Video frames are supplied to the Video Sink during testing for non tunne
 
 VTS L3 validates all the AV Clock features in both sequential and concurrent  modes (if the platform supports multiple AV Clock instances) as represented below.
 
-#### Sequential Clocking
+### Sequential Clock Priming
 
 The Sequential AV Clock test evaluates each AV Clock individually in tunnel and non tunnel mode, one after another, to ensure functional correctness across all supported features. This approach helps isolate issues and verify that every AV Clock instance performs as expected in a standalone environment.
 
-### Non Tunnel Audio Stream
+#### Non Tunnel Audio Stream
 
 ```mermaid
 block-beta
@@ -85,7 +85,7 @@ block-beta
         AVClock --> Output
     end
 ```
-### Non Tunnel Video Stream
+#### Non Tunnel Video Stream
 
 ```mermaid
 block-beta
@@ -99,7 +99,7 @@ block-beta
     end
 ```
 
-### Tunnel Audio Stream
+#### Tunnel Audio Stream
 
 ```mermaid
 block-beta
@@ -111,7 +111,7 @@ block-beta
         AVClock --> Output
     end
 ```
-### Tunnel Video Stream
+#### Tunnel Video Stream
 
 ```mermaid
 block-beta
@@ -124,11 +124,11 @@ block-beta
     end
 ```
 
-#### Concurrent Decoding
+### Concurrent Clock Priming
 
 The Concurrent Clocking test assesses the system's ability to handle multiple AV Clock operating simultaneously, each configured with different supported features. This test is designed to validate the robustness, resource management, and feature compatibility of the platform under concurrent load, and is applicable only if the platform supports multiple AV Clock instances.
 
-### Non Tunnel Audio Stream
+#### Non Tunnel Audio Stream
 ```mermaid
 block-beta
 columns 1
@@ -160,7 +160,7 @@ columns 1
     end
 ```
 
-### Tunnel Audio Stream
+#### Tunnel Audio Stream
 ```mermaid
 block-beta
 columns 1
@@ -189,7 +189,7 @@ columns 1
     end
 ```
 
-### Non Tunnel Video Stream
+#### Non Tunnel Video Stream
 ```mermaid
 block-beta
 columns 1
@@ -221,7 +221,7 @@ columns 1
     end
 ```
 
-### Non Tunnel Video Stream
+#### Non Tunnel Video Stream
 ```mermaid
 block-beta
 columns 1
