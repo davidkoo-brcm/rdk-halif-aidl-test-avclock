@@ -64,24 +64,24 @@ fi
 # Check if either EmulateAVClockService or RDKAVClockService is running
 if check_process "EmulateAVClockService" || check_process "RDKAVClockService"; then
     echo "AV Clock service is already running"
-    if check_process "EmulateAVClockService"; then
-        AVClockService_pid=$(pgrep -f "EmulateAVClockService")
-    else
+    if check_process "RDKAVClockService"; then
         AVClockService_pid=$(pgrep -f "RDKAVClockService")
+    else
+        AVClockService_pid=$(pgrep -f "EmulateAVClockService")
     fi
 else
-    # Prompt user to start EmulateAVClockService
-    if prompt_yes_no "Do you want to start EmulateAVClockService?"; then
-        echo "Execute [EmulateAVClockService]"
-        ${RUN_DIR}/EmulateAVClockService &
+    # Prompt user to start RDKAVClockService
+    if prompt_yes_no "Do you want to start RDKAVClockService?"; then
+        echo "Execute [RDKAVClockService]"
+        RDKAVClockService &
         AVClockService_pid=$!
         # Wait for service to be ready
         sleep 2
     else
-        # Prompt user to start RDKAVClockService
-        if prompt_yes_no "Do you want to start RDKAVClockService instead?"; then
+        # Prompt user to start EmulateAVClockService
+        if prompt_yes_no "Do you want to start EmulateAVClockService instead?"; then
             echo "Execute [RDKAVClockService]"
-            RDKAVClockService &
+            ${RUN_DIR}/EmulateAVClockService &
             AVClockService_pid=$!
             # Wait for service to be ready
             sleep 2
