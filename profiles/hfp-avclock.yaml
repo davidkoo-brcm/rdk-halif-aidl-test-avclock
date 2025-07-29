@@ -5,3 +5,4 @@ IAVClockManager:                # Component object begins
   IAVClock:                     # Resource list
     - 0
     - 1
+    - 2
