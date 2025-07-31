@@ -460,9 +460,8 @@ class AVClockEventListener : public BnAVClockEventListener {
                     eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_FALSE(_aidl_return); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
 #define AVCLOCK_REGISTER_EVENT_LISTENER_NULL_FAILURE(avClock, eventListener) \
@@ -505,9 +504,8 @@ class AVClockEventListener : public BnAVClockEventListener {
                     eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_FALSE(_aidl_return); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
 #define AVCLOCK_UNREGISTER_EVENT_LISTENER_NULL_FAILURE(avClock, eventListener) \

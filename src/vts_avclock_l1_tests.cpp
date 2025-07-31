@@ -1096,7 +1096,13 @@ UT_ADD_TEST(VTS_L1_AVClock, start_pos)
         AVCLOCK_OPEN_SUCCESS(avClock, controllerListener, avClockController, true);
 
         /* Start the AV Clock */
-        AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+        AVCLOCK_START_SUCCESS(avClock, avClockController, true);
+
+        /* Stop the AV Clock */
+        AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
+
+        /* Close the AV Clock */
+        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
 
         UT_LOG_INFO("start for clock ID %d: success", _clockId.value);
     }
@@ -1214,10 +1220,13 @@ UT_ADD_TEST(VTS_L1_AVClock, stop_pos)
         AVCLOCK_OPEN_SUCCESS(avClock, controllerListener, avClockController, true);
 
         /* Start the AV Clock to reach STARTED */
-        AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+        AVCLOCK_START_SUCCESS(avClock, avClockController, true);
 
         /* Stop the AV Clock */
-        AVCLOCK_STOP_SUCCESS(avClock, avClockController,true);
+        AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
+
+        /* Close the AV Clock */
+        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
 
         UT_LOG_INFO("stop for clock ID %d: success", _clockId.value);
     }
@@ -1353,12 +1362,18 @@ UT_ADD_TEST(VTS_L1_AVClock, setAudioSink_pos)
 
         /* Test 3: Set audio sink to valid ID in STARTED state */
         {
-            AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
             com::rdk::hal::audiosink::IAudioSink::Id audioSinkId;
             audioSinkId.value = 1; // Valid ID
             AVCLOCK_SET_AUDIO_SINK_SUCCESS(avClock, avClockController, audioSinkId, true);
             UT_LOG_INFO("setAudioSink to ID 1 for clock ID %d in STARTED: success", _clockId.value);
+
+            /* Stop the AV Clock */
+            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
         }
+
+        /* Close the AV Clock */
+        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
     }
 }
 
@@ -1499,12 +1514,18 @@ UT_ADD_TEST(VTS_L1_AVClock, getAudioSink_pos)
 
         /* Test 3: Get audio sink in STARTED state */
         {
-            AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
             com::rdk::hal::audiosink::IAudioSink::Id expectedAudioSinkId;
             expectedAudioSinkId.value = 0;
             AVCLOCK_GET_AUDIO_SINK_SUCCESS(avClock, avClockController, expectedAudioSinkId);
             UT_LOG_INFO("getAudioSink in STARTED state for clock ID %d: returned ID 0", _clockId.value);
+
+            /* Stop the AV Clock */
+            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
         }
+
+        /* Close the AV Clock */
+        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
     }
 }
 
@@ -1622,12 +1643,18 @@ UT_ADD_TEST(VTS_L1_AVClock, setSupplementaryAudioSink_pos)
 
         /* Test 3: Set supplementary audio sink to valid ID in STARTED state */
         {
-            AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
             com::rdk::hal::audiosink::IAudioSink::Id supplementaryAudioSinkId;
             supplementaryAudioSinkId.value = 1; // Valid ID
             AVCLOCK_SET_SUPPLEMENTARY_AUDIO_SINK_SUCCESS(avClock, avClockController, supplementaryAudioSinkId, true);
             UT_LOG_INFO("setSupplementaryAudioSink to ID 1 for clock ID %d in STARTED: success", _clockId.value);
+
+            /* Stop the AV Clock */
+            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
         }
+
+        /* Close the AV Clock */
+        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
     }
 }
 
@@ -1769,12 +1796,18 @@ UT_ADD_TEST(VTS_L1_AVClock, getSupplementaryAudioSink_pos)
 
         /* Test 3: Get supplementary audio sink in STARTED state */
         {
-            AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
             com::rdk::hal::audiosink::IAudioSink::Id expectedSupplementaryAudioSinkId;
             expectedSupplementaryAudioSinkId.value = 0;
             AVCLOCK_GET_SUPPLEMENTARY_AUDIO_SINK_SUCCESS(avClock, avClockController, expectedSupplementaryAudioSinkId);
             UT_LOG_INFO("getSupplementaryAudioSink in STARTED state for clock ID %d: returned ID 0", _clockId.value);
+
+            /* Stop the AV Clock */
+            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
         }
+
+        /* Close the AV Clock */
+        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
     }
 }
 
@@ -1892,12 +1925,18 @@ UT_ADD_TEST(VTS_L1_AVClock, setVideoSink_pos)
 
         /* Test 3: Set video sink to valid ID in STARTED state */
         {
-            AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
             com::rdk::hal::videosink::IVideoSink::Id videoSinkId;
             videoSinkId.value = 1; // Valid ID
             AVCLOCK_SET_VIDEO_SINK_SUCCESS(avClock, avClockController, videoSinkId, true);
             UT_LOG_INFO("setVideoSink to ID 1 for clock ID %d in STARTED: success", _clockId.value);
+
+            /* Stop the AV Clock */
+            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
         }
+
+        /* Close the AV Clock */
+        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
     }
 }
 
@@ -2038,12 +2077,18 @@ UT_ADD_TEST(VTS_L1_AVClock, getVideoSink_pos)
 
         /* Test 3: Get video sink in STARTED state */
         {
-            AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
             com::rdk::hal::videosink::IVideoSink::Id expectedVideoSinkId;
             expectedVideoSinkId.value = 0;
             AVCLOCK_GET_VIDEO_SINK_SUCCESS(avClock, avClockController, expectedVideoSinkId);
             UT_LOG_INFO("getVideoSink in STARTED state for clock ID %d: returned ID 0", _clockId.value);
+
+            /* Stop the AV Clock */
+            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
         }
+
+        /* Close the AV Clock */
+        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
     }
 }
 /**
@@ -2169,6 +2214,9 @@ UT_ADD_TEST(VTS_L1_AVClock, setClockMode_pos)
             AVCLOCK_SET_CLOCK_MODE_SUCCESS(avClock, avClockController, clockMode, true);
             UT_LOG_INFO("setClockMode to VIDEO_MASTER for clock ID %d in READY: success", _clockId.value);
         }
+
+        /* Close the AV Clock */
+        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
     }
 }
 
@@ -2311,11 +2359,17 @@ UT_ADD_TEST(VTS_L1_AVClock, getClockMode_pos)
 
         /* Test 3: Get clock mode in STARTED state */
         {
-            AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
             com::rdk::hal::avclock::ClockMode expectedClockMode = com::rdk::hal::avclock::ClockMode::PCR;
             AVCLOCK_GET_CLOCK_MODE_SUCCESS(avClock, avClockController, expectedClockMode);
             UT_LOG_INFO("getClockMode in STARTED state for clock ID %d: returned PCR", _clockId.value);
+
+            /* Stop the AV Clock */
+            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
         }
+
+        /* Close the AV Clock */
+        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
     }
 }
 
@@ -2419,7 +2473,7 @@ UT_ADD_TEST(VTS_L1_AVClock, notifyPCRSample_pos)
         AVCLOCK_SET_CLOCK_MODE_SUCCESS(avClock, avClockController, clockMode, true);
 
         /* Start the AV Clock to reach STARTED */
-        AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+        AVCLOCK_START_SUCCESS(avClock, avClockController, true);
 
         /* Test 1: Notify PCR sample in STARTED state with PCR mode */
         {
@@ -2429,6 +2483,12 @@ UT_ADD_TEST(VTS_L1_AVClock, notifyPCRSample_pos)
             UT_LOG_INFO("notifyPCRSample with pcrTimeNs=%lld, sampleTimestampNs=%lld for clock ID %d in STARTED with PCR mode: success",
                         static_cast<long long>(pcrTimeNs), static_cast<long long>(sampleTimestampNs), _clockId.value);
         }
+
+        /* Stop the AV Clock */
+        AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
+
+        /* Close the AV Clock */
+        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
     }
 }
 
@@ -2497,25 +2557,30 @@ UT_ADD_TEST(VTS_L1_AVClock, notifyPCRSample_neg)
 
         /* Test 2: Notify PCR sample with invalid pcrTimeNs in STARTED state with PCR mode */
         {
-            AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
 
             int64_t pcrTimeNs = -1LL;
             int64_t sampleTimestampNs = 2000000000LL;
             AVCLOCK_NOTIFY_PCR_SAMPLE_FAILURE_INVALID_PARAMS(avClock, avClockController, pcrTimeNs, sampleTimestampNs);
             UT_LOG_INFO("notifyPCRSample with invalid pcrTimeNs=%lld for clock ID %d: failed as expected",
                         static_cast<long long>(pcrTimeNs), _clockId.value);
+
+            /* Stop the AV Clock */
+            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
         }
 
         /* Test 3: Notify PCR sample with invalid sampleTimestampNs in STARTED state with PCR mode */
         {
+            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
+
             int64_t pcrTimeNs = 1000000000LL;
             int64_t sampleTimestampNs = -1LL;
             AVCLOCK_NOTIFY_PCR_SAMPLE_FAILURE_INVALID_PARAMS(avClock, avClockController, pcrTimeNs, sampleTimestampNs);
             UT_LOG_INFO("notifyPCRSample with invalid sampleTimestampNs=%lld for clock ID %d: failed as expected",
                         static_cast<long long>(sampleTimestampNs), _clockId.value);
 
-            /* Stop the clock to return to READY */
-            AVCLOCK_STOP_SUCCESS(avClock, avClockController,true);
+            /* Stop the AV Clock */
+            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
         }
 
         /* Test 4: Notify PCR sample in STARTED state with AUTO mode */
@@ -2523,15 +2588,15 @@ UT_ADD_TEST(VTS_L1_AVClock, notifyPCRSample_neg)
             com::rdk::hal::avclock::ClockMode clockMode = com::rdk::hal::avclock::ClockMode::AUTO;
             AVCLOCK_SET_CLOCK_MODE_SUCCESS(avClock, avClockController, clockMode, true);
 
-            AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
 
             int64_t pcrTimeNs = 1000000000LL;
             int64_t sampleTimestampNs = 2000000000LL;
             AVCLOCK_NOTIFY_PCR_SAMPLE_FAILURE_STATE_OR_MODE(avClock, avClockController, pcrTimeNs, sampleTimestampNs);
             UT_LOG_INFO("notifyPCRSample in STARTED state with AUTO mode for clock ID %d: failed as expected", _clockId.value);
 
-            /* Stop the clock to return to READY */
-            AVCLOCK_STOP_SUCCESS(avClock, avClockController,true);
+            /* Stop the AV Clock */
+            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
         }
 
         /* Test 5: Notify PCR sample in CLOSED state */
@@ -2548,6 +2613,9 @@ UT_ADD_TEST(VTS_L1_AVClock, notifyPCRSample_neg)
             int64_t sampleTimestampNs = 2000000000LL;
             AVCLOCK_NOTIFY_PCR_SAMPLE_FAILURE_STATE_OR_MODE(avClock, avClockController, pcrTimeNs, sampleTimestampNs);
             UT_LOG_INFO("notifyPCRSample in CLOSED state for clock ID %d: failed as expected", _clockId.value);
+
+            /* Close the AV Clock */
+            AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
         }
     }
 }
@@ -2604,12 +2672,12 @@ UT_ADD_TEST(VTS_L1_AVClock, getCurrentClockTime_pos)
             com::rdk::hal::avclock::ClockMode clockMode = com::rdk::hal::avclock::ClockMode::AUTO;
             AVCLOCK_SET_CLOCK_MODE_SUCCESS(avClock, avClockController, clockMode, true);
 
-            AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
 
             AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, -1LL); // No exact clockTimeNs check
             UT_LOG_INFO("getCurrentClockTime in STARTED state with AUTO mode for clock ID %d: success", _clockId.value);
 
-            AVCLOCK_STOP_SUCCESS(avClock, avClockController,true);
+            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
         }
 
         /* Test 2: Get current clock time in STARTED state with PCR mode */
@@ -2617,7 +2685,7 @@ UT_ADD_TEST(VTS_L1_AVClock, getCurrentClockTime_pos)
             com::rdk::hal::avclock::ClockMode clockMode = com::rdk::hal::avclock::ClockMode::PCR;
             AVCLOCK_SET_CLOCK_MODE_SUCCESS(avClock, avClockController, clockMode, true);
 
-            AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
 
             int64_t pcrTimeNs = 1000000000LL;
             int64_t sampleTimestampNs = 2000000000LL;
@@ -2625,7 +2693,12 @@ UT_ADD_TEST(VTS_L1_AVClock, getCurrentClockTime_pos)
 
             AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, pcrTimeNs); // Exact clockTimeNs check
             UT_LOG_INFO("getCurrentClockTime in STARTED state with PCR mode for clock ID %d: success", _clockId.value);
+
+            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
         }
+
+        /* Close the AV Clock */
+        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
     }
 }
 
@@ -2690,6 +2763,9 @@ UT_ADD_TEST(VTS_L1_AVClock, getCurrentClockTime_neg)
 
             AVCLOCK_GET_CURRENT_CLOCK_TIME_FAILURE_STATE(avClock, avClockController);
             UT_LOG_INFO("getCurrentClockTime in CLOSED state for clock ID %d: failed as expected", _clockId.value);
+
+            /* Close the AV Clock */
+            AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
         }
     }
 }
@@ -2774,11 +2850,17 @@ UT_ADD_TEST(VTS_L1_AVClock, setPlaybackRate_pos)
 
         /* Test 5: Set playback rate to 1.5 in STARTED state */
         {
-            AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
             double rate = 1.5; // Fast with pitch correction
             AVCLOCK_SET_PLAYBACK_RATE_SUCCESS(avClock, avClockController, rate, true);
             UT_LOG_INFO("setPlaybackRate to %.2f for clock ID %d in STARTED: success", rate, _clockId.value);
+
+            /* Stop the AV Clock */
+            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
         }
+
+        /* Close the AV Clock */
+        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
     }
 }
 
@@ -2862,14 +2944,14 @@ UT_ADD_TEST(VTS_L1_AVClock, setPlaybackRate_neg)
 
         /* Test 4: Set playback rate in STARTED state with PCR mode */
         {
-            AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
 
             double rate = 1.0;
             AVCLOCK_SET_PLAYBACK_RATE_FAILURE_STATE_OR_MODE(avClock, avClockController, rate);
             UT_LOG_INFO("setPlaybackRate to %.2f in STARTED state with PCR mode for clock ID %d: failed as expected", rate, _clockId.value);
 
-            /* Stop the clock to return to READY */
-            AVCLOCK_STOP_SUCCESS(avClock, avClockController,true);
+            /* Stop the AV Clock */
+            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
         }
 
         /* Test 5: Set playback rate in CLOSED state */
@@ -2952,11 +3034,17 @@ UT_ADD_TEST(VTS_L1_AVClock, getPlaybackRate_pos)
 
         /* Test 3: Get playback rate in STARTED state */
         {
-            AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
             double expectedRate = 0.5;
             AVCLOCK_GET_PLAYBACK_RATE_SUCCESS(avClock, avClockController, expectedRate);
             UT_LOG_INFO("getPlaybackRate in STARTED state for clock ID %d: returned %.2f", _clockId.value, expectedRate);
+
+            /* Stop the AV Clock */
+            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
         }
+
+        /* Close the AV Clock */
+        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
     }
 }
 
@@ -3018,14 +3106,17 @@ UT_ADD_TEST(VTS_L1_AVClock, getPlaybackRate_neg)
 
         /* Test 2: Get playback rate in STARTED state with PCR mode */
         {
-            AVCLOCK_START_SUCCESS(avClock, avClockController,true);
+            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
 
             AVCLOCK_GET_PLAYBACK_RATE_FAILURE_STATE_OR_MODE(avClock, avClockController);
             UT_LOG_INFO("getPlaybackRate in STARTED state with PCR mode for clock ID %d: failed as expected", _clockId.value);
 
-            /* Stop the clock to return to READY */
-            AVCLOCK_STOP_SUCCESS(avClock, avClockController,true);
+            /* Stop the AV Clock */
+            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
         }
+
+        /* Close the AV Clock */
+        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
     }
 }
 
