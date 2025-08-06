@@ -82,6 +82,8 @@
 #include <unordered_set>
 #include <optional> // Add for std::optional
 
+#include "vts_avclock_init.h"
+
 #include "com/rdk/hal/avclock/IAVClockManager.h"
 #include "com/rdk/hal/avclock/BnAVClockControllerListener.h"
 #include "com/rdk/hal/avclock/BnAVClockEventListener.h"

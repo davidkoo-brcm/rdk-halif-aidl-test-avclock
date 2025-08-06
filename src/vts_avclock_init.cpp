@@ -51,6 +51,7 @@
  */
 
 #include "vts_avclock.h"
+#include "vts_avclock_init.h"
 
 sp<IAVClockManager> gAVClockManagerService;
 
