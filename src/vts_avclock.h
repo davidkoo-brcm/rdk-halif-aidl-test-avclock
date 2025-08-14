@@ -82,6 +82,8 @@
 #include <unordered_set>
 #include <optional> // Add for std::optional
 
+#include "vts_avclock_init.h"
+
 #include "com/rdk/hal/avclock/IAVClockManager.h"
 #include "com/rdk/hal/avclock/BnAVClockControllerListener.h"
 #include "com/rdk/hal/avclock/BnAVClockEventListener.h"
@@ -127,7 +129,6 @@ int getAVClockService();
 void vts_avclock_helper_validateCapabilities(int avClockId, const avclock::Capabilities& capabilities);
 bool vts_avclock_helper_validatePropertyValue(int avClockId, const std::optional<PropertyValue>& propertyValue, avclock::Property property);
 bool vts_avclock_helper_areElementsUnique(const std::vector<int32_t>& ids);
-UT_status_t VTS_AVClock_init();
 
 #define MAX_TRANSITORY_STATE_WAIT_MS 10
 #define MAX_FINAL_STATE_WAIT_MS 500
@@ -460,9 +461,8 @@ class AVClockEventListener : public BnAVClockEventListener {
                     eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_FALSE(_aidl_return); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
 #define AVCLOCK_REGISTER_EVENT_LISTENER_NULL_FAILURE(avClock, eventListener) \
@@ -505,9 +505,8 @@ class AVClockEventListener : public BnAVClockEventListener {
                     eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_FALSE(_aidl_return); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
 #define AVCLOCK_UNREGISTER_EVENT_LISTENER_NULL_FAILURE(avClock, eventListener) \

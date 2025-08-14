@@ -1,4 +1,3 @@
-#!/bin/bash
 #* ******************************************************************************
 #*  If not stated otherwise in this file or this component's LICENSE
 #*  file the following copyright and licenses apply:
@@ -20,64 +19,83 @@
 #* ******************************************************************************
 
 DEV_BINDER='/dev/binder'
-RUN_DIR=$(realpath "$(dirname "$0")")
+RUN_DIR=`realpath $(dirname $0)`
 
-# Check if the script has write permission to the binder device
-if [ ! -w "$DEV_BINDER" ]; then
-    echo "No permission to access $DEV_BINDER, consider executing this as root"
+# Function to check if a process is running
+check_process() {
+    local process_name=$1
+    pgrep -f "$process_name" > /dev/null
+    return $?
+}
+
+# Function to prompt user with yes/no question
+prompt_yes_no() {
+    local prompt=$1
+    while true; do
+        read -p "$prompt (y/n): " response
+        case $response in
+            [Yy]* ) return 0;;
+            [Nn]* ) return 1;;
+            * ) echo "Please answer y or n";;
+        esac
+    done
+}
+
+if [ ! -w $DEV_BINDER ]; then
+    echo "No permission to access $DEV_BINDER, consider execute this as root"
     exit 1
 fi
 
-# Set LD_LIBRARY_PATH to include the script's directory
-export LD_LIBRARY_PATH="$RUN_DIR:$LD_LIBRARY_PATH"
+export LD_LIBRARY_PATH=$RUN_DIR:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/lib:/lib:/home/root:./
 
-# Check if servicemanager is already running
-if pidof servicemanager > /dev/null; then
-    echo "Service 'servicemanager' is already running"
-    servicemanager_pid=$(pidof servicemanager)
+# Check and start servicemanager (must run if not running)
+if check_process "servicemanager"; then
+    echo "servicemanager is already running"
+    servicemanager_pid=$(pgrep -f "servicemanager")
 else
-    echo "Executing [servicemanager]"
-    "${RUN_DIR}/servicemanager" &
+    echo "Execute [servicemanager]"
+    ${RUN_DIR}/servicemanager &
     servicemanager_pid=$!
-    # Wait for the service to be ready
+    # Wait for service to be ready
     sleep 2
-    # Verify if servicemanager started successfully
-    if ! ps -p "$servicemanager_pid" > /dev/null; then
-        echo "Failed to start servicemanager"
-        exit 1
-    fi
 fi
 
-# Prompt user to start EmulateAVClockService
-echo "Do you want to start the mock service [EmulateAVClockService]? (y/n)"
-read -r user_choice
-case "$user_choice" in
-    [Yy]*)
-        echo "Executing [EmulateAVClockService]"
-        "${RUN_DIR}/EmulateAVClockService" &
+# Check if either EmulateAVClockService or RDKAVClockService is running
+if check_process "EmulateAVClockService" || check_process "RDKAVClockService"; then
+    echo "AV Clock service is already running"
+    if check_process "RDKAVClockService"; then
+        AVClockService_pid=$(pgrep -f "RDKAVClockService")
+    else
+        AVClockService_pid=$(pgrep -f "EmulateAVClockService")
+    fi
+else
+    # Prompt user to start RDKAVClockService
+    if prompt_yes_no "Do you want to start RDKAVClockService?"; then
+        echo "Execute [RDKAVClockService]"
+        RDKAVClockService &
         AVClockService_pid=$!
-        # Wait for the service to be ready
+        # Wait for service to be ready
         sleep 2
-        # Verify if EmulateAVClockService started successfully
-        if ! ps -p "$AVClockService_pid" > /dev/null; then
-            echo "Failed to start EmulateAVClockService"
-            # Clean up servicemanager if it was started by this script
-            if [ -n "$servicemanager_pid" ] && ps -p "$servicemanager_pid" > /dev/null; then
-                kill -9 "$servicemanager_pid"
+    else
+        # Prompt user to start EmulateAVClockService
+        if prompt_yes_no "Do you want to start EmulateAVClockService instead?"; then
+            echo "Execute [RDKAVClockService]"
+            ${RUN_DIR}/EmulateAVClockService &
+            AVClockService_pid=$!
+            # Wait for service to be ready
+            sleep 2
+        else
+            echo "Cannot proceed without a AV Clock service"
+            # Clean up servicemanager
+            if [ ! -z "$servicemanager_pid" ]; then
+                kill -9 $servicemanager_pid
             fi
             exit 1
         fi
-        ;;
-    [Nn]*)
-        echo "Skipping [EmulateAVClockService]"
-        AVClockService_pid=""
-        ;;
-    *)
-        echo "Invalid input. Please enter 'y' or 'n'. Skipping [EmulateAVClockService]"
-        AVClockService_pid=""
-        ;;
-esac
+    fi
+fi
 
-# Execute vts_avclock with the specified profile
-echo "Executing [vts_avclock]"
+echo "Eexecute [vts_avclock]"
 ${RUN_DIR}/vts_avclock $@
+
