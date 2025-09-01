@@ -69,6 +69,10 @@ public:
 
     void SetUp() override
     {
+        if (gAVClockManagerService == nullptr)
+        {
+            UT_FAIL_FATAL("AVClock Service not available");
+        }
     }
 
     void TearDown() override

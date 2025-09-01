@@ -65,6 +65,10 @@ public:
 
     void SetUp() override
     {
+        if (gAVClockManagerService == nullptr)
+        {
+            UT_FAIL_FATAL("AVClock Service not available");
+        }
         UTCore::SetUp();
         // AVClock setup
         if (mClockIds.empty())
