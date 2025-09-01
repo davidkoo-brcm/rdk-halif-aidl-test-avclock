@@ -69,6 +69,10 @@ public:
 
     void SetUp() override
     {
+        if (gAVClockManagerService == nullptr)
+        {
+            UT_FAIL_FATAL("AVClock Service not available");
+        }
     }
 
     void TearDown() override
@@ -527,67 +531,6 @@ UT_ADD_TEST(VTS_L1_AVClock, getProperty_neg)
 }
 
 /**
- * @brief Test the AV Clock's setProperty function for valid property keys.
- *
- * This test verifies if the setProperty function handles valid property keys correctly, returning false for read-only properties.
- *
- * **Test Group ID:** Basic: 01@n
- * **Test Case ID:** 007@n
- * **Priority:** High@n
- * @n
- * **Pre-Conditions:** None@n
- * **Dependencies:** None@n
- * **User Interaction:** None@n
- * @n
- * **Test Procedure:**@n
- * |Variation / Step|Description|Test Data|Expected Result|Notes|
- * |----------------|-----------|---------|---------------|-----|
- * |01|Retrieve available AV Clock IDs|None|clockIds should not be empty, status.isOk() should be true|Should Pass|
- * |02|Get AV Clock handle for each ID|_clockId|avClock should be valid, status.isOk() should be true|Should Pass|
- * |03|Invoke setProperty for RESOURCE_ID|Property::RESOURCE_ID, PropertyValue with intValue=1|status.isOk() should be true, return false (read-only)|Should Pass|
- * |04|Invoke setProperty for METRIC_AV_SYNC_ACCURACY_MS|Property::METRIC_AV_SYNC_ACCURACY_MS, PropertyValue with intValue=0|status.isOk() should be true, return false (read-only)|Should Pass|
- * |05|Invoke setProperty for METRIC_AV_RESYNC_COUNT|Property::METRIC_AV_RESYNC_COUNT, PropertyValue with intValue=0|status.isOk() should be true, return false (read-only)|Should Pass|
- */
-UT_ADD_TEST(VTS_L1_AVClock, setProperty_pos)
-{
-    std::vector<com::rdk::hal::avclock::IAVClock::Id> clockIds;
-    android::sp<com::rdk::hal::avclock::IAVClock> avClock;
-    ::android::binder::Status status;
-
-    /* List of valid properties to test (all read-only) */
-    std::vector<com::rdk::hal::avclock::Property> validProperties = {
-        com::rdk::hal::avclock::Property::RESOURCE_ID,
-        com::rdk::hal::avclock::Property::METRIC_AV_SYNC_ACCURACY_MS,
-        com::rdk::hal::avclock::Property::METRIC_AV_RESYNC_COUNT
-    };
-
-    /* Get the AV Clock IDs */
-    AVCLOCK_MANAGER_GETAVCLOCKIDS(clockIds);
-
-    for (const auto& _clockId : clockIds)
-    {
-        /* Get AV Clock handle */
-        AVCLOCK_MANAGER_GETAVCLOCK_SUCCESS(_clockId, avClock);
-
-        /* Test setProperty for each valid property */
-        for (const auto& _property : validProperties)
-        {
-            com::rdk::hal::PropertyValue propertyValue;
-            propertyValue.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(1); // Example value
-            bool result = false;
-            AVCLOCK_SET_PROPERTY_SUCCESS(avClock, _property, propertyValue, result);
-
-            /* Validate the result (false for read-only properties) */
-            UT_LOG_INFO("setProperty for property %s, clock ID %d: result=%s",
-                        com::rdk::hal::avclock::toString(_property).c_str(),
-                        _clockId.value,
-                        result ? "true" : "false");
-            UT_ASSERT_FALSE(result); // Expect false for read-only properties
-        }
-    }
-}
-
-/**
  * @brief Test the AV Clock's setProperty function for invalid inputs.
  *
  * This test verifies if the setProperty function handles invalid property keys or values correctly by returning false.
@@ -613,6 +556,13 @@ UT_ADD_TEST(VTS_L1_AVClock, setProperty_neg)
     std::vector<com::rdk::hal::avclock::IAVClock::Id> clockIds;
     android::sp<com::rdk::hal::avclock::IAVClock> avClock;
     ::android::binder::Status status;
+
+    /* List of read only properties to test (all read-only) */
+    std::vector<com::rdk::hal::avclock::Property> readOnlyProperties = {
+        com::rdk::hal::avclock::Property::RESOURCE_ID,
+        com::rdk::hal::avclock::Property::METRIC_AV_SYNC_ACCURACY_MS,
+        com::rdk::hal::avclock::Property::METRIC_AV_RESYNC_COUNT
+    };
 
     /* Get the AV Clock IDs */
     AVCLOCK_MANAGER_GETAVCLOCKIDS(clockIds);
@@ -647,6 +597,21 @@ UT_ADD_TEST(VTS_L1_AVClock, setProperty_neg)
                         com::rdk::hal::avclock::toString(property).c_str(),
                         _clockId.value, result ? "true" : "false");
             UT_ASSERT_FALSE(result);
+        }
+        /* Test setProperty for each valid property */
+        for (const auto& _property : readOnlyProperties)
+        {
+            com::rdk::hal::PropertyValue propertyValue;
+            propertyValue.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(1); // Example value
+            bool result = false;
+            AVCLOCK_SET_PROPERTY_FAILURE(avClock, _property, propertyValue, result,Status::EX_UNSUPPORTED_OPERATION);
+
+            /* Validate the result (false for read-only properties) */
+            UT_LOG_INFO("setProperty for property %s, clock ID %d: result=%s",
+                        com::rdk::hal::avclock::toString(_property).c_str(),
+                        _clockId.value,
+                        result ? "true" : "false");
+            UT_ASSERT_FALSE(result); // Expect false for read-only properties
         }
     }
 }
