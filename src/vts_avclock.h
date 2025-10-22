@@ -82,6 +82,11 @@
 #include <unordered_set>
 #include <optional> // Add for std::optional
 
+#include "vts_audiodecoder.h"
+#include "vts_audiosink.h"
+#include "vts_videosink.h"
+#include "vts_videodecoder.h"
+
 #include "vts_avclock_init.h"
 
 #include "com/rdk/hal/avclock/IAVClockManager.h"
@@ -110,6 +115,33 @@ using namespace com::rdk::hal::audiosink;
 using namespace com::rdk::hal::videosink;
 
 extern sp<IAVClockManager> gAVClockManagerService;
+
+enum contentprimetype {
+    primeaudio;
+    primevideo;
+    primeaudiobeforevideo;
+    primevideobeforeaudio;
+    primepcm
+};
+
+// Generic function to return selected elements from a tuple at index
+template <typename TupleType, typename... Indices>
+auto getTupleElements(const std::vector<TupleType>& list, size_t index, Indices... indices)
+    -> std::optional<std::tuple<std::tuple_element_t<Indices, TupleType>...>> {
+
+    if (list.empty()) {
+        UT_LOG_INFO("List is empty");
+        return std::nullopt;
+    }
+
+    if (index >= list.size()) {
+        UT_LOG_INFO("Index out of range. List size: %zu", list.size());
+        return std::nullopt;
+    }
+
+    const auto& tuple = list[index];
+    return std::make_tuple(std::get<Indices>(tuple)...);
+}
 
 /* Status::Exception */
 const static ut_control_keyStringMapping_t statusException_mapTable[] =
@@ -143,6 +175,66 @@ bool vts_avclock_helper_areElementsUnique(const std::vector<int32_t>& ids);
 
 #define MAX_TRANSITORY_STATE_WAIT_MS 10
 #define MAX_FINAL_STATE_WAIT_MS 500
+
+class AVClockTest
+{
+public:
+    AVClockTest(IAVClock::Id clockId, sp<IAVClock> clockHandle,
+                sp<AVClockControllerListener> controlListener,
+                sp<AVClockEventListener> eventListener, sp<avclock::IAVClockController> avClockController)
+    {
+         mavClockId = clockId;
+         mclockHandle = clockHandle;
+         mclockControlListener = controlListener;
+         mclockEventListener = eventListener;
+         mavClockController = avClockController;
+    }
+
+    AVClockVideoTest(IVideoDecoder::Id decoderId, sp<IVideoDecoder> decoderHandle,
+                     sp<VideoDecoderControllerListener> controlListener,
+                     sp<VideoDecoderEventListener> eventListener,
+                     sp<IAVBuffer> AVBufferManager, IAVBufferHelper* avbufferHelper,
+                     bool secureDecode, bool istunnel; testConfiguration_t config)
+    {
+        mvideoDecoderId = decoderId;
+        mvideoDecoderHandle = decoderHandle;
+        mvideoControlListener = controlListener;
+        mvideoSecureDecode = secureDecode;
+        mvideoEventListener = eventListener;
+        mvideoTestConfiguration = config;
+        mvideoTunnel = istunnel;
+        mAVBufferManager = AVBufferManager;
+        mAVbufferHelper = avbufferHelper;
+    }
+
+    void run();
+    void avclockSetup();
+    void avClockCleanup();
+    void audioPrime();
+    void videoPrime();
+    void avclockCleanup();
+
+private:
+    IAVClock::Id mavClockId = clockId;
+    sp<IAVClock> mclockHandle = clockHandle;
+    sp<AVClockControllerListener> mclockControlListener = controlListener;
+    sp<avclock::IAVClockController> mavClockController = avClockController;
+    sp<AVClockEventListener> mclockEventListener = eventListener;
+    IAudioDecoder::Id maudioDecoderId;
+    IVideoDecoder::Id mvudioDecoderId;
+    sp<IAudioDecoder> maudioDecoderHandle;
+    sp<IVideoDecoder> mvideoDecoderHandle;
+    sp<AudioDecoderControllerListener> maudioControlListener;
+    sp<AudioDecoderEventListener> maudioEventListener;
+    sp<VideoDecoderControllerListener> mvideoControlListener;
+    sp<VideoDecoderEventListener> mvideoEventListener;
+    sp<IAVBuffer> mAVBufferManager;
+    bool mSecureDecode;
+    testConfiguration_t maudioTestConfiguration;
+    testConfiguration_t mvideoTestConfiguration;
+    IAVBufferHelper* mAVbufferHelper;
+
+};
 
 class AVClockControllerListener : public BnAVClockControllerListener {
     public:
