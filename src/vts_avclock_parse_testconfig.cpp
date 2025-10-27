@@ -86,53 +86,9 @@ UT_status_t vts_avclock_parse_testconfig(void* pTestInstance, const char *module
         string streamName = streamList + "." + to_string(i) + "Name";
         ut_kvp_getStringField(kvpTestInstance, streamName.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
 
-        string framePTS    = streamList + "." + to_string(i) + "." +"PTS";
-        int64_t PTS = ut_kvp_getUInt64Field(kvpTestInstance, eachPTS.c_str())
-
-        ut_kvp_getStringField(kvpTestInstance, input.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
-        fullPath = currentPath;
-        fullPath.append(streamInputPath);
-        fullPath.append(resultKVP);
-        testDetails.input = fullPath.string();
-
-        ut_kvp_getStringField(kvpTestInstance, reference.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
-        fullPath = currentPath;
-        fullPath.append(streamRefPath);
-        fullPath.append(resultKVP);
-        testDetails.reference = fullPath.string();
-
-        for(int32_t j = 0; j < testDetails.numOfFrames; j++)
-        {
-            bool errorFrame = false;
-
-            string eachFrame = frameSize + "." + to_string(j);
-            string eachPTS = framePTS + "." + to_string(j);
-            int32_t size = ut_kvp_getUInt32Field(kvpTestInstance, eachFrame.c_str());
-            int64_t PTS = ut_kvp_getUInt64Field(kvpTestInstance, eachPTS.c_str());
-            if(errorFrameNum.size() > 0)
-            {
-                if (find(errorFrameNum.begin(), errorFrameNum.end(), j) != errorFrameNum.end())
-                {
-                    errorFrame = true;
-                }
-            }
-            testDetails.frameDetails.push_back({size, PTS, errorFrame});
+        for (const auto& val : streamName["PTS"]) {
+                ptsValues.push_back(val.as<int64_t>());
         }
-
-        testDetails.rms_diff_threashold = ut_kvp_getDoubleField(kvpTestInstance, rmsDiff.c_str());
-        testDetails.decodeTime = ut_kvp_getDoubleField(kvpTestInstance, decodeTime.c_str());
-        testDetails.trimStartNs  = ut_kvp_getUInt64Field(kvpTestInstance, trimStart.c_str());
-        testDetails.trimEndNs    = ut_kvp_getUInt64Field(kvpTestInstance, trimEnd.c_str());
-        testDetails.decoderDelay = ut_kvp_getUInt32Field(kvpTestInstance, decoderDelay.c_str());
-        testDetails.stopPts      = ut_kvp_getUInt64Field(kvpTestInstance, stopPts.c_str());
-        testDetails.discontinuityPts = ut_kvp_getUInt64Field(kvpTestInstance, discontinuityPts.c_str());
-        testDetails.flushPts     = ut_kvp_getUInt64Field(kvpTestInstance, flushPts.c_str());
-        testDetails.flushRestPts = ut_kvp_getUInt64Field(kvpTestInstance, flushRestPts.c_str());
-        testDetails.eosPts       = ut_kvp_getUInt64Field(kvpTestInstance, eosPts.c_str());
-        testDetails.sinkEosPts   = ut_kvp_getUInt64Field(kvpTestInstance, sinkEosPts.c_str());
-        testDetails.sinkFlushPts = ut_kvp_getUInt64Field(kvpTestInstance, sinkFlushPts.c_str());
-
-        testConfiguration.push_back(testDetails);
     }
 
     return UT_STATUS_OK;

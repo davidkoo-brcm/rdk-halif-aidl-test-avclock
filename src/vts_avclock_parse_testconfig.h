@@ -79,7 +79,7 @@
 using namespace std;
 using namespace com::rdk::hal;
 
-std::vector<int64_t> ptsDetails;
+std::vector<long> pcrValues;
 
 
 UT_status_t vts_avclock_parse_testconfig(void* pTestInstance, const char *module, const char *testGroup, const char *testName);

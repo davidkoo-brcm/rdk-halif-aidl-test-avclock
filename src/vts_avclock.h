@@ -117,16 +117,16 @@ using namespace com::rdk::hal::videosink;
 extern sp<IAVClockManager> gAVClockManagerService;
 
 enum contentprimetype {
-    primeaudio;
-    primevideo;
-    primeaudiobeforevideo;
-    primevideobeforeaudio;
+    primeaudio,
+    primevideo,
+    primeaudiobeforevideo,
+    primevideobeforeaudio,
     primepcm
 };
 
 // Generic function to return selected elements from a tuple at index
-template <typename TupleType, typename... Indices>
-auto getTupleElements(const std::vector<TupleType>& list, size_t index, Indices... indices)
+template <typename TupleType, std::size_t... Indices>
+auto getTupleElements(const std::vector<TupleType>& list, size_t index, std::index_sequence<Indices...>)
     -> std::optional<std::tuple<std::tuple_element_t<Indices, TupleType>...>> {
 
     if (list.empty()) {
@@ -143,31 +143,6 @@ auto getTupleElements(const std::vector<TupleType>& list, size_t index, Indices.
     return std::make_tuple(std::get<Indices>(tuple)...);
 }
 
-/* Status::Exception */
-const static ut_control_keyStringMapping_t statusException_mapTable[] =
-{
-    {(char*)"EX_NONE",                  (int32_t) Status::EX_NONE},
-    {(char*)"EX_SECURITY",              (int32_t) Status::EX_SECURITY},
-    {(char*)"EX_BAD_PARCELABLE",        (int32_t) Status::EX_BAD_PARCELABLE},
-    {(char*)"EX_ILLEGAL_ARGUMENT",      (int32_t) Status::EX_ILLEGAL_ARGUMENT},
-    {(char*)"EX_NULL_POINTER",          (int32_t) Status::EX_NULL_POINTER},
-    {(char*)"EX_ILLEGAL_STATE",         (int32_t) Status::EX_ILLEGAL_STATE},
-    {(char*)"EX_NETWORK_MAIN_THREAD",   (int32_t) Status::EX_NETWORK_MAIN_THREAD},
-    {(char*)"EX_UNSUPPORTED_OPERATION", (int32_t) Status::EX_UNSUPPORTED_OPERATION},
-    {(char*)"EX_SERVICE_SPECIFIC",      (int32_t) Status::EX_SERVICE_SPECIFIC},
-    {(char*)"EX_PARCELABLE",            (int32_t) Status::EX_PARCELABLE},
-    {(char*)"EX_HAS_REPLY_HEADER",      (int32_t) Status::EX_HAS_REPLY_HEADER},
-    {(char*)"EX_TRANSACTION_FAILED",    (int32_t) Status::EX_TRANSACTION_FAILED},
-    {NULL, -1}
-};
-
-/* bool */
-const static ut_control_keyStringMapping_t bool_mapTable[] =
-{
-    {(char*)"false", (int32_t) false},
-    {(char*)"true",  (int32_t) true},
-    {NULL, -1}
-};
 int getAVClockService();
 void vts_avclock_helper_validateCapabilities(int avClockId, const avclock::Capabilities& capabilities);
 bool vts_avclock_helper_validatePropertyValue(int avClockId, const std::optional<PropertyValue>& propertyValue, avclock::Property property);
@@ -175,66 +150,6 @@ bool vts_avclock_helper_areElementsUnique(const std::vector<int32_t>& ids);
 
 #define MAX_TRANSITORY_STATE_WAIT_MS 10
 #define MAX_FINAL_STATE_WAIT_MS 500
-
-class AVClockTest
-{
-public:
-    AVClockTest(IAVClock::Id clockId, sp<IAVClock> clockHandle,
-                sp<AVClockControllerListener> controlListener,
-                sp<AVClockEventListener> eventListener, sp<avclock::IAVClockController> avClockController)
-    {
-         mavClockId = clockId;
-         mclockHandle = clockHandle;
-         mclockControlListener = controlListener;
-         mclockEventListener = eventListener;
-         mavClockController = avClockController;
-    }
-
-    AVClockVideoTest(IVideoDecoder::Id decoderId, sp<IVideoDecoder> decoderHandle,
-                     sp<VideoDecoderControllerListener> controlListener,
-                     sp<VideoDecoderEventListener> eventListener,
-                     sp<IAVBuffer> AVBufferManager, IAVBufferHelper* avbufferHelper,
-                     bool secureDecode, bool istunnel; testConfiguration_t config)
-    {
-        mvideoDecoderId = decoderId;
-        mvideoDecoderHandle = decoderHandle;
-        mvideoControlListener = controlListener;
-        mvideoSecureDecode = secureDecode;
-        mvideoEventListener = eventListener;
-        mvideoTestConfiguration = config;
-        mvideoTunnel = istunnel;
-        mAVBufferManager = AVBufferManager;
-        mAVbufferHelper = avbufferHelper;
-    }
-
-    void run();
-    void avclockSetup();
-    void avClockCleanup();
-    void audioPrime();
-    void videoPrime();
-    void avclockCleanup();
-
-private:
-    IAVClock::Id mavClockId = clockId;
-    sp<IAVClock> mclockHandle = clockHandle;
-    sp<AVClockControllerListener> mclockControlListener = controlListener;
-    sp<avclock::IAVClockController> mavClockController = avClockController;
-    sp<AVClockEventListener> mclockEventListener = eventListener;
-    IAudioDecoder::Id maudioDecoderId;
-    IVideoDecoder::Id mvudioDecoderId;
-    sp<IAudioDecoder> maudioDecoderHandle;
-    sp<IVideoDecoder> mvideoDecoderHandle;
-    sp<AudioDecoderControllerListener> maudioControlListener;
-    sp<AudioDecoderEventListener> maudioEventListener;
-    sp<VideoDecoderControllerListener> mvideoControlListener;
-    sp<VideoDecoderEventListener> mvideoEventListener;
-    sp<IAVBuffer> mAVBufferManager;
-    bool mSecureDecode;
-    testConfiguration_t maudioTestConfiguration;
-    testConfiguration_t mvideoTestConfiguration;
-    IAVBufferHelper* mAVbufferHelper;
-
-};
 
 class AVClockControllerListener : public BnAVClockControllerListener {
     public:
@@ -1017,20 +932,19 @@ class AVClockEventListener : public BnAVClockEventListener {
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
     } while (0)
 
-#define AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, expectedClockTimeNs) \
+#define AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, getClockTime) \
     do { \
         ::android::binder::Status status; \
-        com::rdk::hal::avclock::ClockTime clockTime; \
         UT_LOG_INFO("Calling getCurrentClockTime(OUT:clockTime[])"); \
-        status = avClockController->getCurrentClockTime(&clockTime); \
+        status = avClockController->getCurrentClockTime(&getClockTime); \
         UT_LOG_INFO("Result getCurrentClockTime(OUT:clockTime[clockTimeNs=%lld, sampleTimestampNs=%lld]), status:[isOK:%s, exception:%s]", \
-                    static_cast<long long>(clockTime.clockTimeNs), static_cast<long long>(clockTime.sampleTimestampNs), \
+                    static_cast<long long>(getClockTime.clockTimeNs), static_cast<long long>(getClockTime.sampleTimestampNs), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-        UT_ASSERT_TRUE(clockTime.clockTimeNs >= 0); \
-        UT_ASSERT_TRUE(clockTime.sampleTimestampNs >= 0); \
+        UT_ASSERT_TRUE(getClockTime.clockTimeNs >= 0); \
+        UT_ASSERT_TRUE(getClockTime.sampleTimestampNs >= 0); \
     } while (0)
 
 #define AVCLOCK_GET_CURRENT_CLOCK_TIME_FAILURE_STATE(avClock, avClockController) \

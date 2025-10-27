@@ -88,13 +88,9 @@ UT_status_t vts_avclock_parseAVClockHFP()
         temporary.ids.push_back(avclock_id);
     }
 
-    size_t decoderCount = UT_KVP_PROFILE_GET_LIST_COUNT(audiodecoderPath.c_str());
-
-    temporary.supportsSecure = UT_KVP_PROFILE_GET_BOOL("IAVClockManager.supportsSecure");
 
     gAVClock_hfp.push_back(temporary);
     temporary.ids.clear();
-    temporary.supportedcaps.clear();
     return UT_STATUS_OK;
 }
 

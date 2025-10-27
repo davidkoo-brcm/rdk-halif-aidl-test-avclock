@@ -32,21 +32,21 @@
  */
 
 /**
- * @addtogroup AUDIO_SINK Audio Sink Module
+ * @addtogroup AVCLOCK AVClock Module
  * @{
  */
 
 /**
- * @addtogroup AUDIO_SINK_HALTEST Audio Sink HAL Tests
+ * @addtogroup AVCLOCK_HALTEST AVClock HAL Tests
  * @{
  */
 
 /**
- * @defgroup AUDIO_SINK_HALTEST_PARSE_HFP_HEADER Audio Sink HAL Tests parse Hardware feature profile Header File
+ * @defgroup AVCLOCK_HALTEST_PARSE_HFP_HEADER AVClock HAL Tests parse Hardware feature profile Header File
  * @{
  * @parblock
  *
- * ### Parse HFP functions for Audio Sink :
+ * ### Parse HFP functions for AVClock :
  *
  * Parse HFP functions required for the module across all vendors.
  *
@@ -58,7 +58,7 @@
  */
 
 /**
- * @file vts_audiosink_parse_hfp.h
+ * @file vts_avclock_parse_hfp.h
  *
  */
 
@@ -73,14 +73,9 @@
 #include <ut_kvp.h>
 #include <ut_log.h>
 
-using namespace std;
-using namespace com::rdk::hal;
-//using namespace com::rdk::hal::audiodecoder;
-
 struct avclockmanager
 {
-    std::vector<int32_t> ids;
-    bool supportsSecure;
+    std::vector<int32_t> ids
 };
 
 extern std::vector<avclockmanager> gAVClock_hfp;
@@ -90,9 +85,9 @@ extern std::vector<avclockmanager> gAVClock_hfp;
 
 UT_status_t vts_avclock_parseAVClockHFP();
 
-#endif //__VTS_AUDIOSINK_PARSE_HFP_H__
+#endif //__VTS_AVCLOCK_PARSE_HFP_H__
 
-/** @} */ // End of AUDIO_SINK_HALTEST_PARSE_HFP_HEADER
-/** @} */ // End of AUDIO_SINK_HALTEST
-/** @} */ // End of AUDIO_SINK
+/** @} */ // End of AVCLOCK_HALTEST_PARSE_HFP_HEADER
+/** @} */ // End of AVCLOCK_HALTEST
+/** @} */ // End of AVCLOCK_SINK
 /** @} */ // End of HPK
