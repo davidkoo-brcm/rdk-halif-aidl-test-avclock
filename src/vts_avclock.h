@@ -932,19 +932,19 @@ class AVClockEventListener : public BnAVClockEventListener {
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
     } while (0)
 
-#define AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, getClockTime) \
+#define AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, clockTime) \
     do { \
         ::android::binder::Status status; \
         UT_LOG_INFO("Calling getCurrentClockTime(OUT:clockTime[])"); \
-        status = avClockController->getCurrentClockTime(&getClockTime); \
+        status = avClockController->getCurrentClockTime(&clockTime); \
         UT_LOG_INFO("Result getCurrentClockTime(OUT:clockTime[clockTimeNs=%lld, sampleTimestampNs=%lld]), status:[isOK:%s, exception:%s]", \
-                    static_cast<long long>(getClockTime.clockTimeNs), static_cast<long long>(getClockTime.sampleTimestampNs), \
+                    static_cast<long long>(clockTime.clockTimeNs), static_cast<long long>(clockTime.sampleTimestampNs), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_TRUE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
-        UT_ASSERT_TRUE(getClockTime.clockTimeNs >= 0); \
-        UT_ASSERT_TRUE(getClockTime.sampleTimestampNs >= 0); \
+        UT_ASSERT_TRUE(clockTime.clockTimeNs >= 0); \
+        UT_ASSERT_TRUE(clockTime.sampleTimestampNs >= 0); \
     } while (0)
 
 #define AVCLOCK_GET_CURRENT_CLOCK_TIME_FAILURE_STATE(avClock, avClockController) \

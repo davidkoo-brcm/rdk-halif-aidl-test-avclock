@@ -83,6 +83,9 @@
 #include "com/rdk/hal/avbuffer/IAVBuffer.h"
 #include "com/rdk/hal/avbuffer/BnAVBufferSpaceListener.h"
 
+#include "vts_audiosink.h"
+#include "vts_audiodecoder.h"
+#include "vts_videodecoder.h"
 #include "vts_audiodecoder_parse_testconfig.h"
 
 #include "vts_audiosink_helper_functions.h"
@@ -105,7 +108,7 @@ static const char *gVideoDecoderModuleName = "IVideoDecoderManager";
 static const char *gVideoSinkModuleName = "IVideoSinkManager";
 static const char *gTestGroup = "L3";
 
-std::atomic<bool> threadStarted(false)
+std::atomic<bool> threadStarted(false);
 
 //static IAVBufferHelper* gAVbufferHelper;
 
@@ -137,22 +140,22 @@ public:
 
 class VTS_L3_AVClock : public UTCore
 {
-public:
-VTS_L3_AudioSink() : UTCore() {}
+    public:
+    VTS_L3_AVClock() : UTCore() {};
 
-~VTS_L3_AudioSink() override = default;
+    ~VTS_L3_AVClock() override = default;
 
-public:
-    std::vector<std::tuple<IAVClock::Id, sp<IAVClock>, sp<AVClockControllerListener>, sp<AVClockEventListener>>> mAVClockList;
-    std::vector<tuple<IAudioDecoder::Id, sp<IAudioDecoder>, sp<AudioDecoderControllerListener>, sp<AudioDecoderEventListener>, audiodecoder::Capabilities *>> mAudioDecoderList;
-    std::vector<tuple<IVideoDecoder::Id, sp<IVideoDecoder>, sp<VideoDecoderControllerListener>, sp<VideoDecoderEventListener>, videodecoder::Capabilities *>> mVideoDecoderList;
-    std::vector<std::tuple<IAudioSink::Id, sp<IAudioSink>, sp<AudioSinkControllerListener>, sp<AudioSinkEventListener>>> mAudioSinkList;
-    std::vector<tuple<IVideoSink::Id, sp<IVideoSink>, sp<VideoSinkControllerListener>, sp<VideoSinkEventListener>>> mVideoSinkList;
-    sp<IAVBuffer> mAVBufferManager;
-    IAVBufferHelper* mAVbufferHelper;
+    public:
+        std::vector<std::tuple<IAVClock::Id, sp<IAVClock>, sp<AVClockControllerListener>, sp<AVClockEventListener>>> mAVClockList;
+        std::vector<tuple<IAudioDecoder::Id, sp<IAudioDecoder>, sp<AudioDecoderControllerListener>, sp<AudioDecoderEventListener>, audiodecoder::Capabilities *>> mAudioDecoderList;
+        std::vector<tuple<IVideoDecoder::Id, sp<IVideoDecoder>, sp<VideoDecoderControllerListener>, sp<VideoDecoderEventListener>, videodecoder::Capabilities *>> mVideoDecoderList;
+        std::vector<std::tuple<IAudioSink::Id, sp<IAudioSink>, sp<AudioSinkControllerListener>, sp<AudioSinkEventListener>>> mAudioSinkList;
+        std::vector<tuple<IVideoSink::Id, sp<IVideoSink>, sp<VideoSinkControllerListener>, sp<VideoSinkEventListener>>> mVideoSinkList;
+        sp<IAVBuffer> mAVBufferManager;
+        IAVBufferHelper* mAVbufferHelper;
 
-    void SetUp() override
-    {
+        void SetUp() override
+       {
         std::vector<IAVClock::Id> avClockIds;
         std::vector<IAudioSink::Id> audioSinkIds;
         std::vector<IVideoSink::Id> videoSinkIds;
@@ -193,7 +196,7 @@ public:
         mAVbufferHelper = getAVBufferHelperInstance();
 
         /* Get the AVClock IDs */
-        AUDIOSINK_MANAGER_GETAVCLOCKIDS(avClockIds);
+        AVCLOCK_MANAGER_GETAVCLOCKIDS(avClockIds);
 
         /* Get the Audio Sink IDs */
         AUDIOSINK_MANAGER_GETAUDIOSINKIDS(audioSinkIds);
@@ -218,7 +221,7 @@ public:
             sp<AVClockControllerListener> controlListener = new AVClockControllerListener(_avClockId.value);
 
             /* Get AVClock handle */
-            AVCLOCK_MANAGER_GETAVCLOCK_SUCCES(_avClockId, avClock);
+            AVCLOCK_MANAGER_GETAVCLOCK_SUCCESS(_avClockId, avClock);
 
             /* Register events */
             AVCLOCK_REGISTER_EVENT_LISTENER_SUCCESS(avClock, eventListener);
@@ -316,8 +319,9 @@ public:
             mVideoSinkList.push_back({_sinkId, videoSink, videoSinkControlListener, videoSinkEventListener});
         }
     }
-}
-    void checkCompleteStateTransition(sp<IAVClock> avclock, sp<AVClockEventListener> eventListener,
+};
+    
+void checkCompleteStateTransition(sp<IAVClock> avclock, sp<AVClockEventListener> eventListener,
                                       sp<AVClockControllerListener> controlListener, State oldState,
                                       State intermediateState, State newState)
     {

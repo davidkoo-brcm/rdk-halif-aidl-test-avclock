@@ -2600,6 +2600,7 @@ UT_ADD_TEST(VTS_L1_AVClock, getCurrentClockTime_pos)
 {
     std::vector<com::rdk::hal::avclock::IAVClock::Id> clockIds;
     android::sp<com::rdk::hal::avclock::IAVClock> avClock;
+    com::rdk::hal::avclock::ClockTime getclocktime;
     ::android::binder::Status status;
 
     /* Get the AV Clock IDs */
@@ -2622,7 +2623,7 @@ UT_ADD_TEST(VTS_L1_AVClock, getCurrentClockTime_pos)
 
             AVCLOCK_START_SUCCESS(avClock, avClockController, true);
 
-            AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, -1LL); // No exact clockTimeNs check
+            AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, getclocktime); // No exact clockTimeNs check
             UT_LOG_INFO("getCurrentClockTime in STARTED state with AUTO mode for clock ID %d: success", _clockId.value);
 
             AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
@@ -2639,7 +2640,7 @@ UT_ADD_TEST(VTS_L1_AVClock, getCurrentClockTime_pos)
             int64_t sampleTimestampNs = 2000000000LL;
             AVCLOCK_NOTIFY_PCR_SAMPLE_SUCCESS(avClock, avClockController, pcrTimeNs, sampleTimestampNs, true);
 
-            AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, pcrTimeNs); // Exact clockTimeNs check
+            AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, getclocktime); // Exact clockTimeNs check
             UT_LOG_INFO("getCurrentClockTime in STARTED state with PCR mode for clock ID %d: success", _clockId.value);
 
             AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
