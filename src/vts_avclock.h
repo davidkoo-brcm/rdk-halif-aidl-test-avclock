@@ -88,6 +88,7 @@
 #include "vts_videodecoder.h"
 
 #include "vts_avclock_init.h"
+#include "vts_audiosink_parse_hfp.h"
 
 #include "com/rdk/hal/avclock/IAVClockManager.h"
 #include "com/rdk/hal/avclock/BnAVClockControllerListener.h"
@@ -115,14 +116,22 @@ using namespace com::rdk::hal::audiosink;
 using namespace com::rdk::hal::videosink;
 
 extern sp<IAVClockManager> gAVClockManagerService;
+extern std::vector<int32_t> gVideosinks_hfp;
+extern std::vector<int32_t> gAvailableVideosinks_hfp;
+extern std::vector<int32_t> gAvailableVideodecoders_hfp;
 
 enum contentprimetype {
     primeaudio,
     primevideo,
     primeaudiobeforevideo,
     primevideobeforeaudio,
-    primepcm
+    primepcr
 };
+
+bool isClkSinkUsable(const com::rdk::hal::audiosink::IAudioSink::Id &maudioSinkId);
+bool isClkDecoderUsable(const com::rdk::hal::audiodecoder::IAudioDecoder::Id &maudioDecoderId);
+bool isClkVideoSinkUsable(const com::rdk::hal::videosink::IVideoSink::Id &videoSinkId);
+bool isClkVideoDecoderUsable(const com::rdk::hal::videodecoder::IVideoDecoder::Id &videoDecoderId);
 
 // Generic function to return selected elements from a tuple at index
 template <typename TupleType, std::size_t... Indices>
@@ -153,19 +162,87 @@ bool vts_avclock_helper_areElementsUnique(const std::vector<int32_t>& ids);
 
 class AVClockControllerListener : public BnAVClockControllerListener {
     public:
+        AVClockControllerListener(int32_t clockID)
+           : BnAVClockControllerListener(),
+         mClockID(clockID)
+    {
+    }
         AVClockControllerListener() = default;
         virtual ~AVClockControllerListener() = default;
+
+        /**
+         * Wait for the AVClock to reach a particular State within a given timeout.
+         *
+         * @param desiredState The state we want to observe.
+         * @param timeout      How long to wait, e.g. std::chrono::milliseconds(500).
+         * @return true if the state was reached; false if we timed out waiting.
+         */
+        bool waitForState(State desiredState, std::chrono::milliseconds timeout)
+        {
+            std::unique_lock<std::mutex> lock(mMutex);
+            // Wait until mCurrentState == desiredState or until timeout
+            return mCV.wait_for(lock, timeout, [this, desiredState]() {
+                return (mCurrentState == desiredState);
+            });
+        }
+
+        // Accessors for test verifications if desired
+        std::vector<std::pair<State, State>> getStateChanges() const
+        {
+            std::lock_guard<std::mutex> lock(mMutex);
+            return mStateChanges;
+        }
+
+        void resetStateChanges()
+        {
+            std::lock_guard<std::mutex> lock(mMutex);
+            mStateChanges.clear();
+        }
 
         Status onStateChanged(::com::rdk::hal::State oldState, ::com::rdk::hal::State newState) override {
             UT_LOG_INFO("AVClockControllerListener: State changed from %s to %s",
                         ::com::rdk::hal::toString(oldState).c_str(),
                         ::com::rdk::hal::toString(newState).c_str());
+            {
+                std::lock_guard<std::mutex> lock(mMutex);
+                mStateChanges.emplace_back(oldState, newState);
+                mCurrentState = newState;
+            }
+            mCV.notify_all();
             return Status::ok();
         }
+
+        bool checkStateTransition(::com::rdk::hal::State expOldState, ::com::rdk::hal::State expNewState) 
+        {
+            bool foundClosedToOpening = false;
+            for (const auto &[oldState, newState] : mStateChanges)
+            {
+                if (oldState == expOldState && newState == expNewState)
+                {
+                    foundClosedToOpening = true;
+                    break;
+                }
+            }
+            return foundClosedToOpening;
+        }
+
+    private:
+        int32_t mClockID;
+        ::com::rdk::hal::State mCurrentState;
+        mutable std::mutex mMutex;
+        std::condition_variable mCV;
+        std::vector<std::pair< ::com::rdk::hal::State, ::com::rdk::hal::State>> mStateChanges;
+        
     };
 class AVClockEventListener : public BnAVClockEventListener {
     public:
-        AVClockEventListener() : mCurrentState(::com::rdk::hal::State::CLOSED) {}
+        AVClockEventListener(int32_t clockID)
+           : BnAVClockEventListener(),
+         mCurrentState(::com::rdk::hal::State::CLOSED),
+         mClockID(clockID)
+    {
+    }
+        AVClockEventListener() = default;
         virtual ~AVClockEventListener() = default;
 
         /**
@@ -224,6 +301,7 @@ class AVClockEventListener : public BnAVClockEventListener {
         }
 
     private:
+        int32_t mClockID;
         mutable std::mutex mMutex;
         std::condition_variable mCV;
         ::com::rdk::hal::State mCurrentState;
@@ -1058,7 +1136,6 @@ class AVClockEventListener : public BnAVClockEventListener {
         UT_ASSERT_TRUE(_aidl_return); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
-
 
 #endif // __VTS_AVCLOCK_H__
 

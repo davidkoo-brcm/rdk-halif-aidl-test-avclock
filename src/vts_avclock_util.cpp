@@ -62,6 +62,41 @@
 
 extern sp<IAVClockManager> gAVClockManagerService;
 
+bool isClkSinkUsable(const IAudioSink::Id& sinkId)
+{
+    for (const auto& _sink : gAudiosinks_hfp)
+    {
+        if (std::find(_sink.availableIds.begin(), _sink.availableIds.end(), sinkId.value) != _sink.availableIds.end())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool isClkDecoderUsable(const IAudioDecoder::Id& decoderId)
+{
+    if (std::find(gAudiosinks_hfp[0].availableDecoderIds.begin(),
+            gAudiosinks_hfp[0].availableDecoderIds.end(),
+            decoderId.value) == gAudiosinks_hfp[0].availableDecoderIds.end())
+    {
+        return false;
+    }
+    return true;
+}
+
+bool isClkVideoSinkUsable(const IVideoSink::Id& sinkId)
+{
+    return std::find(gAvailableVideosinks_hfp.begin(), gAvailableVideosinks_hfp.end(), sinkId.value) != gAvailableVideosinks_hfp.end();
+}
+
+bool isClkVideoDecoderUsable(const IVideoDecoder::Id& decoderId)
+{
+    return std::find(gAvailableVideodecoders_hfp.begin(),
+                            gAvailableVideodecoders_hfp.end(),
+                            decoderId.value) != gAvailableVideodecoders_hfp.end();
+}
+
 int getAVClockService()
 {
     gAVClockManagerService = android::interface_cast<IAVClockManager>(

@@ -52,8 +52,10 @@
 
 #include "vts_avclock.h"
 #include "vts_avclock_init.h"
+#include "vts_avclock_parse_testconfig.h"
 
 sp<IAVClockManager> gAVClockManagerService;
+void *gAVClockTestConfiguration = nullptr;
 
 UT_status_t VTS_AVClock_init()
 {
@@ -66,6 +68,8 @@ UT_status_t VTS_AVClock_init()
         UT_LOG_ERROR("Failed to process the HFP file");
         return UT_STATUS_FAILURE;
     }*/
+
+    gAVClockTestConfiguration = vts_kvp_create_instance(VTS_AVCLOCK_TEST_CONFIG_PATH);
 
     return UT_STATUS_OK;
 }

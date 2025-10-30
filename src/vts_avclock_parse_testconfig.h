@@ -70,19 +70,15 @@
 #include "ut_kvp_profile.h"
 #include "vts_helper_functions.h"
 #include "com/rdk/hal/avclock/IAVClockManager.h"
-#include "com/rdk/hal/audiodecoder/BnAVClockControllerListener.h"
-#include "com/rdk/hal/audiodecoder/BnAVClockEventListener.h"
+#include "com/rdk/hal/avclock/BnAVClockControllerListener.h"
+#include "com/rdk/hal/avclock/BnAVClockEventListener.h"
 
-#define VTS_TEST_CONFIG_PATH "./audiodecoder_test_configuration/vts_l3_test_config.yaml"
-#define VTS_AUDIOSINK_TEST_CONFIG_PATH "./audiosink_test_configuration/vts_l3_test_config.yaml"
+#define VTS_AVCLOCK_TEST_CONFIG_PATH "./avclock_test_configuration/vts_l3_AVClock_PCR.yaml"
 
 using namespace std;
 using namespace com::rdk::hal;
 
-std::vector<long> pcrValues;
-
-
-UT_status_t vts_avclock_parse_testconfig(void* pTestInstance, const char *module, const char *testGroup, const char *testName);
+UT_status_t vts_avclock_parse_testconfig(void* , const char *, const char *, const char *testName, std::vector<int64_t>&);
 
 #endif //__VTS_AVCLOCK_PARSE_TESTCONFIG_H__
 

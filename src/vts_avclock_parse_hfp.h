@@ -75,7 +75,7 @@
 
 struct avclockmanager
 {
-    std::vector<int32_t> ids
+    std::vector<int32_t> ids;
 };
 
 extern std::vector<avclockmanager> gAVClock_hfp;
