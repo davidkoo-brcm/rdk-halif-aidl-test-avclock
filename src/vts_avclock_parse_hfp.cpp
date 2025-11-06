@@ -77,7 +77,7 @@ UT_status_t vts_avclock_parseAVClockHFP()
     number_of_avclockinst = UT_KVP_PROFILE_GET_LIST_COUNT(avclockpath.c_str());
     if(number_of_avclockinst <= 0)
     {
-        UT_LOG_ERROR("No avclock intances found in the HFP");
+        UT_LOG_ERROR("No avclock instances found in the HFP");
         return UT_STATUS_FAILURE;
     }
 

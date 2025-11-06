@@ -152,7 +152,7 @@ class VTS_L3_AVClock : public UTCore
 
     ~VTS_L3_AVClock() override = default;
 
-    void SetUp() override
+    static void SetUpTestSuite() 
     {
         std::vector<IAVClock::Id> avClockIds;
         std::vector<IAudioSink::Id> audioSinkIds;
@@ -291,7 +291,7 @@ class VTS_L3_AVClock : public UTCore
             VIDEODECODER_GETCAPABILITIES(videoDecoder, capabilities);
 
             mVideoDecoderList.push_back({_videoDecoderId, videoDecoder, controlListener, eventListener, capabilities});
-            UT_LOG_INFO("Added decoder ID %d to test list", decoderIdValue);
+            UT_LOG_INFO("Added decoder ID %d to test list",  _videoDecoderId.value);
         }
 
         for(const auto& _videoSinkId: videoSinkIds)
@@ -317,7 +317,7 @@ class VTS_L3_AVClock : public UTCore
         }
     }
 
-    void TearDown() override
+    static void TearDownTestSuite()
     {
         for (const auto& [_avClockId, avClockHandle, controlListener, eventListener] : mAVClockList)
         {
@@ -332,6 +332,17 @@ class VTS_L3_AVClock : public UTCore
         //TODO: check right place to call joinThreadPool
         //android::IPCThreadState::self()->joinThreadPool();
     }
+ 
+    void SetUp() override
+    {
+
+    }
+
+    void TearDown() override
+    {
+
+    }
+
 };
     
 void checkCompleteStateTransition(sp<IAVClock> avClock, sp<AVClockEventListener> eventListener,
@@ -380,7 +391,7 @@ public:
                      sp<AudioSinkControllerListener> audioSinkControlListener,
                      sp<AudioSinkEventListener> audioSinkEventListener,
                      sp<IAVBuffer> AVBufferManager, IAVBufferHelper* avbufferHelper,
-                     bool audioPrimeSecDecode, bool isTunnel, testConfiguration_t audioPrimeconfig)
+                     bool audioPrimeSecDecode, bool isTunnel, testConfiguration_t audioPrimeconfig, double playbackRate)
     {
         maudioPrimeClockId = audioPrimeClockId;
         maudioPrimeClockHandle = audioPrimeClkHandle;
@@ -399,6 +410,7 @@ public:
         maudioTunnel = isTunnel;
         mAVBufferManager = AVBufferManager;
         mAVbufferHelper = avbufferHelper;
+        mplaybackRate = playbackRate;
     }
     void run()
     {
@@ -423,6 +435,7 @@ private:
         bool maudioTunnel;
         sp<IAVBuffer> mAVBufferManager;
         IAVBufferHelper* mAVbufferHelper;
+        double mplaybackRate;
 
     void audioPrimeClockTest()
     {
@@ -441,6 +454,10 @@ private:
 
                 /*Set the Sink*/
                 AVCLOCK_SET_AUDIO_SINK_SUCCESS(maudioPrimeClockHandle, avClockController, maudioSinkId, true);
+
+                /*set the Play Back Rate*/
+                AVCLOCK_SET_PLAYBACK_RATE_SUCCESS(maudioPrimeClockHandle, avClockController, mplaybackRate, true);
+
 
                 if (!isClkSinkUsable(maudioSinkId))
                 {
@@ -461,7 +478,7 @@ private:
                 
                 com::rdk::hal::avclock::ClockTime clockBeforeDecoder , clockAfterDecoder, clockAfterSink;
 
-                AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, clockBeforeDecoder);
+                AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(maudioPrimeClockHandle, avClockController, clockBeforeDecoder);
 
                 HeapMetrics beforeHeapMetrics, afterHeapMetrics;
                 AVBUFFER_GETMETRICS(mAVBufferManager, maudioPrimeSecureDecode, beforeHeapMetrics);
@@ -469,7 +486,7 @@ private:
                 AudioDecoderTest decodeTest(maudioDecId, maudioDecHandle, maudioDecControlListener,
                                     maudioDecEventListener, mAVBufferManager, mAVbufferHelper,  maudioPrimeSecureDecode, maudioPrimeTestConfig);
 
-                AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, clockAfterDecoder);
+                AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(maudioPrimeClockHandle, avClockController, clockAfterDecoder);
 
                 std::thread decodeThread(&AudioDecoderTest::run, &decodeTest, false);
 
@@ -478,7 +495,7 @@ private:
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
                 audioSinkTest.run();
 
-                AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, clockAfterSink);
+                AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(maudioPrimeClockHandle, avClockController, clockAfterSink);
 
                 if (decodeThread.joinable())
                     decodeThread.join();
@@ -517,7 +534,7 @@ public:
                      sp<VideoSinkControllerListener> videoSinkControlListener,
                      sp<VideoSinkEventListener> videoSinkEventListener,
                      sp<IAVBuffer> AVBufferManager, IAVBufferHelper* avbufferHelper,
-                     bool videoPrimeSecDecode, bool isTunnel, videoDecoderTestConfiguration_t videoDecTestconfig, videoTestConfiguration_t VideoSinkConfig)
+                     bool videoPrimeSecDecode, bool isTunnel, videoDecoderTestConfiguration_t videoDecTestconfig, videoTestConfiguration_t VideoSinkConfig, double playbackRate)
     {
         mvideoPrimeClockId = videoPrimeClockId;
         mvideoPrimeClockHandle = videoPrimeClkHandle;
@@ -537,6 +554,7 @@ public:
         mAVbufferHelper = avbufferHelper;
         mvideoDecTestConfig = videoDecTestconfig;
         mvideoSinkConfig = VideoSinkConfig;
+        mplaybackRate = playbackRate;
     }
     void run()
     {
@@ -562,6 +580,7 @@ private:
         IAVBufferHelper* mAVbufferHelper;
         videoDecoderTestConfiguration_t mvideoDecTestConfig;
         videoTestConfiguration_t mvideoSinkConfig;
+        double mplaybackRate;
 
     void videoPrimeClockTest()
     {
@@ -580,6 +599,9 @@ private:
 
                 /*Set the Sink*/
                 AVCLOCK_SET_VIDEO_SINK_SUCCESS(mvideoPrimeClockHandle, avClockController, mvideoSinkId, true);
+
+                /*set the Play Back Rate*/
+                AVCLOCK_SET_PLAYBACK_RATE_SUCCESS(mvideoPrimeClockHandle, avClockController, mplaybackRate, true);
 
                 if (!isClkVideoSinkUsable(mvideoSinkId))
                 {
@@ -600,7 +622,7 @@ private:
 
                 com::rdk::hal::avclock::ClockTime videoClockBeforeDecoder , videoClockAfterDecoder, videoClockAfterSink;
 
-                AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, videoClockBeforeDecoder);
+                AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(maudioPrimeClockHandle, avClockController, videoClockBeforeDecoder);
 
                 HeapMetrics beforeHeapMetrics, afterHeapMetrics;
                 AVBUFFER_GETMETRICS(mAVBufferManager, mvideoPrimeSecureDecode, beforeHeapMetrics);
@@ -611,7 +633,7 @@ private:
 
                 std::thread decodeThread(&videoDecoderTest::run, &decodeTest, false);
 
-                AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, videoClockAfterDecoder);
+                AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(maudioPrimeClockHandle, avClockController, videoClockAfterDecoder);
 
                 SinkTest *sinkTest = new SinkTest(mvideoSinkId, mvideoSinkHandle, mvideoSinkControlListener, mvideoSinkEventListener,
                                                 mvideoDecControlListener, mvideoDecTestConfig, mvideoSinkConfig);
@@ -619,7 +641,7 @@ private:
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
                 sinkTest->run(mvideoTunnel);
 
-                AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, videoClockAfterSink);
+                AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(maudioPrimeClockHandle, avClockController, videoClockAfterSink);
 
                 if (decodeThread.joinable())
                     decodeThread.join();
@@ -630,6 +652,12 @@ private:
                 UT_ASSERT_TRUE(beforeHeapMetrics.secure == afterHeapMetrics.secure);
                 UT_ASSERT_TRUE(beforeHeapMetrics.bytesUsed == afterHeapMetrics.bytesUsed);
                 UT_ASSERT_TRUE(beforeHeapMetrics.bytesTotal == afterHeapMetrics.bytesTotal);
+
+                /*Stop the AVClock*/
+                AVCLOCK_STOP_SUCCESS(mvideoPrimeClockHandle, avClockController, true);
+
+                /*Close the AVClock*/
+                AVCLOCK_CLOSE_SUCCESS(mvideoPrimeClockHandle, avClockController, true);
                 
         } catch (const std::exception& ex) {
             UT_LOG_ERROR("Exception in runSequentialSink: %s", ex.what());
@@ -693,7 +721,13 @@ public:
                 
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-                AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(mvideoPrimeClockHandle, avClockController, pcrClock);
+                AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(mpcrPrimeClockHandle, avClockController, pcrClock);
+
+                /*Stop the AVClock*/
+                AVCLOCK_STOP_SUCCESS(mpcrPrimeClockHandle, avClockController, true);
+
+                /*Close the AVClock*/
+                AVCLOCK_CLOSE_SUCCESS(mpcrPrimeClockHandle, avClockController, true);
 
         } catch (const std::exception& ex) {
             UT_LOG_ERROR("Exception in runpcrPrimeClockTest: %s", ex.what());
@@ -705,7 +739,7 @@ public:
     }
 };
 
-void runSequentialAudioClock(testConfiguration_t& testConfig, bool isSecure, bool isTunnel, avclock::ClockMode clockMode)
+void runSequentialAudioClock(testConfiguration_t& testConfig, bool isSecure, bool isTunnel, avclock::ClockMode clockMode, double playbackRate)
 {
     try {
             for (const auto& [_clockId, clockHandle, controlListener, eventListener] : mAVClockList)
@@ -744,7 +778,7 @@ void runSequentialAudioClock(testConfiguration_t& testConfig, bool isSecure, boo
 
                 AVClockPrimeAudio audioprimetest(_clockId, clockHandle, clockMode, controlListener, audioDecId, audioDecHandle, audioDecControlListener,
                             audioDecEventListener, audioSinkId, audioSinkHandle, audioSinkControlListener,audioSinkEventListener,
-                            mAVBufferManager, mAVbufferHelper, isSecure, isTunnel, testConfig);
+                            mAVBufferManager, mAVbufferHelper, isSecure, isTunnel, testConfig, playbackRate);
                 std::thread primeaudiothread(&AVClockPrimeAudio::run, &audioprimetest); 
 
                 if (primeaudiothread.joinable())
@@ -759,7 +793,7 @@ void runSequentialAudioClock(testConfiguration_t& testConfig, bool isSecure, boo
         }
     }
 
-    void runSequentialVideoClock(videoDecoderTestConfiguration_t vdecConfig, videoTestConfiguration_t sinkConfig, bool isSecure, bool isTunnel, avclock::ClockMode clockMode)
+    void runSequentialVideoClock(videoDecoderTestConfiguration_t vdecConfig, videoTestConfiguration_t sinkConfig, bool isSecure, bool isTunnel, avclock::ClockMode clockMode, double playbackRate)
     {
        try {
             for (const auto& [_clockId, clockHandle, controlListener, eventListener] : mAVClockList)
@@ -798,7 +832,7 @@ void runSequentialAudioClock(testConfiguration_t& testConfig, bool isSecure, boo
         
                 AVClockPrimeVideo videoprimetest(_clockId, clockHandle, clockMode, controlListener, videoDecId, videoDecHandle, videoDecControlListener,
                         videoDecEventListener, videoSinkId, videoSinkHandle, videoSinkControlListener, videoSinkEventListener,
-                        mAVBufferManager, mAVbufferHelper, isSecure, isTunnel, vdecConfig, sinkConfig);
+                        mAVBufferManager, mAVbufferHelper, isSecure, isTunnel, vdecConfig, sinkConfig, playbackRate);
                 std::thread primevideothread(&AVClockPrimeVideo::run, &videoprimetest);  
                 
                 if (primevideothread.joinable())
@@ -841,7 +875,7 @@ void runSequentialPCRClock(long pcrValue, avclock::ClockMode clockMode)
         }
 }
 
-void runConcurrentAudioClock(testConfiguration_t& testConfig, bool isSecure, bool isTunnel, avclock::ClockMode clkMode)
+void runConcurrentAudioClock(testConfiguration_t& testConfig, bool isSecure, bool isTunnel, avclock::ClockMode clkMode, double playbackRate)
 {
         
         try {
@@ -866,7 +900,7 @@ void runConcurrentAudioClock(testConfiguration_t& testConfig, bool isSecure, boo
 
                     if(mAVClockList.size() == 1)
                     {
-                        UT_LOG_INFO("Platform has once instace of Clock it is same as sequential skipping concurrent Tests");
+                        UT_LOG_INFO("Platform has once instance of Clock it is same as sequential skipping concurrent Tests");
                         continue;
                     }
      
@@ -890,7 +924,7 @@ void runConcurrentAudioClock(testConfiguration_t& testConfig, bool isSecure, boo
   
                     auto audioPrimetest = make_unique<AVClockPrimeAudio>(clockId, clkHandle, clkMode, clkControllerListener, audioDecId, audioDecHandle, audioDecControlListener,
                                 audioDecEventListener, audioSinkId, audioSinkHandle, audioSinkControlListener,audioSinkEventListener,
-                                mAVBufferManager, mAVbufferHelper, isSecure, isTunnel, testConfig);
+                                mAVBufferManager, mAVbufferHelper, isSecure, isTunnel, testConfig, playbackRate);
                     audioPrimeThreads.emplace_back(&AVClockPrimeAudio::run, audioPrimetest.get()); 
                     audioPrimeTests.push_back(move(audioPrimetest));
                 }
@@ -910,7 +944,7 @@ void runConcurrentAudioClock(testConfiguration_t& testConfig, bool isSecure, boo
 
 }
 
-void runConcurrentVideoClock(videoDecoderTestConfiguration_t &vdecConfig, videoTestConfiguration_t &sinkConfig, bool isSecure, bool isTunnel, avclock::ClockMode clkMode)
+void runConcurrentVideoClock(videoDecoderTestConfiguration_t &vdecConfig, videoTestConfiguration_t &sinkConfig, bool isSecure, bool isTunnel, avclock::ClockMode clkMode, double playbackRate)
 {
     
         try {
@@ -959,7 +993,7 @@ void runConcurrentVideoClock(videoDecoderTestConfiguration_t &vdecConfig, videoT
 
                 auto videoprimetest = make_unique<AVClockPrimeVideo>(clockId, clkHandle, clkMode, clkControllerListener, videoDecId, videoDecHandle, videoDecControlListener,
                             videoDecEventListener, videoSinkId, videoSinkHandle, videoSinkControlListener, videoSinkEventListener,
-                            mAVBufferManager, mAVbufferHelper, isSecure, isTunnel, vdecConfig, sinkConfig);
+                            mAVBufferManager, mAVbufferHelper, isSecure, isTunnel, vdecConfig, sinkConfig, playbackRate);
                 videoPrimeThreads.emplace_back(&AVClockPrimeVideo::run, videoprimetest.get());
                 videoPrimeTests.push_back(move(videoprimetest));
             }
@@ -1023,7 +1057,7 @@ void runConcurrentPCRClock(int64_t pcrValue, avclock::ClockMode clockMode)
         }
     }
 
-void runAudioPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, bool isConcurrentMode, avclock::ClockMode clockMode, contentprimetype primetype)
+void runAudioPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, bool isConcurrentMode, avclock::ClockMode clockMode, contentprimetype primetype, double playbackRate)
 {
         UT_LOG_INFO("Started Thread : %s", __func__);
 
@@ -1035,14 +1069,14 @@ void runAudioPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, b
         {
             for(auto& test: testConfiguration)
             {
-                runConcurrentAudioClock(test, isSecureMode, isTunnel, clockMode);
+                runConcurrentAudioClock(test, isSecureMode, isTunnel, clockMode, playbackRate);
             }
         }
         else
         {
             for(auto& test: testConfiguration)
             {
-                runSequentialAudioClock(test, isSecureMode, isTunnel, clockMode);
+                runSequentialAudioClock(test, isSecureMode, isTunnel, clockMode, playbackRate);
             }
         }
     }
@@ -1096,7 +1130,7 @@ void runAudioPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, b
         }
     }
 
-    void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, bool isConcurrentMode, avclock::ClockMode clockMode, contentprimetype primetype)
+    void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, bool isConcurrentMode, avclock::ClockMode clockMode, contentprimetype primetype, double playbackRate)
     {
         std::thread runaudioprimethread;
         std::thread runvideoprimethread;
@@ -1104,42 +1138,57 @@ void runAudioPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, b
 
         if(primetype == primeaudio)
         {
-            runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+            runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackRate);
         } else if(primetype == primevideo)
         {
-            runvideoprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+            runvideoprimethread = std::thread(runVideoPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackRate);
         } else if(primetype == primeaudiobeforevideo)
         {
-            runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+            runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackRate);
+            auto start = std::chrono::steady_clock::now();
             while(!threadStarted)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                UT_LOG_ERROR("Unable to Start Thread got Timed out");
-                return;
+                auto now = std::chrono::steady_clock::now();
+                if (std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count() > 1000)
+                {
+                        UT_LOG_ERROR("Unable to Start Thread: Timed out after 1 second");
+                        return;
+                }
             }
-            runvideoprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+            runvideoprimethread = std::thread(runVideoPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackRate);
         } else if(primetype == primevideobeforeaudio)
         {
-            runvideoprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+            runvideoprimethread = std::thread(runVideoPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackRate);
+            auto start = std::chrono::steady_clock::now();
             while(!threadStarted)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                UT_LOG_ERROR("Unable to Start Thread got Timed out");
-                return;
+                auto now = std::chrono::steady_clock::now();
+                if (std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count() > 1000)
+                {
+                        UT_LOG_ERROR("Unable to Start Thread: Timed out after 1 second");
+                        return;
+                }
             }
-            runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+            runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackRate);
         } else if(primetype == primepcr)
         {
-            runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+            runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackRate);
+            auto start = std::chrono::steady_clock::now();
             while(!threadStarted)
             {
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                UT_LOG_ERROR("Unable to Start Thread got Timed out");
-                return;
-            }
-            runvideoprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+                auto now = std::chrono::steady_clock::now();
+                if (std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count() > 1000)
+                {
+                    UT_LOG_ERROR("Unable to Start Thread: Timed out after 1 second");
+                    return;
+                }
+            runvideoprimethread = std::thread(runVideoPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackRate);
             runpcrprimethread = std::thread(runPcrPrimeTest, testName, isConcurrentMode, clockMode);
-        }
+            }
+        }   
 
         if (runaudioprimethread.joinable())
                 runaudioprimethread.join();
@@ -1149,8 +1198,7 @@ void runAudioPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, b
 
         if (runpcrprimethread.joinable())
                 runpcrprimethread.join();
-
-}
+    }
 
 /**
 * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
@@ -1169,10 +1217,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_AutoAudioOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1192,10 +1241,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_AutoVideoOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1215,10 +1265,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_AudioMasterAudioOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1238,10 +1289,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_VideoMasterVideoOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1261,10 +1313,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_AudioMasterVideoOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1284,10 +1337,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_VideoMasterAudioOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1307,10 +1361,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_PCRMode)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::PCR;
     contentprimetype primetype = primepcr; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1330,10 +1385,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_AutoAudioBeforeVideo)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudiobeforevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1353,10 +1409,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_AutoVideoBeforeAudio)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideobeforeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1376,10 +1433,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_AutoSetAudioPlayRateN
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1399,10 +1457,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_AutoSetAudioPlayRateP
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 0.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1422,10 +1481,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_AutoSetAudioPlayRateF
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 2.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1445,10 +1505,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_AutoSetVideoPlayRateN
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1468,10 +1529,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_AutoSetVideoPlayRateP
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 0.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1491,10 +1553,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_AutoSetVideoPlayRateF
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 2.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1514,10 +1577,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_Secure_AutoAudioOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1537,10 +1601,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_Secure_AutoVideoOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1560,10 +1625,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_Secure_AudioMasterAudioOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1583,10 +1649,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_Secure_VideoMasterVideoOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1606,10 +1673,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_Secure_AudioMasterVideoOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1629,10 +1697,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_Secure_VideoMasterAudioOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1652,10 +1721,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_Secure_PCRMode)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::PCR;
     contentprimetype primetype = primepcr; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1675,10 +1745,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_Secure_AutoAudioBeforeVideo)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudiobeforevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1698,10 +1769,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_Secure_AutoVideoBeforeAudio)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideobeforeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1721,10 +1793,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_Secure_AutoSetAudioPlayRateNorm
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1744,10 +1817,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_Secure_AutoSetAudioPlayRatePaus
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 0.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1767,10 +1841,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_Secure_AutoSetAudioPlayRateFast
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 2.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1790,10 +1865,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_Secure_AutoSetVideoPlayRateNorm
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1813,10 +1889,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_Secure_AutoSetVideoPlayRatePaus
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 0.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1836,10 +1913,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_Secure_AutoSetVideoPlayRateFast
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = false;
+    double playbackrate = 2.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1859,10 +1937,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_NonSecure_AutoAudioOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1882,10 +1961,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_NonSecure_AutoVideoOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1905,10 +1985,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_NonSecure_AudioMasterAudioOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1928,10 +2009,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_NonSecure_VideoMasterVideoOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1951,10 +2033,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_NonSecure_AudioMasterVideoOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1974,10 +2057,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_NonSecure_VideoMasterAudioOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -1997,10 +2081,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_NonSecure_PCRMode)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::PCR;
     contentprimetype primetype = primepcr; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2020,10 +2105,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_NonSecure_AutoAudioBeforeVideo)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudiobeforevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2043,10 +2129,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_NonSecure_AutoVideoBeforeAudio)
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideobeforeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2066,10 +2153,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_NonSecure_AutoSetAudioPlayRateNorm
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2089,10 +2177,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_NonSecure_AutoSetAudioPlayRatePaus
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 0.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2112,10 +2201,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_NonSecure_AutoSetAudioPlayRateFast
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 2.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2135,10 +2225,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_NonSecure_AutoSetVideoPlayRateNorm
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2158,10 +2249,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_NonSecure_AutoSetVideoPlayRatePaus
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 0.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2181,10 +2273,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_NonSecure_AutoSetVideoPlayRateFast
     bool isSecureMode = false;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2204,10 +2297,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_Secure_AutoAudioOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2227,10 +2321,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_Secure_AutoVideoOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2250,10 +2345,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_Secure_AudioMasterAudioOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2273,10 +2369,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_Secure_VideoMasterVideoOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2296,10 +2393,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_Secure_AudioMasterVideoOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2319,10 +2417,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_Secure_VideoMasterAudioOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2342,10 +2441,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_Secure_PCRMode)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::PCR;
     contentprimetype primetype = primepcr; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2365,10 +2465,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_Secure_AutoAudioBeforeVideo)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudiobeforevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2388,10 +2489,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_Secure_AutoVideoBeforeAudio)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideobeforeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2411,10 +2513,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_Secure_AutoSetAudioPlayRateNormalS
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2434,10 +2537,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_Secure_AutoSetAudioPlayRatePause)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 0.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2457,10 +2561,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_Secure_AutoSetAudioPlayRateFastFor
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 2.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2480,10 +2585,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_Secure_AutoSetVideoPlayRateNormalS
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2503,10 +2609,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_Secure_AutoSetVideoPlayRatePause)
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 0.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2526,10 +2633,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_Tunnel_Secure_AutoSetVideoPlayRateFastFor
     bool isSecureMode = true;
     bool isConcurrentMode = false;
     bool isTunnel = true;
+    double playbackrate = 2.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2549,10 +2657,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_NonSecure_AutoAudioOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2572,10 +2681,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_NonSecure_AutoVideoOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2595,10 +2705,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_NonSecure_AudioMasterAudioOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2618,10 +2729,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_NonSecure_VideoMasterVideoOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2641,10 +2753,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_NonSecure_AudioMasterVideoOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2664,10 +2777,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_NonSecure_VideoMasterAudioOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2687,10 +2801,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_NonSecure_PCRMode)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::PCR;
     contentprimetype primetype = primepcr; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2710,10 +2825,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_NonSecure_AutoAudioBeforeVideo)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudiobeforevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2733,10 +2849,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_NonSecure_AutoVideoBeforeAudio)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideobeforeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2756,10 +2873,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_NonSecure_AutoSetAudioPlayRateN
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2779,10 +2897,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_NonSecure_AutoSetAudioPlayRateP
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 0.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2802,10 +2921,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_NonSecure_AutoSetAudioPlayRateF
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 2.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2825,10 +2945,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_NonSecure_AutoSetVideoPlayRateN
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2848,10 +2969,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_NonSecure_AutoSetVideoPlayRateP
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 0.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2871,10 +2993,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_NonSecure_AutoSetVideoPlayRateF
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 2.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2894,10 +3017,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_Secure_AutoAudioOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2917,10 +3041,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_Secure_AutoVideoOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2940,10 +3065,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_Secure_AudioMasterAudioOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2963,10 +3089,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_Secure_VideoMasterVideoOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -2986,10 +3113,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_Secure_AudioMasterVideoOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3009,10 +3137,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_Secure_VideoMasterAudioOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3032,10 +3161,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_Secure_PCRMode)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::PCR;
     contentprimetype primetype = primepcr; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3055,10 +3185,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_Secure_AutoAudioBeforeVideo)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudiobeforevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3078,10 +3209,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_Secure_AutoVideoBeforeAudio)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideobeforeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3101,10 +3233,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_Secure_AutoSetAudioPlayRateNorm
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3124,10 +3257,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_Secure_AutoSetAudioPlayRatePaus
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 0.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3147,10 +3281,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_Secure_AutoSetAudioPlayRateFast
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3170,10 +3305,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_Secure_AutoSetVideoPlayRateNorm
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3193,10 +3329,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_Secure_AutoSetVideoPlayRatePaus
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 0.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3216,10 +3353,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_NonTunnel_Secure_AutoSetVideoPlayRateFast
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = false;
+    double playbackrate = 2.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3239,10 +3377,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_NonSecure_AutoAudioOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3262,10 +3401,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_NonSecure_AutoVideoOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3285,10 +3425,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_NonSecure_AudioMasterAudioOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3308,10 +3449,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_NonSecure_VideoMasterVideoOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3331,10 +3473,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_NonSecure_AudioMasterVideoOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3354,10 +3497,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_NonSecure_VideoMasterAudioOnly)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3377,10 +3521,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_NonSecure_PCRMode)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::PCR;
     contentprimetype primetype = primepcr; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3400,10 +3545,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_NonSecure_AutoAudioBeforeVideo)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudiobeforevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3423,10 +3569,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_NonSecure_AutoVideoBeforeAudio)
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideobeforeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3446,10 +3593,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_NonSecure_AutoSetAudioPlayRateNorm
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3469,10 +3617,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_NonSecure_AutoSetAudioPlayRatePaus
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 0.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3492,10 +3641,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_NonSecure_AutoSetAudioPlayRateFast
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 2.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3515,10 +3665,11 @@ UT_ADD_TEST(VTS_L3_AVClock, concurrent_Tunnel_NonSecure_AutoSetVideoPlayRateNorm
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 2.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3538,10 +3689,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_NonSecure_AutoSetVideoPlayRatePaus
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 0.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3561,10 +3713,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_NonSecure_AutoSetVideoPlayRateFast
     bool isSecureMode = false;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 2.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3584,10 +3737,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_Secure_AutoAudioOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3607,10 +3761,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_Secure_AutoVideoOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3630,10 +3785,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_Secure_AudioMasterAudioOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3653,10 +3809,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_Secure_VideoMasterVideoOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3676,10 +3833,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_Secure_AudioMasterVideoOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3699,10 +3857,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_Secure_VideoMasterAudioOnly)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3722,10 +3881,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_Secure_PCRMode)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::PCR;
     contentprimetype primetype = primepcr; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3745,10 +3905,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_Secure_AutoAudioBeforeVideo)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudiobeforevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3768,10 +3929,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_Secure_AutoVideoBeforeAudio)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideobeforeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3791,10 +3953,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_Secure_AutoSetAudioPlayRateNormalS
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3814,10 +3977,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_Secure_AutoSetAudioPlayRatePause)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 0.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3837,10 +4001,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_Secure_AutoSetAudioPlayRateFastFor
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 2.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primeaudio; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3860,10 +4025,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_Secure_AutoSetVideoPlayRateNormalS
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 1.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3883,10 +4049,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_Secure_AutoSetVideoPlayRatePause)
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 0.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 
 /**
@@ -3906,10 +4073,11 @@ UT_ADD_TEST(VTS_L3_AVClock, Concurrent_Tunnel_Secure_AutoSetVideoPlayRateFastFor
     bool isSecureMode = true;
     bool isConcurrentMode = true;
     bool isTunnel = true;
+    double playbackrate = 2.0;
     avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
     contentprimetype primetype = primevideo; 
     
-    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype);
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 /** @} */ // End of AUDIO_SINK_HALTEST L3 File
 /** @} */ // End of AUDIO_SINK_HALTEST

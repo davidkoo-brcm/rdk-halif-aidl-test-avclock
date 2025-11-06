@@ -89,5 +89,5 @@ UT_status_t vts_avclock_parseAVClockHFP();
 
 /** @} */ // End of AVCLOCK_HALTEST_PARSE_HFP_HEADER
 /** @} */ // End of AVCLOCK_HALTEST
-/** @} */ // End of AVCLOCK_SINK
+/** @} */ // End of AVCLOCK
 /** @} */ // End of HPK

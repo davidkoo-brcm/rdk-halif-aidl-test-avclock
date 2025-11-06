@@ -63,11 +63,6 @@ UT_status_t VTS_AVClock_init()
     {
         return UT_STATUS_FAILURE;
     }
-    /*if(vts_videodecoder_parseAVClockHFP() != UT_STATUS_OK)
-    {
-        UT_LOG_ERROR("Failed to process the HFP file");
-        return UT_STATUS_FAILURE;
-    }*/
 
     gAVClockTestConfiguration = vts_kvp_create_instance(VTS_AVCLOCK_TEST_CONFIG_PATH);
 

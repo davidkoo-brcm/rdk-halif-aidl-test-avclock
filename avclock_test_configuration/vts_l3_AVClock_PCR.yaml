@@ -3,7 +3,7 @@ IAVClockManager:
     Inputs:
       Streams:
         - Name: pcr_pts
-          PTS
+          PTS:
             - 0
             - 40
             - 80

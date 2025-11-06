@@ -32,21 +32,21 @@
  */
 
 /**
- * @addtogroup AUDIO_DECODER Audio Decoder Module
+ * @addtogroup AVCLOCK AVClock Module
  * @{
  */
 
 /**
- * @addtogroup AUDIO_DECODER_HALTEST Audio Decoder HAL Tests
+ * @addtogroup AVCLOCK_HALTEST AVClock HAL Tests
  * @{
  */
 
 /**
- * @defgroup AUDIO_DECODER_HALTEST_PARSE_TESTCONFIG_HEADER Audio Decoder HAL Tests parse test configuration Header File
+ * @defgroup AVCLOCK_HALTEST_PARSE_TESTCONFIG_HEADER AVClock HAL Tests parse test configuration Header File
  * @{
  * @parblock
  *
- * ### Parse test configuration functions for Audio Decoder :
+ * ### Parse test configuration functions for AVClock :
  *
  * Parse test configuration functions required for the module across all vendors.
  *
@@ -58,7 +58,7 @@
  */
 
 /**
- * @file vts_audiodecoder_parse_testconfig.h
+ * @file vts_avclock_parse_testconfig.h
  *
  */
 

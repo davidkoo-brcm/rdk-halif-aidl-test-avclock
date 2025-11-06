@@ -76,13 +76,12 @@ bool isClkSinkUsable(const IAudioSink::Id& sinkId)
 
 bool isClkDecoderUsable(const IAudioDecoder::Id& decoderId)
 {
-    if (std::find(gAudiosinks_hfp[0].availableDecoderIds.begin(),
-            gAudiosinks_hfp[0].availableDecoderIds.end(),
-            decoderId.value) == gAudiosinks_hfp[0].availableDecoderIds.end())
-    {
+    if (gAudiosinks_hfp.empty()) {
         return false;
     }
-    return true;
+
+    const auto& availableDecoders = gAudiosinks_hfp[0].availableDecoderIds;
+    return std::find(availableDecoders.begin(), availableDecoders.end(), decoderId.value) != availableDecoders.end();
 }
 
 bool isClkVideoSinkUsable(const IVideoSink::Id& sinkId)

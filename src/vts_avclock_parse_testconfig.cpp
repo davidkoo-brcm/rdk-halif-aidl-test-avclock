@@ -42,7 +42,7 @@
  */
 
 /**
- * @defgroup AVCLOCK_HALTEST_PARSE_TESTCONFIG Audio Decoder HAL Tests parse test configuration file
+ * @defgroup AVCLOCK_HALTEST_PARSE_TESTCONFIG AVClock HAL Tests parse test configuration file
  * @{
  * @parblock
  *
@@ -83,7 +83,7 @@ UT_status_t vts_avclock_parse_testconfig(void* pTestInstance, const char *module
         char resultKVP[UT_KVP_MAX_ELEMENT_SIZE] = {0};
         uint32_t streamId;
 
-        string streamName = streamList + "." + to_string(i) + "Name";
+        string streamName = streamList + "." + to_string(i) + ".Name";
         ut_kvp_getStringField(kvpTestInstance, streamName.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
 
         std::string streamNameField(resultKVP);
@@ -111,7 +111,7 @@ UT_status_t vts_avclock_parse_testconfig(void* pTestInstance, const char *module
     return UT_STATUS_OK;
 }
 
-/** @} */ // End of AUDIO_DECODER_HALTEST_PARSE_TESTCONFIG
-/** @} */ // End of AUDIO_DECODER_HALTEST
-/** @} */ // End of AUDIO_DECODER
+/** @} */ // End of AVCLOCK_HALTEST_PARSE_TESTCONFIG
+/** @} */ // End of AVCLOCK_HALTEST
+/** @} */ // End of AVCLOCK
 /** @} */ // End of HPK
