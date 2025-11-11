@@ -95,8 +95,9 @@
 #include "vts_videosink_parse_hfp.h"
 #include "vts_videosink_parse_testconfig.h"
 
-#include "vts_avclock_parse_hfp.h"
 #include "vts_avclock_parse_testconfig.h"
+#include "vts_avclock_parse_hfp.h"
+
 #include "vts_avclock.h"
 
 extern const char *gAudioModuleName;
@@ -107,18 +108,7 @@ static const char *gVideoDecoderModuleName = "IVideoDecoderManager";
 static const char *gVideoSinkModuleName = "IVideoSinkManager";
 static const char *gTestGroup = "L3";
 
-std::atomic<bool> threadStarted(false);
-
-std::vector<std::tuple<IAVClock::Id, sp<IAVClock>, sp<AVClockControllerListener>, sp<AVClockEventListener>>> mAVClockList;
-std::vector<tuple<IAudioDecoder::Id, sp<IAudioDecoder>, sp<AudioDecoderControllerListener>, sp<AudioDecoderEventListener>, audiodecoder::Capabilities *>> mAudioDecoderList;
-std::vector<tuple<IVideoDecoder::Id, sp<IVideoDecoder>, sp<VideoDecoderControllerListener>, sp<VideoDecoderEventListener>, videodecoder::Capabilities *>> mVideoDecoderList;
-std::vector<std::tuple<IAudioSink::Id, sp<IAudioSink>, sp<AudioSinkControllerListener>, sp<AudioSinkEventListener>>> mAudioSinkList;
-std::vector<tuple<IVideoSink::Id, sp<IVideoSink>, sp<VideoSinkControllerListener>, sp<VideoSinkEventListener>>> mVideoSinkList;
-sp<IAVBuffer> mAVBufferManager;
-IAVBufferHelper* mAVbufferHelper;
-
 //static IAVBufferHelper* gAVbufferHelper;
-
 static sp<IAVBuffer> vts_avbuffer_getService()
 {
     return
@@ -129,30 +119,22 @@ static sp<IAVBuffer> vts_avbuffer_getService()
         );
 }
 
-/* Test class registration with UT_Core */
-UT_ADD_TEST_TO_GROUP(VTS_L3_AVClock, UT_TESTS_L3);
-
-class AVClockBufferSpaceListener : public BnAVBufferSpaceListener
-{
-public:
-
-    AVClockBufferSpaceListener() {};
-    virtual ~AVClockBufferSpaceListener() = default;
-
-    Status onSpaceAvailable() override
-    {
-        return Status::ok();
-    }
-};
-
 class VTS_L3_AVClock : public UTCore
 {
-    public:
+  public:
+    static std::vector<std::tuple<IAVClock::Id, sp<IAVClock>, sp<AVClockControllerListener>, sp<AVClockEventListener>>> mAVClockList;
+    static std::vector<std::tuple<IAudioDecoder::Id, sp<IAudioDecoder>, sp<AudioDecoderControllerListener>, sp<AudioDecoderEventListener>, audiodecoder::Capabilities*>> mAudioDecoderList;
+    static std::vector<std::tuple<IVideoDecoder::Id, sp<IVideoDecoder>, sp<VideoDecoderControllerListener>, sp<VideoDecoderEventListener>, videodecoder::Capabilities*>> mVideoDecoderList;
+    static std::vector<std::tuple<IAudioSink::Id, sp<IAudioSink>, sp<AudioSinkControllerListener>, sp<AudioSinkEventListener>>> mAudioSinkList;
+    static std::vector<std::tuple<IVideoSink::Id, sp<IVideoSink>, sp<VideoSinkControllerListener>, sp<VideoSinkEventListener>>> mVideoSinkList;
+    static sp<IAVBuffer> mAVBufferManager;
+    static IAVBufferHelper* mAVbufferHelper;
+
     VTS_L3_AVClock() : UTCore() {};
 
     ~VTS_L3_AVClock() override = default;
 
-    static void SetUpTestSuite() 
+    void SetUp() override 
     {
         std::vector<IAVClock::Id> avClockIds;
         std::vector<IAudioSink::Id> audioSinkIds;
@@ -316,8 +298,8 @@ class VTS_L3_AVClock : public UTCore
             mVideoSinkList.push_back({_videoSinkId, videoSink, videoSinkControlListener, videoSinkEventListener});
         }
     }
-
-    static void TearDownTestSuite()
+    
+    void TearDown() override
     {
         for (const auto& [_avClockId, avClockHandle, controlListener, eventListener] : mAVClockList)
         {
@@ -332,17 +314,32 @@ class VTS_L3_AVClock : public UTCore
         //TODO: check right place to call joinThreadPool
         //android::IPCThreadState::self()->joinThreadPool();
     }
- 
-    void SetUp() override
+};
+
+std::vector<std::tuple<IAVClock::Id, sp<IAVClock>, sp<AVClockControllerListener>, sp<AVClockEventListener>>> VTS_L3_AVClock::mAVClockList;
+std::vector<std::tuple<IAudioDecoder::Id, sp<IAudioDecoder>, sp<AudioDecoderControllerListener>, sp<AudioDecoderEventListener>, audiodecoder::Capabilities*>> VTS_L3_AVClock::mAudioDecoderList;
+std::vector<std::tuple<IVideoDecoder::Id, sp<IVideoDecoder>, sp<VideoDecoderControllerListener>, sp<VideoDecoderEventListener>, videodecoder::Capabilities*>> VTS_L3_AVClock::mVideoDecoderList;
+std::vector<std::tuple<IAudioSink::Id, sp<IAudioSink>, sp<AudioSinkControllerListener>, sp<AudioSinkEventListener>>> VTS_L3_AVClock::mAudioSinkList;
+std::vector<std::tuple<IVideoSink::Id, sp<IVideoSink>, sp<VideoSinkControllerListener>, sp<VideoSinkEventListener>>> VTS_L3_AVClock::mVideoSinkList;
+sp<IAVBuffer> VTS_L3_AVClock::mAVBufferManager;
+IAVBufferHelper* VTS_L3_AVClock::mAVbufferHelper;
+
+std::atomic<bool> threadStarted(false);
+
+/* Test class registration with UT_Core */
+UT_ADD_TEST_TO_GROUP(VTS_L3_AVClock, UT_TESTS_L3)
+
+class AVClockBufferSpaceListener : public BnAVBufferSpaceListener
+{
+public:
+
+    AVClockBufferSpaceListener() {};
+    virtual ~AVClockBufferSpaceListener() = default;
+
+    Status onSpaceAvailable() override
     {
-
+        return Status::ok();
     }
-
-    void TearDown() override
-    {
-
-    }
-
 };
     
 void checkCompleteStateTransition(sp<IAVClock> avClock, sp<AVClockEventListener> eventListener,
@@ -605,7 +602,7 @@ private:
 
                 if (!isClkVideoSinkUsable(mvideoSinkId))
                 {
-                    UT_LOG_INFO("[SinkID: %d] is not usable for this test configuration, skipping.", maudioSinkId.value);
+                    UT_LOG_INFO("[SinkID: %d] is not usable for this test configuration, skipping.", mvideoSinkId.value);
                     return;
                 }
 
@@ -674,6 +671,7 @@ class AVClockPrimePcr
 public:
     AVClockPrimePcr(IAVClock::Id pcrPrimeClockId , sp<IAVClock> pcrPrimeClkHandle, avclock::ClockMode pcrPrimeClockMode, sp<AVClockControllerListener> pcrPrimeClkController, int64_t pcrValues)
     {
+        
         mpcrPrimeClockId = pcrPrimeClockId;
         mpcrPrimeClockHandle = pcrPrimeClkHandle;
         mpcrPrimeClockMode = pcrPrimeClockMode;
@@ -742,7 +740,13 @@ public:
 void runSequentialAudioClock(testConfiguration_t& testConfig, bool isSecure, bool isTunnel, avclock::ClockMode clockMode, double playbackRate)
 {
     try {
-            for (const auto& [_clockId, clockHandle, controlListener, eventListener] : mAVClockList)
+            auto& avClockList = VTS_L3_AVClock::mAVClockList;
+            auto& audioDecoderList = VTS_L3_AVClock::mAudioDecoderList;
+            auto& audioSinkList = VTS_L3_AVClock::mAudioSinkList;
+            auto& avBufferManager = VTS_L3_AVClock::mAVBufferManager;
+            auto& avBufferHelper = VTS_L3_AVClock::mAVbufferHelper;
+
+            for (const auto& [_clockId, clockHandle, controlListener, eventListener] : avClockList)
              {  
                 IAudioDecoder::Id audioDecId;
                 sp<IAudioDecoder> audioDecHandle;
@@ -760,17 +764,17 @@ void runSequentialAudioClock(testConfiguration_t& testConfig, bool isSecure, boo
                     continue;
                 }*/
 
-                if (!mAudioDecoderList.empty()) 
+                if (!audioDecoderList.empty()) 
                 {
-                    auto& [audioDecId, audioDecHandle, audioDecControlListener, audioDecEventListener, audioDecCapabilites] = mAudioDecoderList[0];
+                    auto& [audioDecId, audioDecHandle, audioDecControlListener, audioDecEventListener, audioDecCapabilites] = audioDecoderList[0];
                 } else {
                     UT_LOG_INFO(" Audio Decoder List is empty Skipping Sequential Test");
                     break;
                 }
 
-                if (!mAudioSinkList.empty()) 
+                if (!audioSinkList.empty()) 
                 {
-                    auto& [audioSinkId, audioSinkHandle, audioSinkControlListener, audioSinkEventListener] = mAudioSinkList[0];
+                    auto& [audioSinkId, audioSinkHandle, audioSinkControlListener, audioSinkEventListener] = audioSinkList[0];
                 } else {
                     UT_LOG_INFO("Audio Sink List is empty Skipping Sequential Test");
                     break;
@@ -778,7 +782,7 @@ void runSequentialAudioClock(testConfiguration_t& testConfig, bool isSecure, boo
 
                 AVClockPrimeAudio audioprimetest(_clockId, clockHandle, clockMode, controlListener, audioDecId, audioDecHandle, audioDecControlListener,
                             audioDecEventListener, audioSinkId, audioSinkHandle, audioSinkControlListener,audioSinkEventListener,
-                            mAVBufferManager, mAVbufferHelper, isSecure, isTunnel, testConfig, playbackRate);
+                            avBufferManager, avBufferHelper, isSecure, isTunnel, testConfig, playbackRate);
                 std::thread primeaudiothread(&AVClockPrimeAudio::run, &audioprimetest); 
 
                 if (primeaudiothread.joinable())
@@ -796,7 +800,13 @@ void runSequentialAudioClock(testConfiguration_t& testConfig, bool isSecure, boo
     void runSequentialVideoClock(videoDecoderTestConfiguration_t vdecConfig, videoTestConfiguration_t sinkConfig, bool isSecure, bool isTunnel, avclock::ClockMode clockMode, double playbackRate)
     {
        try {
-            for (const auto& [_clockId, clockHandle, controlListener, eventListener] : mAVClockList)
+            auto& avClockList = VTS_L3_AVClock::mAVClockList;
+            auto& videoDecoderList = VTS_L3_AVClock::mVideoDecoderList;
+            auto& videoSinkList = VTS_L3_AVClock::mVideoSinkList;
+            auto& avBufferManager = VTS_L3_AVClock::mAVBufferManager;
+            auto& avBufferHelper = VTS_L3_AVClock::mAVbufferHelper;
+
+            for (const auto& [_clockId, clockHandle, controlListener, eventListener] : avClockList)
              {  
                 IVideoDecoder::Id videoDecId;
                 sp<IVideoDecoder> videoDecHandle;
@@ -814,17 +824,17 @@ void runSequentialAudioClock(testConfiguration_t& testConfig, bool isSecure, boo
                     continue;
                 }*/
 
-                if (!mVideoDecoderList.empty()) 
+                if (!videoDecoderList.empty()) 
                 {
-                    auto& [videoDecId, videoDecHandle, videoDecControlListener, videoDecEventListener, videoDecCapabilites] = mVideoDecoderList[0];
+                    auto& [videoDecId, videoDecHandle, videoDecControlListener, videoDecEventListener, videoDecCapabilites] = videoDecoderList[0];
                 } else {
                     UT_LOG_INFO(" Video Decoder List is empty Skipping Sequential Test");
                     break;
                 }
 
-                if (!mVideoSinkList.empty()) 
+                if (!videoSinkList.empty()) 
                 {
-                    auto& [videoSinkId, videoSinkHandle, videoSinkControlListener, videoSinkEventListener] = mVideoSinkList[0];
+                    auto& [videoSinkId, videoSinkHandle, videoSinkControlListener, videoSinkEventListener] = videoSinkList[0];
                 } else {
                     UT_LOG_ERROR("Video Sink List is empty Skipping Sequential Test");
                     break;
@@ -832,7 +842,7 @@ void runSequentialAudioClock(testConfiguration_t& testConfig, bool isSecure, boo
         
                 AVClockPrimeVideo videoprimetest(_clockId, clockHandle, clockMode, controlListener, videoDecId, videoDecHandle, videoDecControlListener,
                         videoDecEventListener, videoSinkId, videoSinkHandle, videoSinkControlListener, videoSinkEventListener,
-                        mAVBufferManager, mAVbufferHelper, isSecure, isTunnel, vdecConfig, sinkConfig, playbackRate);
+                        avBufferManager, avBufferHelper, isSecure, isTunnel, vdecConfig, sinkConfig, playbackRate);
                 std::thread primevideothread(&AVClockPrimeVideo::run, &videoprimetest);  
                 
                 if (primevideothread.joinable())
@@ -851,7 +861,9 @@ void runSequentialAudioClock(testConfiguration_t& testConfig, bool isSecure, boo
 void runSequentialPCRClock(long pcrValue, avclock::ClockMode clockMode)
 {
     try {
-            for (const auto& [_clockId, clockHandle, controlListener, eventListener] : mAVClockList)
+            auto& avClockList = VTS_L3_AVClock::mAVClockList;
+
+            for (const auto& [_clockId, clockHandle, controlListener, eventListener] : avClockList)
              {  
 
                 /*if (!isClockUsable(_clockId))
@@ -876,13 +888,18 @@ void runSequentialPCRClock(long pcrValue, avclock::ClockMode clockMode)
 }
 
 void runConcurrentAudioClock(testConfiguration_t& testConfig, bool isSecure, bool isTunnel, avclock::ClockMode clkMode, double playbackRate)
-{
-        
+{      
         try {
+            auto& avClockList = VTS_L3_AVClock::mAVClockList;
+            auto& audioDecoderList = VTS_L3_AVClock::mAudioDecoderList;
+            auto& audioSinkList = VTS_L3_AVClock::mAudioSinkList;
+            auto& avBufferManager = VTS_L3_AVClock::mAVBufferManager;
+            auto& avBufferHelper = VTS_L3_AVClock::mAVbufferHelper;
+
             vector<thread> audioPrimeThreads;
             vector<unique_ptr<AVClockPrimeAudio>> audioPrimeTests;
 
-                for(int32_t clockid = 0; clockid < mAVClockList.size(); clockid++)
+                for(int32_t clockid = 0; clockid < avClockList.size(); clockid++)
                 {   
                     IAudioDecoder::Id audioDecId;
                     sp<IAudioDecoder> audioDecHandle;
@@ -898,25 +915,25 @@ void runConcurrentAudioClock(testConfiguration_t& testConfig, bool isSecure, boo
                     sp<AVClockControllerListener> clkControllerListener;
                     sp<AVClockEventListener> clkEventListener;
 
-                    if(mAVClockList.size() == 1)
+                    if(avClockList.size() == 1)
                     {
                         UT_LOG_INFO("Platform has once instance of Clock it is same as sequential skipping concurrent Tests");
                         continue;
                     }
      
-                    auto resultClk = getTupleElements(mAVClockList, clockid, std::index_sequence<0, 1, 2, 3>{});
+                    auto resultClk = getTupleElements(avClockList, clockid, std::index_sequence<0, 1, 2, 3>{});
                     if (resultClk)
                     {
                         auto& [clockId, clkHandle, clkControllerListener, clkEventListener] = *resultClk;
                     }
 
-                    auto resultDec = getTupleElements(mAudioDecoderList, clockid, std::index_sequence<0, 1, 2, 3>{});
+                    auto resultDec = getTupleElements(audioDecoderList, clockid, std::index_sequence<0, 1, 2, 3>{});
                     if (resultDec)
                     {
                         auto& [audioDecId, audioDecHandle, audioDecControlListener, audioDecEventListener] = *resultDec;
                     }
 
-                    auto resultSink = getTupleElements(mAudioSinkList, clockid, std::index_sequence<0, 1, 2, 3>{});
+                    auto resultSink = getTupleElements(audioSinkList, clockid, std::index_sequence<0, 1, 2, 3>{});
                     if (resultSink)
                     {
                         auto& [audioSinkId, audioSinkHandle, audioSinkControlListener, audioSinkEventListener] = *resultSink;
@@ -924,7 +941,7 @@ void runConcurrentAudioClock(testConfiguration_t& testConfig, bool isSecure, boo
   
                     auto audioPrimetest = make_unique<AVClockPrimeAudio>(clockId, clkHandle, clkMode, clkControllerListener, audioDecId, audioDecHandle, audioDecControlListener,
                                 audioDecEventListener, audioSinkId, audioSinkHandle, audioSinkControlListener,audioSinkEventListener,
-                                mAVBufferManager, mAVbufferHelper, isSecure, isTunnel, testConfig, playbackRate);
+                                avBufferManager, avBufferHelper, isSecure, isTunnel, testConfig, playbackRate);
                     audioPrimeThreads.emplace_back(&AVClockPrimeAudio::run, audioPrimetest.get()); 
                     audioPrimeTests.push_back(move(audioPrimetest));
                 }
@@ -948,10 +965,16 @@ void runConcurrentVideoClock(videoDecoderTestConfiguration_t &vdecConfig, videoT
 {
     
         try {
+            auto& avClockList = VTS_L3_AVClock::mAVClockList;
+            auto& videoDecoderList = VTS_L3_AVClock::mVideoDecoderList;
+            auto& videoSinkList = VTS_L3_AVClock::mVideoSinkList;
+            auto& avBufferManager = VTS_L3_AVClock::mAVBufferManager;
+            auto& avBufferHelper = VTS_L3_AVClock::mAVbufferHelper;
+
             vector<thread> videoPrimeThreads;
             vector<unique_ptr<AVClockPrimeVideo>> videoPrimeTests;
 
-            for(int32_t clockid = 0; clockid < mAVClockList.size(); clockid++)
+            for(int32_t clockid = 0; clockid < avClockList.size(); clockid++)
             {
                 IVideoDecoder::Id videoDecId;
                 sp<IVideoDecoder> videoDecHandle;
@@ -967,25 +990,25 @@ void runConcurrentVideoClock(videoDecoderTestConfiguration_t &vdecConfig, videoT
                 sp<AVClockControllerListener> clkControllerListener;
                 sp<AVClockEventListener> clkEventListener;
 
-                if(mAVClockList.size() == 1)
+                if(avClockList.size() == 1)
                 {
                     UT_LOG_INFO("Platform has once instace of Clock it is same as sequential skipping concurrent Tests");
                     continue;
                 }
 
-                auto resultClk = getTupleElements(mAVClockList, clockid, std::index_sequence<0, 1, 2, 3>{});
+                auto resultClk = getTupleElements(avClockList, clockid, std::index_sequence<0, 1, 2, 3>{});
                 if (resultClk)
                 {
                     auto& [clockId, clkHandle, clkControllerListener, clkEventListener] = *resultClk;
                 }
 
-                auto resultDec = getTupleElements(mVideoDecoderList, clockid, std::index_sequence<0, 1, 2, 3>{});
+                auto resultDec = getTupleElements(videoDecoderList, clockid, std::index_sequence<0, 1, 2, 3>{});
                 if (resultDec)
                 {
                     auto& [videoDecId, videoDecHandle, videoDecControlListener, videoDecEventListener] = *resultDec;
                 }
 
-                auto resultSink = getTupleElements(mVideoSinkList, clockid, std::index_sequence<0, 1, 2, 3>{});
+                auto resultSink = getTupleElements(videoSinkList, clockid, std::index_sequence<0, 1, 2, 3>{});
                 if (resultSink)
                 {
                     auto& [videoSinkId, videoSinkHandle, videoSinkControlListener, videoSinkEventListener] = *resultSink;
@@ -993,7 +1016,7 @@ void runConcurrentVideoClock(videoDecoderTestConfiguration_t &vdecConfig, videoT
 
                 auto videoprimetest = make_unique<AVClockPrimeVideo>(clockId, clkHandle, clkMode, clkControllerListener, videoDecId, videoDecHandle, videoDecControlListener,
                             videoDecEventListener, videoSinkId, videoSinkHandle, videoSinkControlListener, videoSinkEventListener,
-                            mAVBufferManager, mAVbufferHelper, isSecure, isTunnel, vdecConfig, sinkConfig, playbackRate);
+                            avBufferManager, avBufferHelper, isSecure, isTunnel, vdecConfig, sinkConfig, playbackRate);
                 videoPrimeThreads.emplace_back(&AVClockPrimeVideo::run, videoprimetest.get());
                 videoPrimeTests.push_back(move(videoprimetest));
             }
@@ -1015,23 +1038,24 @@ void runConcurrentVideoClock(videoDecoderTestConfiguration_t &vdecConfig, videoT
 void runConcurrentPCRClock(int64_t pcrValue, avclock::ClockMode clockMode)
 {
         try {
+            auto& avClockList = VTS_L3_AVClock::mAVClockList;
             vector<thread> pcrPrimeThreads;
             vector<unique_ptr<AVClockPrimePcr>> pcrPrimeTests;
 
-            if(mAVClockList.size() == 1)
+            if(avClockList.size() == 1)
             {
                 UT_LOG_INFO("Platform has once instace of Clock it is same as sequential skipping concurrent Tests");
                 return;
             }
 
-            for(int32_t clockid = 0; clockid < mAVClockList.size(); clockid++)
+            for(int32_t clockid = 0; clockid < avClockList.size(); clockid++)
             {
                 IAVClock::Id clockId;
                 sp<IAVClock> clkHandle; 
                 sp<AVClockControllerListener> clkControllerListener;
                 sp<AVClockEventListener> clkEventListener;
 
-                auto result = getTupleElements(mAVClockList, clockid, std::index_sequence<0, 1, 2, 3>{});
+                auto result = getTupleElements(avClockList, clockid, std::index_sequence<0, 1, 2, 3>{});
                 if (result)
                 {
                     auto& [clockId, clkHandle, clkControllerListener, clkEventListener] = *result;
@@ -1062,8 +1086,9 @@ void runAudioPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, b
         UT_LOG_INFO("Started Thread : %s", __func__);
 
         vector<testConfiguration_t> testConfiguration;
+        const char *DecodeStreams = "Decode";
 
-        vts_audiodecoder_parse_testconfig(gAudioSinkTestConfiguration, gAudioModuleName, gTestGroup, testName, testConfiguration);
+        vts_audiodecoder_parse_testconfig(gAudioSinkTestConfiguration, gAudioModuleName, gTestGroup, DecodeStreams, testConfiguration);
 
         if(isConcurrentMode)
         {
@@ -1081,7 +1106,7 @@ void runAudioPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, b
         }
     }
 
-    void runVideoPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, bool isConcurrentMode, avclock::ClockMode clockMode, contentprimetype primetype)
+    void runVideoPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, bool isConcurrentMode, avclock::ClockMode clockMode, contentprimetype primetype, double playbackRate)
     {
         UT_LOG_INFO("Started Thread : %s", __func__);
 
@@ -1099,10 +1124,10 @@ void runAudioPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, b
 
             if (isConcurrentMode)
             {
-                runConcurrentVideoClock(decoderConfig, sinkConfig, isSecureMode, isTunnel, clockMode);
+                runConcurrentVideoClock(decoderConfig, sinkConfig, isSecureMode, isTunnel, clockMode, playbackRate);
             } else
             {
-                runSequentialVideoClock(decoderConfig, sinkConfig, isSecureMode, isTunnel, clockMode);
+                runSequentialVideoClock(decoderConfig, sinkConfig, isSecureMode, isTunnel, clockMode, playbackRate);
             }
         }
     }
@@ -1213,6 +1238,7 @@ void runAudioPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, b
 */
 UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_AutoAudioOnly)
 {
+    UT_LOG_INFO("entered in test case %s", __func__);
     const char *testName = "PrimeClock_AutoAudioOnly";
     bool isSecureMode = false;
     bool isConcurrentMode = false;
@@ -1222,6 +1248,7 @@ UT_ADD_TEST(VTS_L3_AVClock, Sequential_NonTunnel_NonSecure_AutoAudioOnly)
     contentprimetype primetype = primeaudio; 
     
     runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+    UT_LOG_INFO("after avclockprimetest in test case %s", __func__);
 }
 
 /**
