@@ -59,12 +59,12 @@ void *gAVClockTestConfiguration = nullptr;
 
 UT_status_t VTS_AVClock_init()
 {
+    gAVClockTestConfiguration = vts_kvp_create_instance(VTS_AVCLOCK_TEST_CONFIG_PATH);
+  
     if(getAVClockService() != UT_STATUS_OK)
     {
         return UT_STATUS_FAILURE;
     }
-
-    gAVClockTestConfiguration = vts_kvp_create_instance(VTS_AVCLOCK_TEST_CONFIG_PATH);
 
     return UT_STATUS_OK;
 }
