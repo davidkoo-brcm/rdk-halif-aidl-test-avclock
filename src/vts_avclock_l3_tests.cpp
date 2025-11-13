@@ -1151,20 +1151,6 @@ void runAudioPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, b
         pcrThreadStarted = false;
     }
 
-bool waitForStart(std::atomic<bool> &flag, const char *name) 
-{
-    auto start = std::chrono::steady_clock::now();
-    while (!flag.load()) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-        if (std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::steady_clock::now() - start).count() > 1000) {
-            UT_LOG_ERROR("Unable to Start Thread:%s Timed out after 1 second", name);
-            return false;
-        }
-    }
-    return true;
-}
-
 void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
                          bool isConcurrentMode, avclock::ClockMode clockMode,
                          contentprimetype primetype, double playbackRate)
@@ -1173,73 +1159,175 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
     std::thread runvideoprimethread;
     std::thread runpcrprimethread;
 
+    std::mutex mtx;
+    std::condition_variable cv;
+    bool audioReady = false, videoReady = false, pcrReady = false;
+
+    auto cleanupAndReturn = [&](std::thread &t1, std::thread &t2, std::thread &t3) {
+   if (t1.joinable()) t1.detach();
+        if (t2.joinable()) t2.detach();
+        if (t3.joinable()) t3.detach();
+    };
+
+    auto waitForReady = [&] (bool &flag, const char *name) {
+        std::unique_lock<std::mutex> lock(mtx);
+        if (!cv.wait_for(lock, std::chrono::seconds(5), [&] { return flag; })) {
+            UT_LOG_ERROR("Unable to start %s thread: Timed out after 5 seconds", name);
+            return false;
+        }
+        return true;
+    };
+
+    // Prime Audio Only
     if (primetype == primeaudio) {
-        audioThreadStarted = true; // Set inside thread function ideally
-        runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel,
-                                          isConcurrentMode, clockMode, primetype, playbackRate);
+        runaudioprimethread = std::thread([&] {
+            runAudioPrimeTest(testName, isSecureMode, isTunnel,
+                              isConcurrentMode, clockMode, primetype, playbackRate);
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                audioReady = true;
+            }
+            cv.notify_all();
+        });
 
-    } else if (primetype == primevideo) {
-        videoThreadStarted = true;
-        runvideoprimethread = std::thread(runVideoPrimeTest, testName, isSecureMode, isTunnel,
-                                          isConcurrentMode, clockMode, primetype, playbackRate);
-
-    } else if (primetype == primeaudiobeforevideo) {
-        audioThreadStarted = true;
-        runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel,
-                                          isConcurrentMode, clockMode, primetype, playbackRate);
-
-        if (!waitForStart(audioThreadStarted, "Audio Thread")) {
-            if (runaudioprimethread.joinable()) runaudioprimethread.detach();
+        if (!waitForReady(audioReady, "Audio")) {
+            cleanupAndReturn(runaudioprimethread, runvideoprimethread, runpcrprimethread);
             return;
-        }
-
-        videoThreadStarted = true;
-        runvideoprimethread = std::thread(runVideoPrimeTest, testName, isSecureMode, isTunnel,
-                                          isConcurrentMode, clockMode, primetype, playbackRate);
-        if (!waitForStart(videoThreadStarted, "Video Thread")) {
-            if (runvideoprimethread.joinable()) runvideoprimethread.detach();
-        }
-
-    } else if (primetype == primevideobeforeaudio) {
-        videoThreadStarted = true;
-        runvideoprimethread = std::thread(runVideoPrimeTest, testName, isSecureMode, isTunnel,
-                                          isConcurrentMode, clockMode, primetype, playbackRate);
-
-        if (!waitForStart(videoThreadStarted, "Video Thread")) {
-            if (runvideoprimethread.joinable()) runvideoprimethread.detach();
-        }
-
-        audioThreadStarted = true;
-        runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel,
-                                          isConcurrentMode, clockMode, primetype, playbackRate);
-        if (!waitForStart(audioThreadStarted, "Audio Thread")) {
-            if (runvideoprimethread.joinable()) runvideoprimethread.detach();
-        }
-
-    } else if (primetype == primepcr) {
-        audioThreadStarted = true;
-        runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel,
-                                          isConcurrentMode, clockMode, primetype, playbackRate);
-
-        if (!waitForStart(audioThreadStarted, "Audio Thread")) {
-            if (runaudioprimethread.joinable()) runaudioprimethread.detach();
-        }
-
-        videoThreadStarted = true;
-        runvideoprimethread = std::thread(runVideoPrimeTest, testName, isSecureMode, isTunnel,
-                                          isConcurrentMode, clockMode, primetype, playbackRate);
-
-        if (!waitForStart(videoThreadStarted, "Video Thread")) {
-            if (runvideoprimethread.joinable()) runvideoprimethread.detach();
-        }
-
-        pcrThreadStarted = true;
-        runpcrprimethread = std::thread(runPcrPrimeTest, testName, isConcurrentMode, clockMode);
-        if (!waitForStart(pcrThreadStarted, "PCR Thread")) {
-            if (runpcrprimethread.joinable()) runpcrprimethread.detach();
         }
     }
 
+    // Prime Video Only
+    else if (primetype == primevideo) {
+        runvideoprimethread = std::thread([&] {
+            runVideoPrimeTest(testName, isSecureMode, isTunnel,
+                              isConcurrentMode, clockMode, primetype, playbackRate);
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                videoReady = true;
+            }
+            cv.notify_all();
+        });
+
+        if (!waitForReady(videoReady, "Video")) {
+            cleanupAndReturn(runaudioprimethread, runvideoprimethread, runpcrprimethread);
+            return;
+        }
+    }
+
+    // Audio Before Video
+    else if (primetype == primeaudiobeforevideo) {
+        runaudioprimethread = std::thread([&] {
+            runAudioPrimeTest(testName, isSecureMode, isTunnel,
+                              isConcurrentMode, clockMode, primetype, playbackRate);
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                audioReady = true;
+            }
+            cv.notify_all();
+        });
+
+        if (!waitForReady(audioReady, "Audio")) {
+            cleanupAndReturn(runaudioprimethread, runvideoprimethread, runpcrprimethread);
+            return;
+        }
+
+        runvideoprimethread = std::thread([&] {
+            runVideoPrimeTest(testName, isSecureMode, isTunnel,
+                              isConcurrentMode, clockMode, primetype, playbackRate);
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                videoReady = true;
+            }
+            cv.notify_all();
+        });
+
+        if (!waitForReady(videoReady, "Video")) {
+            cleanupAndReturn(runaudioprimethread, runvideoprimethread, runpcrprimethread);
+            return;
+        }
+    }
+
+    // Video Before Audio
+    else if (primetype == primevideobeforeaudio) {
+        runvideoprimethread = std::thread([&] {
+            runVideoPrimeTest(testName, isSecureMode, isTunnel,
+                              isConcurrentMode, clockMode, primetype, playbackRate);
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                videoReady = true;
+            }
+            cv.notify_all();
+        });
+
+        if (!waitForReady(videoReady, "Video")) {
+            cleanupAndReturn(runaudioprimethread, runvideoprimethread, runpcrprimethread);
+            return;
+        }
+
+        runaudioprimethread = std::thread([&] {
+            runAudioPrimeTest(testName, isSecureMode, isTunnel,
+                              isConcurrentMode, clockMode, primetype, playbackRate);
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                audioReady = true;
+            }
+            cv.notify_all();
+        });
+
+        if (!waitForReady(audioReady, "Audio")) {
+            cleanupAndReturn(runaudioprimethread, runvideoprimethread, runpcrprimethread);
+            return;
+        }
+    }
+
+    // PCR Case
+    else if (primetype == primepcr) {
+        runaudioprimethread = std::thread([&] {
+            runAudioPrimeTest(testName, isSecureMode, isTunnel,
+                              isConcurrentMode, clockMode, primetype, playbackRate);
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                audioReady = true;
+            }
+            cv.notify_all();
+        });
+
+        if (!waitForReady(audioReady, "Audio")) {
+            cleanupAndReturn(runaudioprimethread, runvideoprimethread, runpcrprimethread);
+            return;
+        }
+
+        runvideoprimethread = std::thread([&] {
+            runVideoPrimeTest(testName, isSecureMode, isTunnel,
+                              isConcurrentMode, clockMode, primetype, playbackRate);
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                videoReady = true;
+            }
+            cv.notify_all();
+        });
+
+        if (!waitForReady(videoReady, "Video")) {
+            cleanupAndReturn(runaudioprimethread, runvideoprimethread, runpcrprimethread);
+            return;
+        }
+
+        runpcrprimethread = std::thread([&] {
+            runPcrPrimeTest(testName, isConcurrentMode, clockMode);
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                pcrReady = true;
+            }
+            cv.notify_all();
+        });
+
+        if (!waitForReady(pcrReady, "PCR")) {
+            cleanupAndReturn(runaudioprimethread, runvideoprimethread, runpcrprimethread);
+            return;
+        }
+    }
+
+    // Final cleanup: join all threads
     if (runaudioprimethread.joinable()) runaudioprimethread.join();
     if (runvideoprimethread.joinable()) runvideoprimethread.join();
     if (runpcrprimethread.joinable()) runpcrprimethread.join();
