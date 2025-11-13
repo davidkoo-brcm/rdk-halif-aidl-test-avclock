@@ -107,7 +107,6 @@ static const char *gAudioSinkModuleName = "IAudioSinkManager";
 static const char *gVideoDecoderModuleName = "IVideoDecoderManager";
 static const char *gVideoSinkModuleName = "IVideoSinkManager";
 static const char *gTestGroup = "L3";
-extern void *gPrimeAudioTestConfiguration;
 
 //static IAVBufferHelper* gAVbufferHelper;
 static sp<IAVBuffer> vts_avbuffer_getService()
@@ -326,7 +325,9 @@ std::vector<std::tuple<IVideoSink::Id, sp<IVideoSink>, sp<VideoSinkControllerLis
 sp<IAVBuffer> VTS_L3_AVClock::mAVBufferManager;
 IAVBufferHelper* VTS_L3_AVClock::mAVbufferHelper;
 
-std::atomic<bool> threadStarted(false);
+std::atomic<bool> audioThreadStarted{false};
+std::atomic<bool> videoThreadStarted{false};
+std::atomic<bool> pcrThreadStarted{false};
 
 /* Test class registration with UT_Core */
 UT_ADD_TEST_TO_GROUP(VTS_L3_AVClock, UT_TESTS_L3)
@@ -813,13 +814,13 @@ void runSequentialAudioClock(testConfiguration_t testConfig, bool isSecure, bool
                     continue;
                 }*/
 
-                if (!videoDecoderList.empty())
+                if (videoDecoderList.empty())
                 {
                     UT_LOG_INFO("Video Decoder List is empty. Skipping Sequential Test.");
                     break;
                 }
 
-                if (!videoSinkList.empty()) 
+                if (videoSinkList.empty()) 
                 {
                     UT_LOG_INFO("Video Sink List is empty. Skipping Sequential Test.");
                     break;
@@ -1074,9 +1075,9 @@ void runAudioPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, b
         UT_LOG_INFO("Started Thread : %s", __func__);
 
         vector<testConfiguration_t> testConfiguration;
-        const char *DecodeStreams = "Decode";
+        const char *DecodeStreams = "PrimeAudio";
 
-        vts_audiodecoder_parse_testconfig(gAudioSinkTestConfiguration, gAudioModuleName, gTestGroup, DecodeStreams, testConfiguration);
+        vts_audiodecoder_parse_testconfig(gAudioPrimeTestConfiguration, gAudioModuleName, gTestGroup, DecodeStreams, testConfiguration);
 
         if(isConcurrentMode)
         {
@@ -1093,6 +1094,7 @@ void runAudioPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, b
                 runSequentialAudioClock(test, isSecureMode, isTunnel, clockMode, playbackRate);
             }
         }
+        audioThreadStarted = false;
     }
 
     void runVideoPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, bool isConcurrentMode, avclock::ClockMode clockMode, contentprimetype primetype, double playbackRate)
@@ -1102,11 +1104,11 @@ void runAudioPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, b
         vector<videoDecoderTestConfiguration_t> decoderConfigs;
         vector<videoTestConfiguration_t> sinkConfigs;
 
-        const char *DecodeStreams = "Sink_QueueDepth";
+        const char *DecodeStreams = "PrimeVideo";
 
-        vts_videodecoder_parse_testconfig(gVideoSinkTestConfiguration, VIDEODECODERMGR, gTestGroup, DecodeStreams, decoderConfigs);
+        vts_videodecoder_parse_testconfig(gVideoPrimeTestConfiguration, VIDEODECODERMGR, gTestGroup, DecodeStreams, decoderConfigs);
 
-        vts_videosink_parse_testconfig(gVideoSinkTestConfiguration, VIDEODECODERMGR, gTestGroup, DecodeStreams, sinkConfigs);
+        vts_videosink_parse_testconfig(gVideoPrimeTestConfiguration, VIDEODECODERMGR, gTestGroup, DecodeStreams, sinkConfigs);
 
         for (size_t i = 0; i < decoderConfigs.size(); ++i)
         {
@@ -1121,13 +1123,14 @@ void runAudioPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, b
                 runSequentialVideoClock(decoderConfig, sinkConfig, isSecureMode, isTunnel, clockMode, playbackRate);
             }
         }
+        videoThreadStarted = false;
     }
 
     void runPcrPrimeTest(const char *testName, bool isConcurrentMode, avclock::ClockMode clockMode)
     {
         UT_LOG_INFO("Started Thread : %s", __func__);
         std::vector<int64_t> pcrValues;
-        const char *ParsePCR = "PCR";
+        const char *ParsePCR = "ParsePCR";
 
         vts_avclock_parse_testconfig(gAVClockTestConfiguration, gModuleName, gTestGroup, ParsePCR, pcrValues);
 
@@ -1145,77 +1148,102 @@ void runAudioPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, b
                 runSequentialPCRClock(_pcrValue, clockMode);
             }
         }
+        pcrThreadStarted = false;
     }
 
-    void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel, bool isConcurrentMode, avclock::ClockMode clockMode, contentprimetype primetype, double playbackRate)
-    {
-        std::thread runaudioprimethread;
-        std::thread runvideoprimethread;
-        std::thread runpcrprimethread;
-
-        if(primetype == primeaudio)
-        {
-            runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackRate);
-        } else if(primetype == primevideo)
-        {
-            runvideoprimethread = std::thread(runVideoPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackRate);
-        } else if(primetype == primeaudiobeforevideo)
-        {
-            runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackRate);
-            auto start = std::chrono::steady_clock::now();
-            while(!threadStarted)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                auto now = std::chrono::steady_clock::now();
-                if (std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count() > 1000)
-                {
-                        UT_LOG_ERROR("Unable to Start Thread: Timed out after 1 second");
-                        return;
-                }
-            }
-            runvideoprimethread = std::thread(runVideoPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackRate);
-        } else if(primetype == primevideobeforeaudio)
-        {
-            runvideoprimethread = std::thread(runVideoPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackRate);
-            auto start = std::chrono::steady_clock::now();
-            while(!threadStarted)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                auto now = std::chrono::steady_clock::now();
-                if (std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count() > 1000)
-                {
-                        UT_LOG_ERROR("Unable to Start Thread: Timed out after 1 second");
-                        return;
-                }
-            }
-            runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackRate);
-        } else if(primetype == primepcr)
-        {
-            runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackRate);
-            auto start = std::chrono::steady_clock::now();
-            while(!threadStarted)
-            {
-                std::this_thread::sleep_for(std::chrono::milliseconds(10));
-                auto now = std::chrono::steady_clock::now();
-                if (std::chrono::duration_cast<std::chrono::milliseconds>(now - start).count() > 1000)
-                {
-                    UT_LOG_ERROR("Unable to Start Thread: Timed out after 1 second");
-                    return;
-                }
-            runvideoprimethread = std::thread(runVideoPrimeTest, testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackRate);
-            runpcrprimethread = std::thread(runPcrPrimeTest, testName, isConcurrentMode, clockMode);
-            }
-        }   
-
-        if (runaudioprimethread.joinable())
-                runaudioprimethread.join();
-
-        if (runvideoprimethread.joinable())
-                runvideoprimethread.join();
-
-        if (runpcrprimethread.joinable())
-                runpcrprimethread.join();
+bool waitForStart(std::atomic<bool> &flag, const char *name) 
+{
+    auto start = std::chrono::steady_clock::now();
+    while (!flag.load()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        if (std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - start).count() > 1000) {
+            UT_LOG_ERROR("Unable to Start Thread:%s Timed out after 1 second", name);
+            return false;
+        }
     }
+    return true;
+}
+
+void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
+                         bool isConcurrentMode, avclock::ClockMode clockMode,
+                         contentprimetype primetype, double playbackRate)
+{
+    std::thread runaudioprimethread;
+    std::thread runvideoprimethread;
+    std::thread runpcrprimethread;
+
+    if (primetype == primeaudio) {
+        audioThreadStarted = true; // Set inside thread function ideally
+        runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel,
+                                          isConcurrentMode, clockMode, primetype, playbackRate);
+
+    } else if (primetype == primevideo) {
+        videoThreadStarted = true;
+        runvideoprimethread = std::thread(runVideoPrimeTest, testName, isSecureMode, isTunnel,
+                                          isConcurrentMode, clockMode, primetype, playbackRate);
+
+    } else if (primetype == primeaudiobeforevideo) {
+        audioThreadStarted = true;
+        runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel,
+                                          isConcurrentMode, clockMode, primetype, playbackRate);
+
+        if (!waitForStart(audioThreadStarted, "Audio Thread")) {
+            if (runaudioprimethread.joinable()) runaudioprimethread.detach();
+            return;
+        }
+
+        videoThreadStarted = true;
+        runvideoprimethread = std::thread(runVideoPrimeTest, testName, isSecureMode, isTunnel,
+                                          isConcurrentMode, clockMode, primetype, playbackRate);
+        if (!waitForStart(videoThreadStarted, "Video Thread")) {
+            if (runvideoprimethread.joinable()) runvideoprimethread.detach();
+        }
+
+    } else if (primetype == primevideobeforeaudio) {
+        videoThreadStarted = true;
+        runvideoprimethread = std::thread(runVideoPrimeTest, testName, isSecureMode, isTunnel,
+                                          isConcurrentMode, clockMode, primetype, playbackRate);
+
+        if (!waitForStart(videoThreadStarted, "Video Thread")) {
+            if (runvideoprimethread.joinable()) runvideoprimethread.detach();
+        }
+
+        audioThreadStarted = true;
+        runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel,
+                                          isConcurrentMode, clockMode, primetype, playbackRate);
+        if (!waitForStart(audioThreadStarted, "Audio Thread")) {
+            if (runvideoprimethread.joinable()) runvideoprimethread.detach();
+        }
+
+    } else if (primetype == primepcr) {
+        audioThreadStarted = true;
+        runaudioprimethread = std::thread(runAudioPrimeTest, testName, isSecureMode, isTunnel,
+                                          isConcurrentMode, clockMode, primetype, playbackRate);
+
+        if (!waitForStart(audioThreadStarted, "Audio Thread")) {
+            if (runaudioprimethread.joinable()) runaudioprimethread.detach();
+        }
+
+        videoThreadStarted = true;
+        runvideoprimethread = std::thread(runVideoPrimeTest, testName, isSecureMode, isTunnel,
+                                          isConcurrentMode, clockMode, primetype, playbackRate);
+
+        if (!waitForStart(videoThreadStarted, "Video Thread")) {
+            if (runvideoprimethread.joinable()) runvideoprimethread.detach();
+        }
+
+        pcrThreadStarted = true;
+        runpcrprimethread = std::thread(runPcrPrimeTest, testName, isConcurrentMode, clockMode);
+        if (!waitForStart(pcrThreadStarted, "PCR Thread")) {
+            if (runpcrprimethread.joinable()) runpcrprimethread.detach();
+        }
+    }
+
+    if (runaudioprimethread.joinable()) runaudioprimethread.join();
+    if (runvideoprimethread.joinable()) runvideoprimethread.join();
+    if (runpcrprimethread.joinable()) runpcrprimethread.join();
+}
 
 /**
 * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)

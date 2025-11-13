@@ -86,31 +86,27 @@ UT_status_t vts_avclock_parse_testconfig(void* pTestInstance, const char *module
         string streamName = streamList + "." + to_string(i) + ".Name";
         ut_kvp_getStringField(kvpTestInstance, streamName.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
 
-        std::string streamNameField(resultKVP);
-
-        if (streamNameField == "pcr_pts") 
-        {
-            std::string ptsListKey = streamList + "." + std::to_string(i) + ".PTS";
-            int32_t ptsCount = ut_kvp_getListCount(kvpTestInstance, ptsListKey.c_str());
+        std::string streamNameField(resultKVP); 
         
-            for (int32_t j = 0; j < ptsCount; j++) {
-                    std::string ptsValueKey = ptsListKey + "." + std::to_string(j);
-                    int64_t ptsValue;
-                    ptsValue = ut_kvp_getUInt64Field(kvpTestInstance, ptsValueKey.c_str());
-                    if(!ptsValue)
-                    {
-                        UT_LOG_ERROR("Failed to Get the PCR Values from Yaml File");
-                        break;
-                    }
-                    pcrValues.push_back(ptsValue);
-            }
-        }
+        std::string ptsListKey = streamList + "." + std::to_string(i) + ".PTS";
+        int32_t ptsCount = ut_kvp_getListCount(kvpTestInstance, ptsListKey.c_str());
 
+        for (int32_t j = 0; j < ptsCount; j++)
+        {
+                std::string ptsValueKey = ptsListKey + "." + std::to_string(j);
+                int64_t ptsValue;
+                ptsValue = ut_kvp_getUInt64Field(kvpTestInstance, ptsValueKey.c_str());
+                if(!ptsValue)
+                {
+                    UT_LOG_ERROR("Failed to Get the PCR Values from Yaml File");
+                    break;
+                }
+                pcrValues.push_back(ptsValue);
+        }
     }
 
     return UT_STATUS_OK;
 }
-
 /** @} */ // End of AVCLOCK_HALTEST_PARSE_TESTCONFIG
 /** @} */ // End of AVCLOCK_HALTEST
 /** @} */ // End of AVCLOCK

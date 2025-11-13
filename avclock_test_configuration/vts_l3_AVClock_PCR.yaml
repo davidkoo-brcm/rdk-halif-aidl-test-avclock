@@ -1,8 +1,9 @@
 IAVClockManager:
   L3:
-    Inputs:
-      Streams:
-        - Name: PCR
+    ParsePCR:
+     Inputs:
+       Streams:
+        - Name: Pcr_Intervals
           PTS:
             - 0
             - 40

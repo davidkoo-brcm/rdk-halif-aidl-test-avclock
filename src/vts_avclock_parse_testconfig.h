@@ -74,6 +74,8 @@
 #include "com/rdk/hal/avclock/BnAVClockEventListener.h"
 
 #define VTS_AVCLOCK_TEST_CONFIG_PATH "./avclock_test_configuration/vts_l3_AVClock_PCR.yaml"
+#define VTS_PRIMEAUDIO_TEST_CONFIG_PATH "./avclock_test_configuration/vts_l3_primeaudio_test_config.yaml"
+#define VTS_PRIMEVIDEO_TEST_CONFIG_PATH "./avclock_test_configuration/vts_l3_primevideo_test_config.yaml"
 
 using namespace std;
 using namespace com::rdk::hal;

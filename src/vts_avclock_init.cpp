@@ -56,10 +56,14 @@
 
 sp<IAVClockManager> gAVClockManagerService;
 void *gAVClockTestConfiguration = nullptr;
+void *gAudioPrimeTestConfiguration = nullptr;
+void *gVideoPrimeTestConfiguration = nullptr;
 
 UT_status_t VTS_AVClock_init()
 {
     gAVClockTestConfiguration = vts_kvp_create_instance(VTS_AVCLOCK_TEST_CONFIG_PATH);
+    gAudioPrimeTestConfiguration = vts_kvp_create_instance(VTS_PRIMEAUDIO_TEST_CONFIG_PATH);
+    gVideoPrimeTestConfiguration = vts_kvp_create_instance(VTS_PRIMEVIDEO_TEST_CONFIG_PATH);
   
     if(getAVClockService() != UT_STATUS_OK)
     {
