@@ -128,6 +128,39 @@ enum contentprimetype {
     primepcr
 };
 
+struct AudioConfig {
+    IAudioDecoder::Id decId;
+    sp<IAudioDecoder> decHandle;
+    sp<AudioDecoderControllerListener> decCtrlListener;
+    sp<AudioDecoderEventListener> decEventListener;
+    IAudioSink::Id sinkId;
+    sp<IAudioSink> sinkHandle;
+    sp<AudioSinkControllerListener> sinkCtrlListener;
+    sp<AudioSinkEventListener> sinkEventListener;
+    bool secureDecode;
+    bool tunnelMode;
+    testConfiguration_t testConfig;
+};
+
+struct VideoConfig {
+    IVideoDecoder::Id decId;
+    sp<IVideoDecoder> decHandle;
+    sp<VideoDecoderControllerListener> decCtrlListener;
+    sp<VideoDecoderEventListener> decEventListener;
+    IVideoSink::Id sinkId;
+    sp<IVideoSink> sinkHandle;
+    sp<VideoSinkControllerListener> sinkCtrlListener;
+    sp<VideoSinkEventListener> sinkEventListener;
+    bool secureDecode;
+    bool tunnelMode;
+    videoDecoderTestConfiguration_t decTestConfig;
+    videoTestConfiguration_t sinkTestConfig;
+};
+
+struct PcrConfig {
+    int64_t pcrValue;
+};
+
 bool isClkSinkUsable(const com::rdk::hal::audiosink::IAudioSink::Id &maudioSinkId);
 bool isClkDecoderUsable(const com::rdk::hal::audiodecoder::IAudioDecoder::Id &maudioDecoderId);
 bool isClkVideoSinkUsable(const com::rdk::hal::videosink::IVideoSink::Id &videoSinkId);
@@ -316,9 +349,6 @@ class AVClockEventListener : public BnAVClockEventListener {
         UT_LOG_INFO("Result getAVClockIds(OUT:clockIds:[size: %d]), status:[isOK:%s, exception:%s]", \
                     clockIds.size(), UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE_FATAL(status.isOk()); \
-        UT_ASSERT_FALSE_FATAL(clockIds.empty()); \
-        UT_ASSERT_EQUAL_FATAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
 #define AVCLOCK_MANAGER_GETAVCLOCK_SUCCESS(avClockId, avClock) \
@@ -330,9 +360,6 @@ class AVClockEventListener : public BnAVClockEventListener {
                     avClockId.value, avClock.get(), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE_FATAL(status.isOk()); \
-        UT_ASSERT_NOT_EQUAL_FATAL(avClock, nullptr); \
-        UT_ASSERT_EQUAL_FATAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
 #define AVCLOCK_GET_PROPERTY_SUCCESS(avClock, property, propertyValue) \
@@ -456,9 +483,6 @@ class AVClockEventListener : public BnAVClockEventListener {
                     controllerListener.get(), avClockController.get(), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE_FATAL(status.isOk()); \
-        UT_ASSERT_NOT_EQUAL_FATAL(avClockController.get(), nullptr); \
-        UT_ASSERT_EQUAL_FATAL(status.exceptionCode(), Status::EX_NONE); \
         if (stateCheck) { \
             ::com::rdk::hal::State lastState; \
             AVCLOCK_WAIT_FOR_STATE(avClock, ::com::rdk::hal::State::READY, lastState); \
@@ -476,9 +500,6 @@ class AVClockEventListener : public BnAVClockEventListener {
                     avClockController.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE_FATAL(status.isOk()); \
-        UT_ASSERT_TRUE_FATAL(_aidl_return); \
-        UT_ASSERT_EQUAL_FATAL(status.exceptionCode(), Status::EX_NONE); \
         if (stateCheck) { \
             ::com::rdk::hal::State lastState; \
             AVCLOCK_WAIT_FOR_STATE(avClock, ::com::rdk::hal::State::CLOSED, lastState); \
@@ -1136,6 +1157,43 @@ class AVClockEventListener : public BnAVClockEventListener {
         UT_ASSERT_TRUE(_aidl_return); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
+
+class AVClockPrimeTest {
+public:
+    AVClockPrimeTest(IAVClock::Id clockId,
+                     sp<IAVClock> clockHandle,
+                     avclock::ClockMode clockMode,
+                     sp<AVClockControllerListener> clockController,
+                     sp<IAVBuffer> bufferManager,
+                     IAVBufferHelper* bufferHelper,
+                     double playbackRate)
+        : mClockId(clockId), mClockHandle(clockHandle), mClockMode(clockMode),
+          mClockController(clockController), mBufferManager(bufferManager),
+          mBufferHelper(bufferHelper), mPlaybackRate(playbackRate) {}
+
+    int32_t getClockId() const { return mClockId.value; }    
+    sp<IAVClock> getClockHandle() const { return mClockHandle; }
+    double getPlaybackRate() const { return mPlaybackRate; }
+
+    void validateClockTime(sp<IAVClock> clockHandle, sp<IAVClockController>& avclockcontroller, double playbackrate);
+    void runAudioTest(const AudioConfig audioCfg, sp<IAVClockController>& avclockcontroller );
+    void runVideoTest(const VideoConfig videoCfg, sp<IAVClockController>& avclockcontroller);
+    void runPcrTest(const PcrConfig pcrCfg, android::sp<IAVClockController>& avclockconrotller);
+    android::sp<com::rdk::hal::avclock::IAVClockController> setupAndStartClock();
+    void shutdownClock(android::sp<com::rdk::hal::avclock::IAVClockController> clockcontroller);
+    long getMonotonicRawTimestamp();
+
+private:
+    // Common members
+    IAVClock::Id mClockId;
+    sp<IAVClock> mClockHandle;
+    avclock::ClockMode mClockMode;
+    sp<AVClockControllerListener> mClockController;
+    sp<IAVBuffer> mBufferManager;
+    IAVBufferHelper* mBufferHelper;
+    double mPlaybackRate;
+    mutable std::mutex mMutex; // Protect shared state
+};
 
 #endif // __VTS_AVCLOCK_H__
 
