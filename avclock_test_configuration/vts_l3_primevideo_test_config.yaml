@@ -20,6 +20,6 @@
 # *
 #** ******************************************************************************
 
-include_0: stream_configuration/vts_l3_H264_HD_30_YUV420.yaml
+include_0: videosink_stream_configuration/vts_l3_H264_HD_30_YUV420.yaml
 
 include_1: avclock_test_configuration/vts_l3_PrimeVideo.yaml

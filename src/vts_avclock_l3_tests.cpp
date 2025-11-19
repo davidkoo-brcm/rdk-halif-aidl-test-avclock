@@ -443,6 +443,9 @@ void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg, sp<IAVClockContr
 
         HeapMetrics beforeHeap, afterHeap;
         AVBUFFER_GETMETRICS(mBufferManager, audioCfg.secureDecode, beforeHeap);
+        
+        // Set the Audio Sink
+        AVCLOCK_SET_AUDIO_SINK_SUCCESS(mClockHandle, avClockController, audioCfg.sinkId, true);
 
         AudioDecoderTest decodeTest(audioCfg.decId, audioCfg.decHandle, audioCfg.decCtrlListener,
                                     audioCfg.decEventListener, mBufferManager, mBufferHelper,
@@ -475,6 +478,9 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig videoCfg, sp<IAVClockContr
 
         HeapMetrics beforeHeap, afterHeap;
         AVBUFFER_GETMETRICS(mBufferManager, videoCfg.secureDecode, beforeHeap);
+
+        // Set the Audio Sink
+        AVCLOCK_SET_VIDEO_SINK_SUCCESS(mClockHandle, avClockController, videoCfg.sinkId, true);
 
         videoDecoderTest decodeTest(videoCfg.decId, videoCfg.decHandle, videoCfg.decCtrlListener,
                                     videoCfg.decEventListener, mBufferManager, videoCfg.secureDecode,
@@ -887,7 +893,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
         
         // Setup and start clock
         auto clockController = storedClockTest->setupAndStartClock();
-        clockControllerList.emplace_back(std::move(clockController));
+        clockControllerList.push_back(clockController);
                      
         // Prime Audio Only
         if (primetype == primeaudio) {
