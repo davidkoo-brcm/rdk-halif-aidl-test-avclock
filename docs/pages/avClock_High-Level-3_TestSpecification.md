@@ -38,11 +38,11 @@ The AV Clock HAL allows the application to specify which video sink and audio si
 
 ## Test Streams Specification
 
--Audio Test Config File - [Test Config File](avclock_test_configuration/vts_l3_primeaudio_test_config.yaml)
+-Audio Test Config File - [Audio Test Config File](../../avclock_test_configuration/vts_l3_primeaudio_test_config.yaml)
 
--Video Test Config File - [Test Config File](avclock_test_configuration/vts_l3_primevideo_test_config.yaml)
+-Video Test Config File - [Video Test Config File](../../avclock_test_configuration/vts_l3_primevideo_test_config.yaml)
 
--PCR Test Config File - [Test Config File](avclock_test_configuration/vts_l3_AVClock_PCR.yaml)
+-PCR Test Config File - [PCR Test Config File](../../avclock_test_configuration/vts_l3_AVClock_PCR.yaml)
 
 ## L3 Test Specification
 
