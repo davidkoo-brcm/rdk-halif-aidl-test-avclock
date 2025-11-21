@@ -1,129 +1,20 @@
-# Testing Suite For AVClock HAL
+# AVClock HAL Test Suite
+
+This repository contains the Vendor Test Suite (VTS) for the `IAVClock` AIDL HAL interface. It is designed to validate the functionality of the AVClock HAL implementation.
 
 ## Build Steps
 
-### 1. Build linux binder
+This test suite is part of Unified VTS for AIDL HALs. For initial setup, environment configuration, and build instructions, please refer to the Unified VTS README documentation.
 
-The test suite depends on the Linux binder with `AIDL` support. Follow these steps to build it:
+- **[Unified VTS README](https://github.com/rdkcentral/rdk-halif-aidl-unified-vts/blob/main/README.md)**
 
-For detail build instruction, please refer to [Linux Binder](https://github.com/rdk-e/linux_binder_idl/tree/main)
+## Running the AVClock Tests
 
-Here outline the simplest steps are
+While the Unified VTS can run all tests at once, you can execute the `VTS_L1_AVClock`, `VTS_L2_AVCLOCK` and `VTS_L3_AVClock` test suite individually for targeted validation. This is useful for debugging and development of the `AVClock` HAL.
 
-```bash
-git clone -b develop 'ssh://git@github.com/rdk-e/linux_binder_idl.git'
+## Reference Documents
 
-cd linux_binder_idl
-
-sc docker run rdk-kirkstone /bin/bash
-
-./build-linux-binder-aidl.sh 64
-```
-
-### 2. Build this test
-
-Clone and build the test suite:
-
-```bash
-git clone git@github.com:rdkcentral/rdk-halif-binder-test-avclock.git
-```
-
-```bash
-cd rdk-halif-binder-test-avclock
-```
-
-Addition environment variables can be used:
-
-- AIDL_BIN: Path to the `AIDL` compiler (e.g., /path/to/linux_binder_idl/out/aidl).
-
-- LINUX_BINDER_OUT_DIR: Path to the Linux binder output directory (e.g., /path/to/linux_binder_idl/local).
-
-- UT_CORE_VERSION: Specific version of the UT-Core framework (e.g., 4.7.0). Defaults to the latest tagged version.
-
-- RDK_HALIF_AIDL_VERSION: Specific version of the AIDL HAL Specification (e.g, 0.7.1). Defaults to the latest HEAD.
-
-Example:
-
-```bash
-export UT_CORE_VERSION=4.7.0
-export RDK_HALIF_AIDL_VERSION=0.7.1
-export AIDL_BIN=/path/linux_binder_idl/out/aidl
-export LINUX_BINDER_OUT_DIR=/path//linux_binder_idl/local/
-```
-
-Run the build script:
-
-```bash
-./build.sh
-```
-
-The build.sh script:
-
-- Clones the `rdk-halif-aidl` repository and UT-Core framework.
-
-- Compiles the test suite.
-
-- Generates binaries in the `build/bin` directory.
-
-Example directory structure :
-
-```bash
-build/bin/
-├── aidl
-├── EmulateAVClockService
-├── lib
-├── libaudiodecoderaidl.so
-├── libaudiosinkaidl.so
-├── libavclockaidl.so
-├── libbase.so
-├── libbinder.so
-├── libcutils.so
-├── libcutils_sockets.so
-├── liblog.so
-├── libut_control.so
-├── libutils.so
-├── libvideodecoderaidl.so
-├── libvideosinkaidl.so
-├── profiles
-│   └── hfp-avclock.yaml
-├── run.sh
-├── servicemanager
-└── vts_avclock
-
-```
-
-## Run test
-
-- Package the Binaries:
-
-```bash
-cd build
-tar -zcf avclock_vts.tar.gz bin
-```
-
-- Transfer to Target Device:
-
-Copy the tarball to the target device (e.g., using scp):
-
-```bash
-scp avclock_vts.tar.gz root@target-device:/home/root/
-
-```
-
-- Extract on Target Device:
-
-Log into the target device and extract the tarball:
-
-```bash
-ssh root@target-device
-cd /home/root
-tar -zxf avclock_vts.tar.gz
-cd bin
-```
-
-- Run the Test:
-Execute the run.sh script as root:
-
-```bash
-sudo ./run.sh -p profiles/hfp-avclock.yaml
-```
+|SNo|Document Name|Document Description|Document Link|
+|---|-------------|--------------------|-------------|
+|1|`L2` High Level Test Specification Document|High Level Test Specification Documentation for this module|[avClock_High-Level-2_TestSpecification.md](docs/pages/avClock_High-Level-2_TestSpecification.md)|
+|2|`L3` High Level Test Specification Document|High Level Test Specification Documentation for this module|[avClock_High-Level-3_TestSpecification.md](docs/pages/avClock_High-Level-3_TestSpecification.md)|
