@@ -624,7 +624,7 @@ class AVClockEventListener : public BnAVClockEventListener {
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
-        UT_ASSERT_TRUE(_aidl_return); \
+        UT_ASSERT_FALSE(_aidl_return); \
     } while (0)
 
 
@@ -712,7 +712,7 @@ class AVClockEventListener : public BnAVClockEventListener {
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
-        UT_ASSERT_TRUE(_aidl_return); \
+        UT_ASSERT_FALSE(_aidl_return); \
     } while (0)
 
 #define AVCLOCK_GET_SUPPLEMENTARY_AUDIO_SINK_SUCCESS(avClock, avClockController, expectedSupplementaryAudioSinkId) \
@@ -784,7 +784,7 @@ class AVClockEventListener : public BnAVClockEventListener {
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
-        UT_ASSERT_TRUE(_aidl_return); \
+        UT_ASSERT_FALSE(_aidl_return); \
     } while (0)
 
 #define AVCLOCK_GET_VIDEO_SINK_SUCCESS(avClock, avClockController, expectedVideoSinkId) \
