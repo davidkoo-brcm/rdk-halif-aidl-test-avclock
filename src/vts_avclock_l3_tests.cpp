@@ -442,7 +442,6 @@ void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg, sp<IAVClockContr
         if (!isClkDecoderUsable(audioCfg.decId)) return;
 
         HeapMetrics beforeHeap, afterHeap;
-        bool isSinkAvailable = true;
         AVBUFFER_GETMETRICS(mBufferManager, audioCfg.secureDecode, beforeHeap);
         
         // Set the Audio Sink
@@ -450,7 +449,7 @@ void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg, sp<IAVClockContr
 
         AudioDecoderTest decodeTest(audioCfg.decId, audioCfg.decHandle, audioCfg.decCtrlListener,
                                     audioCfg.decEventListener, mBufferManager, mBufferHelper,
-                                    audioCfg.secureDecode, audioCfg.testConfig, isSinkAvailable);
+                                    audioCfg.secureDecode, audioCfg.testConfig);
         std::thread decodeThread(&AudioDecoderTest::run, &decodeTest, false);
 
         AudioSinkTest sinkTest(audioCfg.sinkId, audioCfg.sinkHandle, audioCfg.sinkCtrlListener,
@@ -478,7 +477,6 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig videoCfg, sp<IAVClockContr
         if (!isClkVideoDecoderUsable(videoCfg.decId)) return;
 
         HeapMetrics beforeHeap, afterHeap;
-        bool isSinkAVailable = true;
         AVBUFFER_GETMETRICS(mBufferManager, videoCfg.secureDecode, beforeHeap);
 
         // Set the Audio Sink
@@ -486,7 +484,7 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig videoCfg, sp<IAVClockContr
 
         videoDecoderTest decodeTest(videoCfg.decId, videoCfg.decHandle, videoCfg.decCtrlListener,
                                     videoCfg.decEventListener, mBufferManager, videoCfg.secureDecode,
-                                    videoCfg.tunnelMode, videoCfg.decTestConfig, mBufferHelper, isSinkAVailable);
+                                    videoCfg.tunnelMode, videoCfg.decTestConfig, mBufferHelper);
         std::thread decodeThread(&videoDecoderTest::run, &decodeTest, false);
         
         auto decConfig = videoCfg.decTestConfig;
