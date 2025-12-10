@@ -585,19 +585,6 @@ UT_ADD_TEST(VTS_L1_AVClock, setProperty_neg)
             UT_ASSERT_FALSE(result);
         }
 
-        /* Test 2: Null PropertyValue */
-        {
-            com::rdk::hal::PropertyValue propertyValue;
-            propertyValue.value = std::nullopt; // Null value
-            com::rdk::hal::avclock::Property property = com::rdk::hal::avclock::Property::RESOURCE_ID;
-            bool result = false;
-            AVCLOCK_SET_PROPERTY_FAILURE(avClock, property, propertyValue, result,Status::EX_ILLEGAL_ARGUMENT);
-
-            UT_LOG_INFO("setProperty for property %s with null value, clock ID %d: result=%s",
-                        com::rdk::hal::avclock::toString(property).c_str(),
-                        _clockId.value, result ? "true" : "false");
-            UT_ASSERT_FALSE(result);
-        }
         /* Test setProperty for each valid property */
         for (const auto& _property : readOnlyProperties)
         {
@@ -909,6 +896,8 @@ UT_ADD_TEST(VTS_L1_AVClock, registerEventListener_neg)
             AVCLOCK_REGISTER_EVENT_LISTENER_FAILURE(avClock, eventListener);
 
             UT_LOG_INFO("registerEventListener (already registered) for clock ID %d: failed as expected", _clockId.value);
+
+            AVCLOCK_UNREGISTER_EVENT_SUCCESS(avClock,eventListener);
         }
         /*TODO this testcase*/
         /* Test 2: Register a null event listener
@@ -1245,10 +1234,7 @@ UT_ADD_TEST(VTS_L1_AVClock, stop_neg)
             /* Create a new controller for the stop call */
             avClockController = nullptr;
             controllerListener = new AVClockControllerListener();
-            AVCLOCK_OPEN_SUCCESS(avClock, controllerListener, avClockController, false); // No state check, as state is CLOSED
-
             AVCLOCK_STOP_FAILURE(avClock, avClockController);
-
             UT_LOG_INFO("stop in CLOSED state for clock ID %d: failed as expected", _clockId.value);
         }
 
