@@ -167,11 +167,11 @@ UT_ADD_TEST(VTS_L2_AVCLOCK, SetReadOnlyPropertyTest)
         PropertyValue propertyValue;
         propertyValue.value = PropertyValue::Value::make<PropertyValue::Value::Tag::intValue>(1);
         bool result = true;
-        AVCLOCK_SET_PROPERTY_FAILURE(clk,com::rdk::hal::avclock::Property::RESOURCE_ID,propertyValue,result,Status::EX_NONE);
+        AVCLOCK_SET_PROPERTY_FAILURE(clk,com::rdk::hal::avclock::Property::RESOURCE_ID,propertyValue,result,Status::EX_UNSUPPORTED_OPERATION);
         EXPECT_FALSE(result);
-        AVCLOCK_SET_PROPERTY_FAILURE(clk,com::rdk::hal::avclock::Property::METRIC_AV_SYNC_ACCURACY_MS,propertyValue,result , Status::EX_NONE);
+        AVCLOCK_SET_PROPERTY_FAILURE(clk,com::rdk::hal::avclock::Property::METRIC_AV_SYNC_ACCURACY_MS,propertyValue,result , Status::EX_UNSUPPORTED_OPERATION);
         EXPECT_FALSE(result);
-        AVCLOCK_SET_PROPERTY_FAILURE(clk,com::rdk::hal::avclock::Property::METRIC_AV_RESYNC_COUNT,propertyValue,result, Status::EX_NONE);
+        AVCLOCK_SET_PROPERTY_FAILURE(clk,com::rdk::hal::avclock::Property::METRIC_AV_RESYNC_COUNT,propertyValue,result, Status::EX_UNSUPPORTED_OPERATION);
         EXPECT_FALSE(result);
     }
 }

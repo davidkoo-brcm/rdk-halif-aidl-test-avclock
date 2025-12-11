@@ -848,6 +848,8 @@ UT_ADD_TEST(VTS_L1_AVClock, registerEventListener_pos)
         AVCLOCK_REGISTER_EVENT_LISTENER_SUCCESS(avClock, eventListener);
 
         UT_LOG_INFO("registerEventListener for clock ID %d: success", _clockId.value);
+
+        AVCLOCK_UNREGISTER_EVENT_SUCCESS(avClock,eventListener);
     }
 }
 
@@ -1222,33 +1224,19 @@ UT_ADD_TEST(VTS_L1_AVClock, stop_neg)
         /* Get AV Clock handle */
         AVCLOCK_MANAGER_GETAVCLOCK_SUCCESS(_clockId, avClock);
 
-        /* Test 1: Stop in CLOSED state */
+        /* Test 1: Stop in READY state */
         {
             android::sp<com::rdk::hal::avclock::IAVClockController> avClockController;
             android::sp<com::rdk::hal::avclock::IAVClockControllerListener> controllerListener = new AVClockControllerListener();
             AVCLOCK_OPEN_SUCCESS(avClock, controllerListener, avClockController, true);
+
+            AVCLOCK_STOP_FAILURE(avClock, avClockController);
+            UT_LOG_INFO("stop in READY state for clock ID %d: failed as expected", _clockId.value);
 
             /* Close the AV Clock to ensure CLOSED state */
             AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
 
-            /* Create a new controller for the stop call */
-            avClockController = nullptr;
-            controllerListener = new AVClockControllerListener();
-            AVCLOCK_STOP_FAILURE(avClock, avClockController);
-            UT_LOG_INFO("stop in CLOSED state for clock ID %d: failed as expected", _clockId.value);
         }
-
-        /*TODO */
-        /* Test 2: Stop in READY state
-        {
-            android::sp<com::rdk::hal::avclock::IAVClockController> avClockController;
-            android::sp<com::rdk::hal::avclock::IAVClockControllerListener> controllerListener = new AVClockControllerListener();
-            AVCLOCK_OPEN_SUCCESS(avClock, controllerListener, avClockController, true);
-
-            AVCLOCK_STOP_FAILURE(avClock, avClockController);
-
-            UT_LOG_INFO("stop in READY state for clock ID %d: failed as expected", _clockId.value);
-        }*/
     }
 }
 
