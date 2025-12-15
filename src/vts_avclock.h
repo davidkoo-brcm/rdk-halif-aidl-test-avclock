@@ -377,7 +377,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, stateCheck) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling close(IN:avClockController[0x%p], OUT:_aidl_return[])", avClockController.get()); \
         status = avClock->close(avClockController, &_aidl_return); \
         UT_LOG_INFO("Result close(IN:avClockController[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -439,7 +439,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_REGISTER_EVENT_LISTENER_SUCCESS(avClock, eventListener) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling registerEventListener(IN:eventListener[0x%p], OUT:_aidl_return[])", eventListener.get()); \
         status = avClock->registerEventListener(eventListener, &_aidl_return); \
         UT_LOG_INFO("Result registerEventListener(IN:eventListener[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -454,7 +454,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_REGISTER_EVENT_LISTENER_FAILURE(avClock, eventListener) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling registerEventListener(IN:eventListener[0x%p], OUT:_aidl_return[])", eventListener.get()); \
         status = avClock->registerEventListener(eventListener, &_aidl_return); \
         UT_LOG_INFO("Result registerEventListener(IN:eventListener[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -468,7 +468,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_REGISTER_EVENT_LISTENER_NULL_FAILURE(avClock, eventListener) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling registerEventListener(IN:eventListener[0x%p], OUT:_aidl_return[])", eventListener.get()); \
         status = avClock->registerEventListener(eventListener, &_aidl_return); \
         UT_LOG_INFO("Result registerEventListener(IN:eventListener[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -483,7 +483,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_UNREGISTER_EVENT_LISTENER_SUCCESS(avClock, eventListener) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[0x%p], OUT:_aidl_return[])", eventListener.get()); \
         status = avClock->unregisterEventListener(eventListener, &_aidl_return); \
         UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -498,7 +498,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_UNREGISTER_EVENT_LISTENER_FAILURE(avClock, eventListener) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[0x%p], OUT:_aidl_return[])", eventListener.get()); \
         status = avClock->unregisterEventListener(eventListener, &_aidl_return); \
         UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -512,7 +512,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_UNREGISTER_EVENT_LISTENER_NULL_FAILURE(avClock, eventListener) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[0x%p], OUT:_aidl_return[])", eventListener.get()); \
         status = avClock->unregisterEventListener(eventListener, &_aidl_return); \
         UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -585,7 +585,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_SET_AUDIO_SINK_SUCCESS(avClock, avClockController, audioSinkId, expectedResult) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling setAudioSink(IN:audioSinkId[%d], OUT:_aidl_return[])", audioSinkId.value); \
         status = avClockController->setAudioSink(audioSinkId, &_aidl_return); \
         UT_LOG_INFO("Result setAudioSink(IN:audioSinkId[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -600,7 +600,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_SET_AUDIO_SINK_FAILURE_INVALID_ID(avClock, avClockController, audioSinkId) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling setAudioSink(IN:audioSinkId[%d], OUT:_aidl_return[])", audioSinkId.value); \
         status = avClockController->setAudioSink(audioSinkId, &_aidl_return); \
         UT_LOG_INFO("Result setAudioSink(IN:audioSinkId[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -615,7 +615,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_SET_AUDIO_SINK_FAILURE_STATE(avClock, avClockController, audioSinkId) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling setAudioSink(IN:audioSinkId[%d], OUT:_aidl_return[])", audioSinkId.value); \
         status = avClockController->setAudioSink(audioSinkId, &_aidl_return); \
         UT_LOG_INFO("Result setAudioSink(IN:audioSinkId[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -673,7 +673,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_SET_SUPPLEMENTARY_AUDIO_SINK_SUCCESS(avClock, avClockController, supplementaryAudioSinkId, expectedResult) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling setSupplementaryAudioSink(IN:supplementaryAudioSinkId[%d], OUT:_aidl_return[])", supplementaryAudioSinkId.value); \
         status = avClockController->setSupplementaryAudioSink(supplementaryAudioSinkId, &_aidl_return); \
         UT_LOG_INFO("Result setSupplementaryAudioSink(IN:supplementaryAudioSinkId[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -688,7 +688,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_SET_SUPPLEMENTARY_AUDIO_SINK_FAILURE_INVALID_ID(avClock, avClockController, supplementaryAudioSinkId) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling setSupplementaryAudioSink(IN:supplementaryAudioSinkId[%d], OUT:_aidl_return[])", supplementaryAudioSinkId.value); \
         status = avClockController->setSupplementaryAudioSink(supplementaryAudioSinkId, &_aidl_return); \
         UT_LOG_INFO("Result setSupplementaryAudioSink(IN:supplementaryAudioSinkId[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -703,7 +703,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_SET_SUPPLEMENTARY_AUDIO_SINK_FAILURE_STATE(avClock, avClockController, supplementaryAudioSinkId) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling setSupplementaryAudioSink(IN:supplementaryAudioSinkId[%d], OUT:_aidl_return[])", supplementaryAudioSinkId.value); \
         status = avClockController->setSupplementaryAudioSink(supplementaryAudioSinkId, &_aidl_return); \
         UT_LOG_INFO("Result setSupplementaryAudioSink(IN:supplementaryAudioSinkId[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -745,7 +745,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_SET_VIDEO_SINK_SUCCESS(avClock, avClockController, videoSinkId, expectedResult) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling setVideoSink(IN:videoSinkId[%d], OUT:_aidl_return[])", videoSinkId.value); \
         status = avClockController->setVideoSink(videoSinkId, &_aidl_return); \
         UT_LOG_INFO("Result setVideoSink(IN:videoSinkId[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -760,7 +760,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_SET_VIDEO_SINK_FAILURE_INVALID_ID(avClock, avClockController, videoSinkId) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling setVideoSink(IN:videoSinkId[%d], OUT:_aidl_return[])", videoSinkId.value); \
         status = avClockController->setVideoSink(videoSinkId, &_aidl_return); \
         UT_LOG_INFO("Result setVideoSink(IN:videoSinkId[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -775,7 +775,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_SET_VIDEO_SINK_FAILURE_STATE(avClock, avClockController, videoSinkId) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling setVideoSink(IN:videoSinkId[%d], OUT:_aidl_return[])", videoSinkId.value); \
         status = avClockController->setVideoSink(videoSinkId, &_aidl_return); \
         UT_LOG_INFO("Result setVideoSink(IN:videoSinkId[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -818,7 +818,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_SET_CLOCK_MODE_SUCCESS(avClock, avClockController, clockMode, expectedResult) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling setClockMode(IN:clockMode[%d], OUT:_aidl_return[])", static_cast<int>(clockMode)); \
         status = avClockController->setClockMode(clockMode, &_aidl_return); \
         UT_LOG_INFO("Result setClockMode(IN:clockMode[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -833,7 +833,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_SET_CLOCK_MODE_FAILURE_INVALID_MODE(avClock, avClockController, clockMode) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling setClockMode(IN:clockMode[%d], OUT:_aidl_return[])", static_cast<int>(clockMode)); \
         status = avClockController->setClockMode(clockMode, &_aidl_return); \
         UT_LOG_INFO("Result setClockMode(IN:clockMode[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -848,7 +848,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_SET_CLOCK_MODE_FAILURE_STATE(avClock, avClockController, clockMode) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling setClockMode(IN:clockMode[%d], OUT:_aidl_return[])", static_cast<int>(clockMode)); \
         status = avClockController->setClockMode(clockMode, &_aidl_return); \
         UT_LOG_INFO("Result setClockMode(IN:clockMode[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -890,7 +890,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_NOTIFY_PCR_SAMPLE_SUCCESS(avClock, avClockController, pcrTimeNs, sampleTimestampNs, expectedResult) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling notifyPCRSample(IN:pcrTimeNs[%lld], IN:sampleTimestampNs[%lld], OUT:_aidl_return[])", \
                     static_cast<long long>(pcrTimeNs), static_cast<long long>(sampleTimestampNs)); \
         status = avClockController->notifyPCRSample(pcrTimeNs, sampleTimestampNs, &_aidl_return); \
@@ -907,7 +907,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_NOTIFY_PCR_SAMPLE_FAILURE_INVALID_PARAMS(avClock, avClockController, pcrTimeNs, sampleTimestampNs) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling notifyPCRSample(IN:pcrTimeNs[%lld], IN:sampleTimestampNs[%lld], OUT:_aidl_return[])", \
                     static_cast<long long>(pcrTimeNs), static_cast<long long>(sampleTimestampNs)); \
         status = avClockController->notifyPCRSample(pcrTimeNs, sampleTimestampNs, &_aidl_return); \
@@ -923,7 +923,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_NOTIFY_PCR_SAMPLE_FAILURE_STATE_OR_MODE(avClock, avClockController, pcrTimeNs, sampleTimestampNs) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling notifyPCRSample(IN:pcrTimeNs[%lld], IN:sampleTimestampNs[%lld], OUT:_aidl_return[])", \
                     static_cast<long long>(pcrTimeNs), static_cast<long long>(sampleTimestampNs)); \
         status = avClockController->notifyPCRSample(pcrTimeNs, sampleTimestampNs, &_aidl_return); \
@@ -969,7 +969,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_SET_PLAYBACK_RATE_SUCCESS(avClock, avClockController, rate, expectedResult) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling setPlaybackRate(IN:rate[%.2f], OUT:_aidl_return[])", rate); \
         status = avClockController->setPlaybackRate(rate, &_aidl_return); \
         UT_LOG_INFO("Result setPlaybackRate(IN:rate[%.2f], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -984,7 +984,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_SET_PLAYBACK_RATE_FAILURE_INVALID_RATE(avClock, avClockController, rate) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling setPlaybackRate(IN:rate[%.2f], OUT:_aidl_return[])", rate); \
         status = avClockController->setPlaybackRate(rate, &_aidl_return); \
         UT_LOG_INFO("Result setPlaybackRate(IN:rate[%.2f], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -998,7 +998,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_SET_PLAYBACK_RATE_FAILURE_STATE_OR_MODE(avClock, avClockController, rate) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling setPlaybackRate(IN:rate[%.2f], OUT:_aidl_return[])", rate); \
         status = avClockController->setPlaybackRate(rate, &_aidl_return); \
         UT_LOG_INFO("Result setPlaybackRate(IN:rate[%.2f], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -1038,7 +1038,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_REGISTER_EVENT_SUCCESS(avClock, eventListener) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling registerEventListener(IN:eventListener[0x%p], OUT:_aidl_return[])", eventListener.get()); \
         status = avClock->registerEventListener(eventListener, &_aidl_return); \
         UT_LOG_INFO("Result registerEventListener(IN:eventListener[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
@@ -1053,7 +1053,7 @@ class AVClockEventListener : public BnAVClockEventListener {
 #define AVCLOCK_UNREGISTER_EVENT_SUCCESS(avClock, eventListener) \
     do { \
         ::android::binder::Status status; \
-        bool _aidl_return; \
+        bool _aidl_return = false; \
         UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[0x%p], OUT:_aidl_return[])", eventListener.get()); \
         status = avClock->unregisterEventListener(eventListener, &_aidl_return); \
         UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
