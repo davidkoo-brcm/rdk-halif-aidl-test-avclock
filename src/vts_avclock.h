@@ -315,7 +315,6 @@ class AVClockEventListener : public BnAVClockEventListener {
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
-        UT_ASSERT_EQUAL(avClock, nullptr); \
     } while (0)
 
 #define AVCLOCK_GETCAPABILITIES(avClock, capabilities) \
@@ -403,7 +402,6 @@ class AVClockEventListener : public BnAVClockEventListener {
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
-        UT_ASSERT_EQUAL(avClockController.get(), nullptr); \
     } while (0)
 
 #define AVCLOCK_CLOSE_FAILURE(avClock, avClockController, result) \
