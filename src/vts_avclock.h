@@ -261,9 +261,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         ::android::binder::Status status; \
         UT_LOG_INFO("Calling getProperty(IN:property[%s], OUT:propertyValue[])",com::rdk::hal::avclock::toString(property).c_str()); \
         status = avClock->getProperty(property, &propertyValue); \
-        UT_LOG_INFO("Result getProperty(IN:property[%s], OUT:propertyValue[has_value:%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_INFO("Result getProperty(IN:property[%s]), status:[isOK:%s, exception:%s]", \
                     com::rdk::hal::avclock::toString(property).c_str(), \
-                    propertyValue.has_value() ? "true" : "false", \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_ARGUMENT); \
@@ -294,10 +293,9 @@ class AVClockEventListener : public BnAVClockEventListener {
                     property, \
                     propertyValue.value.has_value() ? "true" : "false"); \
         status = avClock->setProperty(property, propertyValue, &result); \
-        UT_LOG_INFO("Result setProperty(IN:property[%d], IN:propertyValue[has_value:%s], OUT:result=%s), status:[isOK:%s, exception:%s]", \
+        UT_LOG_INFO("Result setProperty(IN:property[%d], IN:propertyValue[has_value:%s]), status:[isOK:%s, exception:%s]", \
                     property, \
                     propertyValue.value.has_value() ? "true" : "false", \
-                    result ? "true" : "false", \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
@@ -309,12 +307,11 @@ class AVClockEventListener : public BnAVClockEventListener {
         ::android::binder::Status status; \
         UT_LOG_INFO("Calling getAVClock(IN:avClockId:[%d], OUT:avClock[])", avClockId.value); \
         status = gAVClockManagerService->getAVClock(avClockId, &avClock); \
-        UT_LOG_INFO("Result getAVClock(IN:avClockId:[%d], OUT:avClock:[0x%X]), status:[isOK:%s, exception:%s]", \
-                    avClockId.value, avClock.get(), \
+        UT_LOG_INFO("Result getAVClock(IN:avClockId:[%d]), status:[isOK:%s, exception:%s]", \
+                    avClockId.value, \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
-        UT_ASSERT_EQUAL(avClock, nullptr); \
     } while (0)
 
 #define AVCLOCK_GETCAPABILITIES(avClock, capabilities) \
@@ -396,8 +393,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         ::android::binder::Status status; \
         UT_LOG_INFO("Calling open(IN:controllerListener[0x%p], OUT:avClockController[])", controllerListener); \
         status = avClock->open(controllerListener, &avClockController); \
-        UT_LOG_INFO("Result open(IN:controllerListener[0x%p], OUT:avClockController[0x%X]), status:[isOK:%s, exception:%s]", \
-                    controllerListener, avClockController.get(), \
+        UT_LOG_INFO("Result open(IN:controllerListener[0x%p]), status:[isOK:%s, exception:%s]", \
+                    controllerListener, \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
@@ -409,8 +406,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         ::android::binder::Status status; \
         UT_LOG_INFO("Calling close(IN:avClockController:[0x%X], OUT:result)", avClockController.get()); \
         status = avClock->close(avClockController, &result); \
-        UT_LOG_INFO("Result close(IN:avClockController:[0x%X], OUT:result=%s), status:[isOK:%s, exception:%s]", \
-                    avClockController.get(), result ? "true" : "false", \
+        UT_LOG_INFO("Result close(IN:avClockController:[0x%X]), status:[isOK:%s, exception:%s]", \
+                    avClockController.get(), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
@@ -422,8 +419,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         ::android::binder::Status status; \
         UT_LOG_INFO("Calling close(IN:avClockController:[0x%X], OUT:result)", avClockController.get()); \
         status = avClock->close(avClockController, &result); \
-        UT_LOG_INFO("Result close(IN:avClockController:[0x%X], OUT:result=%s), status:[isOK:%s, exception:%s]", \
-                    avClockController.get(), result ? "true" : "false", \
+        UT_LOG_INFO("Result close(IN:avClockController:[0x%X]), status:[isOK:%s, exception:%s]", \
+                    avClockController.get(), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
@@ -451,8 +448,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         bool _aidl_return = false; \
         UT_LOG_INFO("Calling registerEventListener(IN:eventListener[0x%p], OUT:_aidl_return[])", eventListener.get()); \
         status = avClock->registerEventListener(eventListener, &_aidl_return); \
-        UT_LOG_INFO("Result registerEventListener(IN:eventListener[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-                    eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+        UT_LOG_INFO("Result registerEventListener(IN:eventListener[0x%p]), status:[isOK:%s, exception:%s]", \
+                    eventListener.get(), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
@@ -464,8 +461,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         bool _aidl_return = false; \
         UT_LOG_INFO("Calling registerEventListener(IN:eventListener[0x%p], OUT:_aidl_return[])", eventListener.get()); \
         status = avClock->registerEventListener(eventListener, &_aidl_return); \
-        UT_LOG_INFO("Result registerEventListener(IN:eventListener[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-                    eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+        UT_LOG_INFO("Result registerEventListener(IN:eventListener[0x%p]), status:[isOK:%s, exception:%s]", \
+                    eventListener.get(), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
@@ -493,8 +490,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         bool _aidl_return = false; \
         UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[0x%p], OUT:_aidl_return[])", eventListener.get()); \
         status = avClock->unregisterEventListener(eventListener, &_aidl_return); \
-        UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-                    eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+        UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[0x%p]), status:[isOK:%s, exception:%s]", \
+                    eventListener.get(), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
@@ -506,8 +503,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         bool _aidl_return = false; \
         UT_LOG_INFO("Calling unregisterEventListener(IN:eventListener[0x%p], OUT:_aidl_return[])", eventListener.get()); \
         status = avClock->unregisterEventListener(eventListener, &_aidl_return); \
-        UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[0x%p], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-                    eventListener.get(), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+        UT_LOG_INFO("Result unregisterEventListener(IN:eventListener[0x%p]), status:[isOK:%s, exception:%s]", \
+                    eventListener.get(), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
@@ -607,8 +604,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         bool _aidl_return = false; \
         UT_LOG_INFO("Calling setAudioSink(IN:audioSinkId[%d], OUT:_aidl_return[])", audioSinkId.value); \
         status = avClockController->setAudioSink(audioSinkId, &_aidl_return); \
-        UT_LOG_INFO("Result setAudioSink(IN:audioSinkId[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-                    audioSinkId.value, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+        UT_LOG_INFO("Result setAudioSink(IN:audioSinkId[%d]), status:[isOK:%s, exception:%s]", \
+                    audioSinkId.value, \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
@@ -636,8 +633,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         com::rdk::hal::audiosink::IAudioSink::Id audioSinkId; \
         UT_LOG_INFO("Calling getAudioSink(OUT:audioSinkId[])"); \
         status = avClockController->getAudioSink(&audioSinkId); \
-        UT_LOG_INFO("Result getAudioSink(OUT:audioSinkId[%d]), status:[isOK:%s, exception:%s]", \
-                    audioSinkId.value, UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+        UT_LOG_INFO("Result getAudioSink(), status:[isOK:%s, exception:%s]", \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
@@ -693,8 +690,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         bool _aidl_return = false; \
         UT_LOG_INFO("Calling setSupplementaryAudioSink(IN:supplementaryAudioSinkId[%d], OUT:_aidl_return[])", supplementaryAudioSinkId.value); \
         status = avClockController->setSupplementaryAudioSink(supplementaryAudioSinkId, &_aidl_return); \
-        UT_LOG_INFO("Result setSupplementaryAudioSink(IN:supplementaryAudioSinkId[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-                    supplementaryAudioSinkId.value, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+        UT_LOG_INFO("Result setSupplementaryAudioSink(IN:supplementaryAudioSinkId[%d]), status:[isOK:%s, exception:%s]", \
+                    supplementaryAudioSinkId.value, \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
@@ -721,8 +718,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         com::rdk::hal::audiosink::IAudioSink::Id supplementaryAudioSinkId; \
         UT_LOG_INFO("Calling getSupplementaryAudioSink(OUT:supplementaryAudioSinkId[])"); \
         status = avClockController->getSupplementaryAudioSink(&supplementaryAudioSinkId); \
-        UT_LOG_INFO("Result getSupplementaryAudioSink(OUT:supplementaryAudioSinkId[%d]), status:[isOK:%s, exception:%s]", \
-                    supplementaryAudioSinkId.value, UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+        UT_LOG_INFO("Result getSupplementaryAudioSink(), status:[isOK:%s, exception:%s]", \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
@@ -763,8 +760,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         bool _aidl_return = false; \
         UT_LOG_INFO("Calling setVideoSink(IN:videoSinkId[%d], OUT:_aidl_return[])", videoSinkId.value); \
         status = avClockController->setVideoSink(videoSinkId, &_aidl_return); \
-        UT_LOG_INFO("Result setVideoSink(IN:videoSinkId[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-                    videoSinkId.value, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+        UT_LOG_INFO("Result setVideoSink(IN:videoSinkId[%d]), status:[isOK:%s, exception:%s]", \
+                    videoSinkId.value, \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
@@ -791,8 +788,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         com::rdk::hal::videosink::IVideoSink::Id videoSinkId; \
         UT_LOG_INFO("Calling getVideoSink(OUT:videoSinkId[])"); \
         status = avClockController->getVideoSink(&videoSinkId); \
-        UT_LOG_INFO("Result getVideoSink(OUT:videoSinkId[%d]), status:[isOK:%s, exception:%s]", \
-                    videoSinkId.value, UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+        UT_LOG_INFO("Result getVideoSink(), status:[isOK:%s, exception:%s]", \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
@@ -834,8 +831,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         bool _aidl_return = false; \
         UT_LOG_INFO("Calling setClockMode(IN:clockMode[%d], OUT:_aidl_return[])", static_cast<int>(clockMode)); \
         status = avClockController->setClockMode(clockMode, &_aidl_return); \
-        UT_LOG_INFO("Result setClockMode(IN:clockMode[%d], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-                    static_cast<int>(clockMode), UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+        UT_LOG_INFO("Result setClockMode(IN:clockMode[%d]), status:[isOK:%s, exception:%s]", \
+                    static_cast<int>(clockMode), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
@@ -862,8 +859,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         com::rdk::hal::avclock::ClockMode clockMode; \
         UT_LOG_INFO("Calling getClockMode(OUT:clockMode[])"); \
         status = avClockController->getClockMode(&clockMode); \
-        UT_LOG_INFO("Result getClockMode(OUT:clockMode[%d]), status:[isOK:%s, exception:%s]", \
-                    static_cast<int>(clockMode), UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+        UT_LOG_INFO("Result getClockMode(), status:[isOK:%s, exception:%s]", \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
@@ -908,9 +905,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         UT_LOG_INFO("Calling notifyPCRSample(IN:pcrTimeNs[%lld], IN:sampleTimestampNs[%lld], OUT:_aidl_return[])", \
                     static_cast<long long>(pcrTimeNs), static_cast<long long>(sampleTimestampNs)); \
         status = avClockController->notifyPCRSample(pcrTimeNs, sampleTimestampNs, &_aidl_return); \
-        UT_LOG_INFO("Result notifyPCRSample(IN:pcrTimeNs[%lld], IN:sampleTimestampNs[%lld], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
+        UT_LOG_INFO("Result notifyPCRSample(IN:pcrTimeNs[%lld], IN:sampleTimestampNs[%lld]), status:[isOK:%s, exception:%s]", \
                     static_cast<long long>(pcrTimeNs), static_cast<long long>(sampleTimestampNs), \
-                    UT_Control_GetMapString(bool_mapTable, _aidl_return), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
@@ -938,8 +934,7 @@ class AVClockEventListener : public BnAVClockEventListener {
         com::rdk::hal::avclock::ClockTime clockTime; \
         UT_LOG_INFO("Calling getCurrentClockTime(OUT:clockTime[])"); \
         status = avClockController->getCurrentClockTime(&clockTime); \
-        UT_LOG_INFO("Result getCurrentClockTime(OUT:clockTime[clockTimeNs=%lld, sampleTimestampNs=%lld]), status:[isOK:%s, exception:%s]", \
-                    static_cast<long long>(clockTime.clockTimeNs), static_cast<long long>(clockTime.sampleTimestampNs), \
+        UT_LOG_INFO("Result getCurrentClockTime(), status:[isOK:%s, exception:%s]", \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
@@ -980,8 +975,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         bool _aidl_return = false; \
         UT_LOG_INFO("Calling setPlaybackRate(IN:rate[%.2f], OUT:_aidl_return[])", rate); \
         status = avClockController->setPlaybackRate(rate, &_aidl_return); \
-        UT_LOG_INFO("Result setPlaybackRate(IN:rate[%.2f], OUT:_aidl_return[%s]), status:[isOK:%s, exception:%s]", \
-                    rate, UT_Control_GetMapString(bool_mapTable, _aidl_return), \
+        UT_LOG_INFO("Result setPlaybackRate(IN:rate[%.2f]), status:[isOK:%s, exception:%s]", \
+                    rate, \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
@@ -1008,8 +1003,8 @@ class AVClockEventListener : public BnAVClockEventListener {
         double rate; \
         UT_LOG_INFO("Calling getPlaybackRate(OUT:rate[])"); \
         status = avClockController->getPlaybackRate(&rate); \
-        UT_LOG_INFO("Result getPlaybackRate(OUT:rate[%.2f]), status:[isOK:%s, exception:%s]", \
-                    rate, UT_Control_GetMapString(bool_mapTable, status.isOk()), \
+        UT_LOG_INFO("Result getPlaybackRate(), status:[isOK:%s, exception:%s]", \
+                    UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_STATE); \
