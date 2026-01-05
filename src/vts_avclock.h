@@ -88,6 +88,17 @@
 #include "com/rdk/hal/avclock/BnAVClockControllerListener.h"
 #include "com/rdk/hal/avclock/BnAVClockEventListener.h"
 
+#ifndef ENABLE_UT_INFO_LOGGING
+#ifdef UT_LOG_DEBUG
+#undef UT_LOG_DEBUG
+#define UT_LOG_DEBUG(...)
+#endif
+#ifdef UT_LOG_INFO
+#undef UT_LOG_INFO
+#define UT_LOG_INFO(...)
+#endif
+#endif
+
 using android::sp;
 using android::String16;
 using android::defaultServiceManager;
@@ -265,6 +276,7 @@ class AVClockEventListener : public BnAVClockEventListener {
                     com::rdk::hal::avclock::toString(property).c_str(), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_ARGUMENT); \
     } while (0)
 
@@ -299,6 +311,7 @@ class AVClockEventListener : public BnAVClockEventListener {
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
         UT_ASSERT_EQUAL(status.exceptionCode(), exception); \
+        UT_ASSERT_FALSE(status.isOk()); \
     } while (0)
 
 
