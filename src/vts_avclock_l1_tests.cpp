@@ -835,21 +835,30 @@ UT_ADD_TEST(VTS_L1_AVClock, registerEventListener_pos)
     android::sp<com::rdk::hal::avclock::IAVClock> avClock;
     ::android::binder::Status status;
 
-    /* Get the AV Clock IDs */
+    // Store pairs of Clock and Listener to clean up later
+    std::vector<std::pair<android::sp<com::rdk::hal::avclock::IAVClock>, android::sp<com::rdk::hal::avclock::IAVClockEventListener>>> activeListeners;
+
     AVCLOCK_MANAGER_GETAVCLOCKIDS(clockIds);
 
+    // STEP 1: Register on ALL clocks
     for (const auto& _clockId : clockIds)
     {
-        /* Get AV Clock handle */
         AVCLOCK_MANAGER_GETAVCLOCK_SUCCESS(_clockId, avClock);
 
-        /* Register an event listener */
         android::sp<com::rdk::hal::avclock::IAVClockEventListener> eventListener = new AVClockEventListener();
-        AVCLOCK_REGISTER_EVENT_LISTENER_SUCCESS(avClock, eventListener);
 
+        // Register and verify success
+        AVCLOCK_REGISTER_EVENT_LISTENER_SUCCESS(avClock, eventListener);
         UT_LOG_INFO("registerEventListener for clock ID %d: success", _clockId.value);
 
-        AVCLOCK_UNREGISTER_EVENT_SUCCESS(avClock,eventListener);
+        // Store them for later unregistration
+        activeListeners.push_back({avClock, eventListener});
+    }
+
+    // STEP 2: Unregister ALL clocks (Batch Cleanup)
+    for (const auto& pair : activeListeners)
+    {
+        AVCLOCK_UNREGISTER_EVENT_SUCCESS(pair.first, pair.second);
     }
 }
 
