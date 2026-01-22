@@ -835,19 +835,30 @@ UT_ADD_TEST(VTS_L1_AVClock, registerEventListener_pos)
     android::sp<com::rdk::hal::avclock::IAVClock> avClock;
     ::android::binder::Status status;
 
-    /* Get the AV Clock IDs */
+    // Store pairs of Clock and Listener to clean up later
+    std::vector<std::pair<android::sp<com::rdk::hal::avclock::IAVClock>, android::sp<com::rdk::hal::avclock::IAVClockEventListener>>> activeListeners;
+
     AVCLOCK_MANAGER_GETAVCLOCKIDS(clockIds);
 
+    // STEP 1: Register on ALL clocks
     for (const auto& _clockId : clockIds)
     {
-        /* Get AV Clock handle */
         AVCLOCK_MANAGER_GETAVCLOCK_SUCCESS(_clockId, avClock);
 
-        /* Register an event listener */
         android::sp<com::rdk::hal::avclock::IAVClockEventListener> eventListener = new AVClockEventListener();
-        AVCLOCK_REGISTER_EVENT_LISTENER_SUCCESS(avClock, eventListener);
 
+        // Register and verify success
+        AVCLOCK_REGISTER_EVENT_LISTENER_SUCCESS(avClock, eventListener);
         UT_LOG_INFO("registerEventListener for clock ID %d: success", _clockId.value);
+
+        // Store them for later unregistration
+        activeListeners.push_back({avClock, eventListener});
+    }
+
+    // STEP 2: Unregister ALL clocks (Batch Cleanup)
+    for (const auto& pair : activeListeners)
+    {
+        AVCLOCK_UNREGISTER_EVENT_SUCCESS(pair.first, pair.second);
     }
 }
 
@@ -1222,33 +1233,19 @@ UT_ADD_TEST(VTS_L1_AVClock, stop_neg)
         /* Get AV Clock handle */
         AVCLOCK_MANAGER_GETAVCLOCK_SUCCESS(_clockId, avClock);
 
-        /* Test 1: Stop in CLOSED state */
+        /* Test 1: Stop in READY state */
         {
             android::sp<com::rdk::hal::avclock::IAVClockController> avClockController;
             android::sp<com::rdk::hal::avclock::IAVClockControllerListener> controllerListener = new AVClockControllerListener();
             AVCLOCK_OPEN_SUCCESS(avClock, controllerListener, avClockController, true);
+
+            AVCLOCK_STOP_FAILURE(avClock, avClockController);
+            UT_LOG_INFO("stop in READY state for clock ID %d: failed as expected", _clockId.value);
 
             /* Close the AV Clock to ensure CLOSED state */
             AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
 
-            /* Create a new controller for the stop call */
-            avClockController = nullptr;
-            controllerListener = new AVClockControllerListener();
-            AVCLOCK_STOP_FAILURE(avClock, avClockController);
-            UT_LOG_INFO("stop in CLOSED state for clock ID %d: failed as expected", _clockId.value);
         }
-
-        /*TODO */
-        /* Test 2: Stop in READY state
-        {
-            android::sp<com::rdk::hal::avclock::IAVClockController> avClockController;
-            android::sp<com::rdk::hal::avclock::IAVClockControllerListener> controllerListener = new AVClockControllerListener();
-            AVCLOCK_OPEN_SUCCESS(avClock, controllerListener, avClockController, true);
-
-            AVCLOCK_STOP_FAILURE(avClock, avClockController);
-
-            UT_LOG_INFO("stop in READY state for clock ID %d: failed as expected", _clockId.value);
-        }*/
     }
 }
 
