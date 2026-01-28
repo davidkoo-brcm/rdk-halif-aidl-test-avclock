@@ -210,7 +210,7 @@ class AVClockControllerListener : public BnAVClockControllerListener {
          * @param timeout      How long to wait, e.g. std::chrono::milliseconds(500).
          * @return true if the state was reached; false if we timed out waiting.
          */
-        bool waitForState(State desiredState, std::chrono::milliseconds timeout)
+        bool waitForState(com::rdk::hal::State desiredState, std::chrono::milliseconds timeout)
         {
             std::unique_lock<std::mutex> lock(mMutex);
             // Wait until mCurrentState == desiredState or until timeout
@@ -220,7 +220,7 @@ class AVClockControllerListener : public BnAVClockControllerListener {
         }
 
         // Accessors for test verifications if desired
-        std::vector<std::pair<State, State>> getStateChanges() const
+        std::vector<std::pair<com::rdk::hal::State, com::rdk::hal::State>> getStateChanges() const
         {
             std::lock_guard<std::mutex> lock(mMutex);
             return mStateChanges;
@@ -285,7 +285,7 @@ class AVClockEventListener : public BnAVClockEventListener {
          * @param timeout      How long to wait, e.g. std::chrono::milliseconds(500).
          * @return true if the state was reached; false if we timed out waiting.
          */
-        bool waitForState(State desiredState, std::chrono::milliseconds timeout)
+        bool waitForState(com::rdk::hal::State desiredState, std::chrono::milliseconds timeout)
         {
             std::unique_lock<std::mutex> lock(mMutex);
             // Wait until mCurrentState == desiredState or until timeout
@@ -294,7 +294,7 @@ class AVClockEventListener : public BnAVClockEventListener {
             });
         }
         // Accessors for test verifications if desired
-        std::vector<std::pair<State, State>> getStateChanges() const
+        std::vector<std::pair<com::rdk::hal::State, com::rdk::hal::State>> getStateChanges() const
         {
             std::lock_guard<std::mutex> lock(mMutex);
             return mStateChanges;

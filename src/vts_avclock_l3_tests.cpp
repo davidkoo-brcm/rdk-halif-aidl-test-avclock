@@ -347,8 +347,8 @@ public:
 };
     
 void checkCompleteStateTransition(sp<IAVClock> avClock, sp<AVClockEventListener> eventListener,
-                                      sp<AVClockControllerListener> controlListener, State oldState,
-                                      State intermediateState, State newState)
+                                      sp<AVClockControllerListener> controlListener, com::rdk::hal::State oldState,
+                                      com::rdk::hal::State intermediateState, com::rdk::hal::State newState)
     {
         ::com::rdk::hal::State currentState;
 
@@ -443,13 +443,15 @@ void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg, sp<IAVClockContr
 
         HeapMetrics beforeHeap, afterHeap;
         AVBUFFER_GETMETRICS(mBufferManager, audioCfg.secureDecode, beforeHeap);
-        
+
+        bool isAudioSinkAttached = (audioCfg.sinkHandle != nullptr);
+
         // Set the Audio Sink
         AVCLOCK_SET_AUDIO_SINK_SUCCESS(mClockHandle, avClockController, audioCfg.sinkId, true);
 
         AudioDecoderTest decodeTest(audioCfg.decId, audioCfg.decHandle, audioCfg.decCtrlListener,
                                     audioCfg.decEventListener, mBufferManager, mBufferHelper,
-                                    audioCfg.secureDecode, audioCfg.testConfig);
+                                    audioCfg.secureDecode, audioCfg.testConfig, isAudioSinkAttached);
         std::thread decodeThread(&AudioDecoderTest::run, &decodeTest, false);
 
         AudioSinkTest sinkTest(audioCfg.sinkId, audioCfg.sinkHandle, audioCfg.sinkCtrlListener,
@@ -479,12 +481,14 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig videoCfg, sp<IAVClockContr
         HeapMetrics beforeHeap, afterHeap;
         AVBUFFER_GETMETRICS(mBufferManager, videoCfg.secureDecode, beforeHeap);
 
+        bool isVideoSinkAttached = (videoCfg.sinkHandle != nullptr);
+
         // Set the Audio Sink
         AVCLOCK_SET_VIDEO_SINK_SUCCESS(mClockHandle, avClockController, videoCfg.sinkId, true);
 
         videoDecoderTest decodeTest(videoCfg.decId, videoCfg.decHandle, videoCfg.decCtrlListener,
                                     videoCfg.decEventListener, mBufferManager, videoCfg.secureDecode,
-                                    videoCfg.tunnelMode, videoCfg.decTestConfig, mBufferHelper);
+                                    videoCfg.tunnelMode, videoCfg.decTestConfig, mBufferHelper, isVideoSinkAttached);
         std::thread decodeThread(&videoDecoderTest::run, &decodeTest, false);
         
         auto decConfig = videoCfg.decTestConfig;
