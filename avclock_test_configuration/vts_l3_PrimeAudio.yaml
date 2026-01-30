@@ -1,0 +1,244 @@
+#** *****************************************************************************
+# *
+# * If not stated otherwise in this file or this component's LICENSE file the
+# * following copyright and licenses apply:
+# *
+# * Copyright 2025 RDK Management
+# *
+# * Licensed under the Apache License, Version 2.0 (the "License");
+# * you may not use this file except in compliance with the License.
+# * You may obtain a copy of the License at
+# *
+# *
+# * http://www.apache.org/licenses/LICENSE-2.0
+# *
+# * Unless required by applicable law or agreed to in writing, software
+# * distributed under the License is distributed on an "AS IS" BASIS,
+# * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# * See the License for the specific language governing permissions and
+# * limitations under the License.
+# *
+#** ******************************************************************************
+IAudioDecoderManager:
+  stream_download_path: "http://<>/streams" #`URL` path to download the audio test streams
+  input_streams_path: "assets/streams/input" #Target path where input streams are stored
+  reference_streams_path: "assets/streams/reference/" #Target path for reference PCM streams
+  L3: #Test Level
+    PrimeAudio: #Test Name
+      Controls:
+        delay_between_decode_calls: -1 # Insert delay in msec between each `decodeBuffer()` call
+        stop_start_pts: -1 #`pts` value in nano seconds at which the decoder should be stopped and restarted during the test. -1 indicates that decoder should not be restarted
+        signal_discontinuity_pts: -1 #`pts` value in nano seconds at which the test should signal discontinuity to the decoder. -1 indicates that no discontinuity signal should be sent
+        flush_pts: -1 #`pts` value in nano seconds that determine when the test should flush the decoder. -1 indicates that test should not flush
+        flush_reset_pts: -1 #`pts` value in nano seconds that determine when the test should flush with reset the decoder. -1 indicates that test should not flush
+        eos_pts: -1 #`pts` value in nano seconds that determine when the test should sent `eos` signal to decoder. -1 indicates that test should not signal `eos`
+        sink_eos_pts: -1
+        sink_flush_pts: -1
+      Inputs:
+        Streams:
+####### AAC Streams ##############
+          - Name: tones_8k_2_64_aac #Stream name
+            PTS: #List of Presentation Time Stamps (per frame) in microseconds
+              - 0
+              - 128000000
+              - 256000000
+              - 384000000
+              - 512000000
+              - 640000000
+              - 768000000
+              - 896000000
+              - 1024000000
+              - 1152000000
+            trim: #Start and end trim points in Nano seconds
+              - 0 #Start in Nano seconds
+              - 0 #End
+            decode_time_threshold: 100000 #Time budget per frame for decoding, in microseconds
+            rms_diff_threshold: 0.5 #Maximum allowed `rms` difference for output validation
+          - Name: tones_11_025k_2_64_aac
+            PTS:
+              - 0
+              - 92879818
+              - 185759636
+              - 278639454
+              - 371519272
+              - 464399090
+              - 557278908
+              - 650158726
+              - 743038544
+              - 835918362
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_12k_2_64_aac
+            PTS:
+              - 0
+              - 85333333
+              - 170666666
+              - 256000000
+              - 341333333
+              - 426666666
+              - 512000000
+              - 597333333
+              - 682666666
+              - 768000000
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_16k_2_64_aac
+            PTS:
+              - 0
+              - 64000000
+              - 128000000
+              - 192000000
+              - 256000000
+              - 320000000
+              - 384000000
+              - 448000000
+              - 512000000
+              - 576000000
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_22_05k_2_96_aac
+            PTS:
+              - 0
+              - 46439909
+              - 92879818
+              - 139319727
+              - 185759636
+              - 232199545
+              - 278639454
+              - 325079363
+              - 371519272
+              - 417959181
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_24k_2_96_aac
+            PTS:
+              - 0
+              - 42666666
+              - 85333332
+              - 127999998
+              - 170666664
+              - 213333330
+              - 255999996
+              - 298666662
+              - 341333328
+              - 383999994
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+####### AC3 Streams ##############
+          - Name: tones_32k_1_64_ac3
+            PTS:
+              - 123456
+              - 48123456
+              - 96123456
+              - 144123456
+              - 192123456
+              - 240123456
+              - 288123456
+              - 336123456
+              - 384123456
+              - 432123456
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_32k_2_64_ac3
+            PTS:
+              - 123456
+              - 48123456
+              - 96123456
+              - 144123456
+              - 192123456
+              - 240123456
+              - 288123456
+              - 336123456
+              - 384123456
+              - 432123456
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_44_1k_1_64_ac3
+            PTS:
+              - 123456
+              - 34712833
+              - 69321710
+              - 103930587
+              - 138539464
+              - 173148341
+              - 207757218
+              - 242366095
+              - 276974972
+              - 311583849
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_44_1k_2_96_ac3
+            PTS:
+              - 123456
+              - 34712833
+              - 69321710
+              - 103930587
+              - 138539464
+              - 173148341
+              - 207757218
+              - 242366095
+              - 276974972
+              - 311583849
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_48k_1_128_ac3
+            PTS:
+              - 123456
+              - 32123456
+              - 64123456
+              - 96123456
+              - 128123456
+              - 160123456
+              - 192123456
+              - 224123456
+              - 256123456
+              - 288123456
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
+          - Name: tones_48k_2_192_ac3
+            PTS:
+              - 123456
+              - 32123456
+              - 64123456
+              - 96123456
+              - 128123456
+              - 160123456
+              - 192123456
+              - 224123456
+              - 256123456
+              - 288123456
+            trim:
+              - 0
+              - 0
+            decode_time_threshold: 100000
+            rms_diff_threshold: 0.5
