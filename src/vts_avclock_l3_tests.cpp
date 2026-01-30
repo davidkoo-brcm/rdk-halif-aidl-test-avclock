@@ -618,8 +618,16 @@ void runAudioClockTest( std::shared_ptr<AVClockPrimeTest> clockTest,
             clockTest->validateClockTime(clockHandle, avClockController, playbackRate);
             });
 
-            validatepts.join();
-            primeAudioThread.join();
+            if(validatepts.joinable())
+            {
+                validatepts.join();
+            }
+
+            if(primeAudioThread.joinable())
+            {
+                primeAudioThread.join();
+            }
+
             UT_LOG_INFO("Audio Clock Test completed.");
         } else {
             UT_LOG_WARNING("AudioConfig could not be initialized.");
@@ -717,9 +725,17 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
             std::thread validatepts([clockTest, clockHandle, avClockController, playbackRate] mutable{
             clockTest->validateClockTime(clockHandle, avClockController, playbackRate);
             });
-         
-            validatepts.join();
-            primeVideoThread.join();
+
+            if(validatepts.joinable())
+            {
+                validatepts.join();
+            }
+
+            if(primeVideoThread.joinable())
+            {
+                primeVideoThread.join();
+            }
+
             UT_LOG_INFO("Video Clock Test completed.");
         } else {
             UT_LOG_WARNING("VideoConfig could not be initialized.");
@@ -753,9 +769,18 @@ void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest, long pcrValue,
         std::thread validatepts([clockTest, clockHandle, avClockController, playbackRate] mutable{
         clockTest->validateClockTime(clockHandle, avClockController, playbackRate);
         });
-         
-        validatepts.join();
-        primePcrThread.join();
+
+        if(validatepts.joinable())
+        {
+            UT_LOG_DEBUG("Joining validation thread");
+            validatepts.join();
+        }
+
+        if(primePcrThread.joinable())
+        {
+            UT_LOG_DEBUG("Joining PCR Thread");
+            primePcrThread.join();
+        }
         UT_LOG_INFO("Sequential PCR Clock Test completed successfully.");
     } catch (const std::exception& ex) {
         UT_LOG_ERROR("Exception in runSequentialPCRClock: %s", ex.what());
@@ -867,8 +892,8 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
     auto waitForReady = [&] (bool &flag, const char *name) {
         std::unique_lock<std::mutex> lock(mtx);
-        if (!cv.wait_for(lock, std::chrono::seconds(5), [&] { return flag; })) {
-            UT_LOG_ERROR("Unable to start %s thread: Timed out after 5 seconds", name);
+        if (!cv.wait_for(lock, std::chrono::milliseconds(200), [&] { return flag; })) {
+            UT_LOG_ERROR("Timeout %s thread: Timed out after 5 minutes please increase time", name);
             return false;
         }
         return true;
@@ -902,12 +927,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
         // Prime Audio Only
         if (primetype == primeaudio) {
             runaudioprimethread = std::thread([&, storedClockTest] mutable {
-                runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     audioReady = true;
                 }
                 cv.notify_all();
+                runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
+
             });
 
             if (!waitForReady(audioReady, "Audio")) {
@@ -920,11 +946,11 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
         // Prime Video Only
         else if (primetype == primevideo) {
            runvideoprimethread = std::thread([&, storedClockTest] {
-                runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     videoReady = true;
                 }
+                runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
                 cv.notify_all();
             });
 
@@ -938,11 +964,11 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
         // Audio Before Video
         else if (primetype == primeaudiobeforevideo) {
             runaudioprimethread = std::thread([&, storedClockTest] {
-                runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     audioReady = true;
                 }
+                runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
                 cv.notify_all();
             });
 
@@ -954,11 +980,11 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             primeThreads.push_back(std::move(runaudioprimethread));
 
             runvideoprimethread = std::thread([&, storedClockTest] {
-                runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     videoReady = true;
                 }
+                runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
                 cv.notify_all();
             });
 
@@ -973,11 +999,11 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
         else if (primetype == primevideobeforeaudio)
         {
              runvideoprimethread = std::thread([&, storedClockTest] {
-                runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     videoReady = true;
                 }
+                runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
                 cv.notify_all();
             });
 
@@ -989,11 +1015,11 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             primeThreads.push_back(std::move(runvideoprimethread));
 
             runaudioprimethread = std::thread([&, storedClockTest] {
-                runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     audioReady = true;
                 }
+                runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
                 cv.notify_all();
             });
 
@@ -1009,11 +1035,11 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
         else if (primetype == primepcr)
         {
             runaudioprimethread = std::thread([&, storedClockTest] {
-                runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     audioReady = true;
                 }
+                runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
                 cv.notify_all();
             });
 
@@ -1025,11 +1051,11 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             primeThreads.push_back(std::move(runaudioprimethread));
 
             runvideoprimethread = std::thread([&, storedClockTest] {
-                runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     videoReady = true;
                 }
+                runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
                 cv.notify_all();
             });
 
@@ -1041,11 +1067,11 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             primeThreads.push_back(std::move(runvideoprimethread));
 
             runpcrprimethread = std::thread([&, storedClockTest] {
-                runPcrPrimeTest(storedClockTest, isConcurrentMode, clockControllerList.back());
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     audioReady = true;
                 }
+                runPcrPrimeTest(storedClockTest, isConcurrentMode, clockControllerList.back());
                 cv.notify_all();
             });
 
@@ -1086,11 +1112,11 @@ else
         // Prime Audio Only
         if (primetype == primeaudio) {
             runaudioprimethread = std::thread([&, clockTest] {
-                runAudioPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode, avclockController);
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     audioReady = true;
                 }
+                runAudioPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode, avclockController);
                 cv.notify_all();
             });
 
@@ -1103,11 +1129,11 @@ else
         // Prime Video Only
         else if (primetype == primevideo) {
             runvideoprimethread = std::thread([&, clockTest] {
-                runVideoPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode, avclockController);
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     videoReady = true;
                 }
+                runVideoPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode, avclockController);
                 cv.notify_all();
             });
 
@@ -1120,12 +1146,12 @@ else
         // Audio Before Video
         else if (primetype == primeaudiobeforevideo) {
             runaudioprimethread = std::thread([&, clockTest] {
-                runAudioPrimeTest(clockTest, isSecureMode, isTunnel,
-                                  isConcurrentMode, avclockController);
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     audioReady = true;
                 }
+                runAudioPrimeTest(clockTest, isSecureMode, isTunnel,
+                                  isConcurrentMode, avclockController);
                 cv.notify_all();
             });
 
@@ -1135,12 +1161,12 @@ else
             }
 
             runvideoprimethread = std::thread([&, clockTest] {
-                runVideoPrimeTest(clockTest, isSecureMode, isTunnel,
-                                  isConcurrentMode, avclockController);
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     videoReady = true;
                 }
+                runVideoPrimeTest(clockTest, isSecureMode, isTunnel,
+                                  isConcurrentMode, avclockController);
                 cv.notify_all();
             });
 
@@ -1153,12 +1179,12 @@ else
         // Video Before Audio
         else if (primetype == primevideobeforeaudio) {
             runvideoprimethread = std::thread([&, clockTest] {
-                runVideoPrimeTest(clockTest, isSecureMode, isTunnel,
-                                  isConcurrentMode, avclockController);
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     videoReady = true;
                 }
+                runVideoPrimeTest(clockTest, isSecureMode, isTunnel,
+                                  isConcurrentMode, avclockController);
                 cv.notify_all();
             });
 
@@ -1168,12 +1194,12 @@ else
             }
 
             runaudioprimethread = std::thread([&, clockTest] {
-                runAudioPrimeTest(clockTest, isSecureMode, isTunnel,
-                                  isConcurrentMode, avclockController);
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     audioReady = true;
                 }
+                runAudioPrimeTest(clockTest, isSecureMode, isTunnel,
+                                  isConcurrentMode, avclockController);
                 cv.notify_all();
             });
 
@@ -1186,12 +1212,12 @@ else
         // PCR Case
         else if (primetype == primepcr) {
             runaudioprimethread = std::thread([&, clockTest] {
-                runAudioPrimeTest(clockTest, isSecureMode, isTunnel,
-                                  isConcurrentMode, avclockController);
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     audioReady = true;
                 }
+                runAudioPrimeTest(clockTest, isSecureMode, isTunnel,
+                                  isConcurrentMode, avclockController);
                 cv.notify_all();
             });
 
@@ -1201,12 +1227,12 @@ else
             }
 
             runvideoprimethread = std::thread([&, clockTest] {
-                runVideoPrimeTest(clockTest, isSecureMode, isTunnel,
-                                  isConcurrentMode, avclockController);
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     videoReady = true;
                 }
+                runVideoPrimeTest(clockTest, isSecureMode, isTunnel,
+                                  isConcurrentMode, avclockController);
                 cv.notify_all();
             });
 
@@ -1216,11 +1242,11 @@ else
             }
 
             runpcrprimethread = std::thread([&, clockTest] {
-                runPcrPrimeTest(clockTest, isConcurrentMode, avclockController);
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     pcrReady = true;
                 }
+                runPcrPrimeTest(clockTest, isConcurrentMode, avclockController);
                 cv.notify_all();
             });
 
