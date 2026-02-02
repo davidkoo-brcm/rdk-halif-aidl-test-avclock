@@ -111,7 +111,7 @@ public:
         mAvClocks.clear();
         mClockIds.clear();
     }
-    void checkCompleteStateTransition(sp<IAVClock> clk, sp<AVClockEventListener> eventListener, State oldState, State intermediateState, State newState)
+    void checkCompleteStateTransition(sp<IAVClock> clk, sp<AVClockEventListener> eventListener, com::rdk::hal::State oldState, com::rdk::hal::State intermediateState, com::rdk::hal::State newState)
     {
         ::com::rdk::hal::State currentState;
         eventListener->waitForState(intermediateState, std::chrono::milliseconds(MAX_TRANSITORY_STATE_WAIT_MS));
@@ -167,12 +167,12 @@ UT_ADD_TEST(VTS_L2_AVCLOCK, SetReadOnlyPropertyTest)
         PropertyValue propertyValue;
         propertyValue.value = PropertyValue::Value::make<PropertyValue::Value::Tag::intValue>(1);
         bool result = true;
-        AVCLOCK_SET_PROPERTY_FAILURE(clk,com::rdk::hal::avclock::Property::RESOURCE_ID,propertyValue,result,Status::EX_NONE);
-        EXPECT_FALSE(result);
-        AVCLOCK_SET_PROPERTY_FAILURE(clk,com::rdk::hal::avclock::Property::METRIC_AV_SYNC_ACCURACY_MS,propertyValue,result , Status::EX_NONE);
-        EXPECT_FALSE(result);
-        AVCLOCK_SET_PROPERTY_FAILURE(clk,com::rdk::hal::avclock::Property::METRIC_AV_RESYNC_COUNT,propertyValue,result, Status::EX_NONE);
-        EXPECT_FALSE(result);
+        AVCLOCK_SET_PROPERTY_FAILURE(clk,com::rdk::hal::avclock::Property::RESOURCE_ID,propertyValue,result,Status::EX_UNSUPPORTED_OPERATION);
+
+        AVCLOCK_SET_PROPERTY_FAILURE(clk,com::rdk::hal::avclock::Property::METRIC_AV_SYNC_ACCURACY_MS,propertyValue,result , Status::EX_UNSUPPORTED_OPERATION);
+
+        AVCLOCK_SET_PROPERTY_FAILURE(clk,com::rdk::hal::avclock::Property::METRIC_AV_RESYNC_COUNT,propertyValue,result, Status::EX_UNSUPPORTED_OPERATION);
+
     }
 }
 
@@ -191,18 +191,18 @@ UT_ADD_TEST(VTS_L2_AVCLOCK, SetReadOnlyPropertyTest)
  */
 
  UT_ADD_TEST(VTS_L2_AVCLOCK, TestStateTransitions) {
-    State state;
+    com::rdk::hal::State state;
     for (size_t i = 0; i < mAvClocks.size(); ++i) {
         sp<IAVClockController> controller = mControllers[i];
         sp<AVClockEventListener> listener = mEvtListeners[i];
 
         // Start the AV Clock
-        AVCLOCK_START_SUCCESS(mAvClocks[i],controller,false);
-        checkCompleteStateTransition(mAvClocks[i],listener,State::READY,State::STARTING,State::STARTED);
+        AVCLOCK_START_SUCCESS(mAvClocks[i], controller, false);
+        checkCompleteStateTransition(mAvClocks[i],listener, com::rdk::hal::State::READY, com::rdk::hal::State::STARTING, com::rdk::hal::State::STARTED);
 
         // Stop the AV Clock
-        AVCLOCK_STOP_SUCCESS(mAvClocks[i],controller,false);
-        checkCompleteStateTransition(mAvClocks[i],listener,State::STARTED,State::STOPPING,State::READY);
+        AVCLOCK_STOP_SUCCESS(mAvClocks[i], controller, false);
+        checkCompleteStateTransition(mAvClocks[i],listener, com::rdk::hal::State::STARTED, com::rdk::hal::State::STOPPING, com::rdk::hal::State::READY);
     }
 }
 
@@ -250,7 +250,7 @@ UT_ADD_TEST(VTS_L2_AVCLOCK, VerifyClockModeSetToAutoOnOpenAndSetGetClockMode) {
 * Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/avClock_High-Level-2_TestSpecification.md)
 */
 UT_ADD_TEST(VTS_L2_AVCLOCK, VerifyPlaybackRateAndStateTransitions) {
-    State state;
+    com::rdk::hal::State state;
 
     for (size_t i = 0; i < mAvClocks.size(); ++i)
     {

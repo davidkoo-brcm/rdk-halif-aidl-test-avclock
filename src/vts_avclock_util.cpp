@@ -62,6 +62,40 @@
 
 extern sp<IAVClockManager> gAVClockManagerService;
 
+bool isClkSinkUsable(const IAudioSink::Id& sinkId)
+{
+    for (const auto& _sink : gAudiosinks_hfp)
+    {
+        if (std::find(_sink.availableIds.begin(), _sink.availableIds.end(), sinkId.value) != _sink.availableIds.end())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool isClkDecoderUsable(const IAudioDecoder::Id& decoderId)
+{
+    if (gAudiosinks_hfp.empty()) {
+        return false;
+    }
+
+    const auto& availableDecoders = gAudiosinks_hfp[0].availableDecoderIds;
+    return std::find(availableDecoders.begin(), availableDecoders.end(), decoderId.value) != availableDecoders.end();
+}
+
+bool isClkVideoSinkUsable(const IVideoSink::Id& sinkId)
+{
+    return std::find(gAvailableVideosinks_hfp.begin(), gAvailableVideosinks_hfp.end(), sinkId.value) != gAvailableVideosinks_hfp.end();
+}
+
+bool isClkVideoDecoderUsable(const IVideoDecoder::Id& decoderId)
+{
+    return std::find(gAvailableVideodecoders_hfp.begin(),
+                            gAvailableVideodecoders_hfp.end(),
+                            decoderId.value) != gAvailableVideodecoders_hfp.end();
+}
+
 int getAVClockService()
 {
     gAVClockManagerService = android::interface_cast<IAVClockManager>(
@@ -88,6 +122,7 @@ void vts_avclock_helper_validateCapabilities(int avClockId, const avclock::Capab
     // Add assertions based on profile or capabilities fields
     UT_ASSERT_TRUE(true); // Placeholder
 }
+
 #if 0
 bool vts_avclock_helper_validatePropertyValue(int avClockId, const std::optional<PropertyValue>& propertyValue, avclock::Property property) {
     if (!propertyValue.has_value()) {

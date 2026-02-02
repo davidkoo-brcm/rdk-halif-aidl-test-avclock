@@ -57,6 +57,9 @@
 #include <ut_log.h>
 #include <ut_control_plane.h>
 
+extern void *gAVClockTestConfiguration;
+extern void *gAudioPrimeTestConfiguration;
+extern void *gVideoPrimeTestConfiguration;
 
 UT_status_t VTS_AVClock_init();
 
