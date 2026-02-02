@@ -604,7 +604,7 @@ void runAudioClockTest( std::shared_ptr<AVClockPrimeTest> clockTest,
         }
 
         if (mAudioList) {
-            std::thread primeAudioThread([clockTest, audioCfg = *mAudioList, avClockController] mutable{
+            std::thread primeAudioThread([clockTest, audioCfg = *mAudioList, avClockController]() mutable{
                 clockTest->runAudioTest(audioCfg, avClockController);
             });
 
@@ -614,7 +614,7 @@ void runAudioClockTest( std::shared_ptr<AVClockPrimeTest> clockTest,
             // TBD will below sleep with wait event after spec update.
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
             
-            std::thread validatepts([clockTest, clockHandle, avClockController, playbackRate] mutable{
+            std::thread validatepts([clockTest, clockHandle, avClockController, playbackRate]() mutable{
             clockTest->validateClockTime(clockHandle, avClockController, playbackRate);
             });
 
@@ -657,7 +657,6 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 
         if (isConcurrentMode) {
             //  Concurrent Mode: Fetch decoder and sink by clockId
-            auto clockId = clockTest->getClockId(); // Ensure getter exists or pass clockId explicitly
 
             auto resultDec = getTupleElements(videoDecoderList, clockTest->getClockId(), std::index_sequence<0, 1, 2, 3>{});
             auto resultSink = getTupleElements(videoSinkList, clockTest->getClockId(), std::index_sequence<0, 1, 2, 3>{});
@@ -712,7 +711,7 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
         }
 
         if (mVideoList) {
-            std::thread primeVideoThread([clockTest, videoCfg = *mVideoList, avClockController] mutable{
+            std::thread primeVideoThread([clockTest, videoCfg = *mVideoList, avClockController]() mutable{
                 clockTest->runVideoTest(videoCfg, avClockController);
             });
 
@@ -722,7 +721,7 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
             // TBD will below sleep with wait event after spec update.
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
             
-            std::thread validatepts([clockTest, clockHandle, avClockController, playbackRate] mutable{
+            std::thread validatepts([clockTest, clockHandle, avClockController, playbackRate]() mutable{
             clockTest->validateClockTime(clockHandle, avClockController, playbackRate);
             });
 
@@ -752,7 +751,7 @@ void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest, long pcrValue,
     PcrConfig config{ pcrValue };
     try {
         // Launch PCR test in a thread using the existing pcrPrimeTest instance
-        std::thread primePcrThread([clockTest, config, avClockController] mutable {
+        std::thread primePcrThread([clockTest, config, avClockController]() mutable {
             try {
                 clockTest->runPcrTest(config, avClockController);
             } catch (const std::exception& ex) {
@@ -766,7 +765,7 @@ void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest, long pcrValue,
         // TBD will below sleep with wait event after spec update.
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
             
-        std::thread validatepts([clockTest, clockHandle, avClockController, playbackRate] mutable{
+        std::thread validatepts([clockTest, clockHandle, avClockController, playbackRate]() mutable{
         clockTest->validateClockTime(clockHandle, avClockController, playbackRate);
         });
 
@@ -926,7 +925,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
                      
         // Prime Audio Only
         if (primetype == primeaudio) {
-            runaudioprimethread = std::thread([&, storedClockTest] mutable {
+            runaudioprimethread = std::thread([&, storedClockTest]() mutable {
                 {
                     std::lock_guard<std::mutex> lock(mtx);
                     audioReady = true;
@@ -1107,7 +1106,6 @@ else
 
         // Call the method on the instance
         auto avclockController = clockTest->setupAndStartClock();
-        auto clockTestPtr = clockTest.get();
                      
         // Prime Audio Only
         if (primetype == primeaudio) {
