@@ -459,7 +459,7 @@ void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg, sp<IAVClockContr
                                audioCfg.decId, audioCfg.secureDecode, audioCfg.tunnelMode,
                                audioCfg.testConfig);
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
-        sinkTest.run();
+        sinkTest.run(audioCfg.tunnelMode);
 
         if (decodeThread.joinable()) decodeThread.join();
 
