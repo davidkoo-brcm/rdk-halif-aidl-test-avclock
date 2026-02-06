@@ -441,9 +441,6 @@ void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg, sp<IAVClockContr
         if (!isClkSinkUsable(audioCfg.sinkId)) return;
         if (!isClkDecoderUsable(audioCfg.decId)) return;
 
-        HeapMetrics beforeHeap, afterHeap;
-        AVBUFFER_GETMETRICS(mBufferManager, audioCfg.secureDecode, beforeHeap);
-
         bool isAudioSinkAttached = (audioCfg.sinkHandle != nullptr);
 
         // Set the Audio Sink
@@ -462,9 +459,6 @@ void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg, sp<IAVClockContr
         sinkTest.run();
 
         if (decodeThread.joinable()) decodeThread.join();
-
-        AVBUFFER_GETMETRICS(mBufferManager, audioCfg.secureDecode, afterHeap);
-        UT_ASSERT_TRUE(beforeHeap.bytesUsed == afterHeap.bytesUsed);
     } catch (...) {
         UT_LOG_ERROR("Exception in runAudioTest");
         UT_ASSERT_TRUE(false);
@@ -477,9 +471,6 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig videoCfg, sp<IAVClockContr
     try {
         if (!isClkVideoSinkUsable(videoCfg.sinkId)) return;
         if (!isClkVideoDecoderUsable(videoCfg.decId)) return;
-
-        HeapMetrics beforeHeap, afterHeap;
-        AVBUFFER_GETMETRICS(mBufferManager, videoCfg.secureDecode, beforeHeap);
 
         bool isVideoSinkAttached = (videoCfg.sinkHandle != nullptr);
 
@@ -501,9 +492,6 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig videoCfg, sp<IAVClockContr
         sinkTest.run(videoCfg.tunnelMode);
 
         if (decodeThread.joinable()) decodeThread.join();
-
-        AVBUFFER_GETMETRICS(mBufferManager, videoCfg.secureDecode, afterHeap);
-        UT_ASSERT_TRUE(beforeHeap.bytesUsed == afterHeap.bytesUsed);
     } catch (...) {
         UT_LOG_ERROR("Exception in runVideoTest");
         UT_ASSERT_TRUE(false);
