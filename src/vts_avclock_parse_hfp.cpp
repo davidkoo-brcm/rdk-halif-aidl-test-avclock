@@ -83,7 +83,7 @@ UT_status_t vts_avclock_parseAVClockHFP()
 
     for(int32_t i = 0; i < number_of_avclockinst; ++i)
     {
-        string avclockidpath = avclockpath + "." + std::to_string(i) + ".id";
+        string avclockidpath = avclockpath + "." + std::to_string(i);
         int32_t avclock_id = UT_KVP_PROFILE_GET_UINT32(avclockidpath.c_str());
         temporary.ids.push_back(avclock_id);
     }
