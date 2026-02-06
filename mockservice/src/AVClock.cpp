@@ -280,9 +280,16 @@ namespace com {
                         return android::binder::Status::ok();
                     }
                     
-                    // Compare the underlying IBinder objects
+                    // Compare the underlying IBinder objects with additional null safety
                     android::sp<android::IBinder> registeredBinder = IInterface::asBinder(this->mAVClockEventListener);
                     android::sp<android::IBinder> providedBinder = IInterface::asBinder(avClockEventListener);
+                    
+                    // Check if binders are valid
+                    if (registeredBinder == nullptr || providedBinder == nullptr)
+                    {
+                        *_aidl_return = false;
+                        return android::binder::Status::ok();
+                    }
                     
                     if (registeredBinder.get() != providedBinder.get())
                     {
