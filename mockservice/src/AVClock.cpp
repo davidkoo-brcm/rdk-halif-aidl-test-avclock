@@ -482,11 +482,6 @@ namespace com {
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
 
-                    if(pcrTimeNs < 0 ||sampleTimestampNs < 0){
-                        *_aidl_return = false;
-                        return android::binder::Status::ok();
-                    }
-
                     this->mPCRSamples = { PCRSample{pcrTimeNs, sampleTimestampNs} };
                     *_aidl_return = true;
                     return android::binder::Status::ok();
