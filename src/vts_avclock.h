@@ -1181,7 +1181,7 @@ public:
     void runPcrTest(const PcrConfig pcrCfg, android::sp<IAVClockController>& avclockconrotller);
     android::sp<com::rdk::hal::avclock::IAVClockController> setupAndStartClock();
     void shutdownClock(android::sp<com::rdk::hal::avclock::IAVClockController> clockcontroller);
-    long getMonotonicRawTimestamp();
+    int64_t getMonotonicRawTimestamp();
 
 private:
     // Common members

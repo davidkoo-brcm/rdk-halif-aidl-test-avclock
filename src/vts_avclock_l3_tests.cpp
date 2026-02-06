@@ -510,7 +510,7 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig videoCfg, sp<IAVClockContr
     }
 }
 
-long AVClockPrimeTest::getMonotonicRawTimestamp() {
+int64_t AVClockPrimeTest::getMonotonicRawTimestamp() {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
     return static_cast<int64_t>(ts.tv_sec) * 1'000'000'000LL + ts.tv_nsec;
@@ -746,7 +746,7 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 }
 
 
-void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest, long pcrValue, sp<IAVClockController>& avClockController)
+void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest, int64_t pcrValue, sp<IAVClockController>& avClockController)
 {   
     PcrConfig config{ pcrValue };
     try {
