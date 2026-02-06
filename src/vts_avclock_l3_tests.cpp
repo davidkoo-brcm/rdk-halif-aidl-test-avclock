@@ -314,8 +314,9 @@ class VTS_L3_AVClock : public UTCore
             ::android::binder::Status status;
             bool _aidl_return = false;
             status = audioDecoder->unregisterEventListener(eventListener, &_aidl_return);
-            UT_LOG_INFO("Result unregisterEventListener for AudioDecoder ID %d, status:[isOK:%s, exception:%s]",
+            UT_LOG_INFO("Result unregisterEventListener for AudioDecoder ID %d, _aidl_return:[%s], status:[isOK:%s, exception:%s]",
                         _audioDecoderId.value,
+                        UT_Control_GetMapString(bool_mapTable, _aidl_return),
                         UT_Control_GetMapString(bool_mapTable, status.isOk()),
                         UT_Control_GetMapString(statusException_mapTable, status.exceptionCode()));
             /* Delete dynamically allocated capabilities */
@@ -330,8 +331,9 @@ class VTS_L3_AVClock : public UTCore
             ::android::binder::Status status;
             bool _aidl_return = false;
             status = videoDecoder->unregisterEventListener(eventListener, &_aidl_return);
-            UT_LOG_INFO("Result unregisterEventListener for VideoDecoder ID %d, status:[isOK:%s, exception:%s]",
+            UT_LOG_INFO("Result unregisterEventListener for VideoDecoder ID %d, _aidl_return:[%s], status:[isOK:%s, exception:%s]",
                         _videoDecoderId.value,
+                        UT_Control_GetMapString(bool_mapTable, _aidl_return),
                         UT_Control_GetMapString(bool_mapTable, status.isOk()),
                         UT_Control_GetMapString(statusException_mapTable, status.exceptionCode()));
             /* Delete dynamically allocated capabilities */
@@ -346,8 +348,9 @@ class VTS_L3_AVClock : public UTCore
             ::android::binder::Status status;
             bool _aidl_return = false;
             status = audioSink->unregisterEventListener(eventListener, &_aidl_return);
-            UT_LOG_INFO("Result unregisterEventListener for AudioSink ID %d, status:[isOK:%s, exception:%s]",
+            UT_LOG_INFO("Result unregisterEventListener for AudioSink ID %d, _aidl_return:[%s], status:[isOK:%s, exception:%s]",
                         _audioSinkId.value,
+                        UT_Control_GetMapString(bool_mapTable, _aidl_return),
                         UT_Control_GetMapString(bool_mapTable, status.isOk()),
                         UT_Control_GetMapString(statusException_mapTable, status.exceptionCode()));
         }
@@ -358,8 +361,9 @@ class VTS_L3_AVClock : public UTCore
             ::android::binder::Status status;
             bool _aidl_return = false;
             status = videoSink->unregisterEventListener(eventListener, &_aidl_return);
-            UT_LOG_INFO("Result unregisterEventListener for VideoSink ID %d, status:[isOK:%s, exception:%s]",
+            UT_LOG_INFO("Result unregisterEventListener for VideoSink ID %d, _aidl_return:[%s], status:[isOK:%s, exception:%s]",
                         _videoSinkId.value,
+                        UT_Control_GetMapString(bool_mapTable, _aidl_return),
                         UT_Control_GetMapString(bool_mapTable, status.isOk()),
                         UT_Control_GetMapString(statusException_mapTable, status.exceptionCode()));
         }
