@@ -280,11 +280,12 @@ namespace com {
                         return android::binder::Status::ok();
                     }
                     
-                    // Compare the underlying IBinder objects with additional null safety
-                    android::sp<android::IBinder> registeredBinder = IInterface::asBinder(this->mAVClockEventListener);
-                    android::sp<android::IBinder> providedBinder = IInterface::asBinder(avClockEventListener);
+                    // Compare the underlying IBinder objects
+                    const auto registeredBinder = IInterface::asBinder(this->mAVClockEventListener);
+                    const auto providedBinder = IInterface::asBinder(avClockEventListener);
                     
-                    // Check if binders are valid
+                    // Defensive check: asBinder() should not return null for non-null interface pointers
+                    // but if it does, treat it as a mismatch rather than crashing
                     if (registeredBinder == nullptr || providedBinder == nullptr)
                     {
                         *_aidl_return = false;
