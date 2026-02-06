@@ -137,6 +137,12 @@ UT_ADD_TEST(VTS_L1_AVClock, getAVClockIds_pos)
     // Step 06: Expected clock IDs from HAL Feature Profile
     const char* profile_path = "IAVClockManager.IAVClock";
     size_t expectedCount = UT_KVP_PROFILE_GET_LIST_COUNT(profile_path);
+    if (expectedCount == 0)
+    {
+        UT_LOG_ERROR("HAL Feature Profile not found or empty for key: %s. "
+                     "Ensure the profile file (hfp-avclock.yaml) is loaded correctly "
+                     "by passing the correct profile path to the test executable.", profile_path);
+    }
     UT_ASSERT_EQUAL(initialClockIds.size(), expectedCount);
 
     // Insert expected IDs into set
