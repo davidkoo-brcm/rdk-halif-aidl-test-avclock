@@ -274,12 +274,22 @@ namespace com {
                         *_aidl_return = false;
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
                     }
-                    if (this->mAVClockEventListener == nullptr ||
-                        IInterface::asBinder(this->mAVClockEventListener) != IInterface::asBinder(avClockEventListener))
+                    if (this->mAVClockEventListener == nullptr)
                     {
                         *_aidl_return = false;
                         return android::binder::Status::ok();
                     }
+                    
+                    // Compare the underlying IBinder objects
+                    android::sp<android::IBinder> registeredBinder = IInterface::asBinder(this->mAVClockEventListener);
+                    android::sp<android::IBinder> providedBinder = IInterface::asBinder(avClockEventListener);
+                    
+                    if (registeredBinder.get() != providedBinder.get())
+                    {
+                        *_aidl_return = false;
+                        return android::binder::Status::ok();
+                    }
+                    
                     *_aidl_return = true;
                     this->mAVClockEventListener = nullptr;
                     this->mEventListener = false;
