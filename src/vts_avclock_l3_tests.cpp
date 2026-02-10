@@ -155,9 +155,20 @@ public:
     if (gAVClockManagerService == NULL) {
       UT_FAIL_FATAL("AVClock Service not available");
     }
+<<<<<<< HEAD
 
     if (gAudioDecoderManager == NULL) {
       UT_FAIL_FATAL("AudioDecoder Service not available");
+
+    void TearDown() override
+    {
+        mAVClockList.clear();
+        mAudioDecoderList.clear();
+        mVideoDecoderList.clear();
+        mAudioSinkList.clear();
+        mVideoSinkList.clear();
+        //TODO: check right place to call joinThreadPool
+        //android::IPCThreadState::self()->joinThreadPool();
     }
 
     if (gAudioSinkManager == NULL) {
@@ -439,11 +450,18 @@ android::sp<IAVClockController> AVClockPrimeTest::setupAndStartClock() {
   return clockController;
 }
 
-void AVClockPrimeTest::shutdownClock(
-    android::sp<IAVClockController> clockcontroller) {
-  try {
-    // Stop the AVClock
-    AVCLOCK_STOP_SUCCESS(mClockHandle, clockcontroller, true);
+   void AVClockPrimeTest::shutdownClock(android::sp<IAVClockController> clockcontroller)
+   {
+    try {
+
+        for (const auto& [_avClockId, avClockHandle, controlListener, eventListener] : VTS_L3_AVClock::mAVClockList)
+        {
+            /* Un-register the events */
+            AVCLOCK_UNREGISTER_EVENT_SUCCESS(avClockHandle, eventListener);
+        }
+
+        // Stop the AVClock
+        AVCLOCK_STOP_SUCCESS(mClockHandle, clockcontroller, true);
 
     // Close the AVClock
     AVCLOCK_CLOSE_SUCCESS(mClockHandle, clockcontroller, true);
