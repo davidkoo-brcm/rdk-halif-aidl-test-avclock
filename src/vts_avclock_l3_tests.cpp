@@ -145,17 +145,18 @@ public:
 
   ~VTS_L3_AVClock() override = default;
 
-  void SetUp() override {
-    std::vector<IAVClock::Id> avClockIds;
-    std::vector<IAudioSink::Id> audioSinkIds;
-    std::vector<IVideoSink::Id> videoSinkIds;
-    std::vector<IAudioDecoder::Id> audioDecoderIds;
-    std::vector<IVideoDecoder::Id> videoDecoderIds;
+    void SetUp() override 
+    {
+        std::vector<IAVClock::Id> avClockIds;
+        std::vector<IAudioSink::Id> audioSinkIds;
+        std::vector<IVideoSink::Id> videoSinkIds;
+        std::vector<IAudioDecoder::Id> audioDecoderIds;
+        std::vector<IVideoDecoder::Id> videoDecoderIds;
 
     if (gAVClockManagerService == NULL) {
       UT_FAIL_FATAL("AVClock Service not available");
     }
-<<<<<<< HEAD
+
 
     if (gAudioDecoderManager == NULL) {
       UT_FAIL_FATAL("AudioDecoder Service not available");
@@ -328,27 +329,20 @@ public:
 
       // TODO: VideoSink Get capabilities are yet to implement in the video sink
 
-      mVideoSinkList.push_back({_videoSinkId, videoSink,
-                                videoSinkControlListener,
-                                videoSinkEventListener});
-    }
-  }
-
-  void TearDown() override {
-    for (const auto &[_avClockId, avClockHandle, controlListener,
-                      eventListener] : mAVClockList) {
-      /* Un-register the events */
-      AVCLOCK_UNREGISTER_EVENT_SUCCESS(avClockHandle, eventListener);
+            mVideoSinkList.push_back({_videoSinkId, videoSink, videoSinkControlListener, videoSinkEventListener});
+        }
     }
 
-    mAVClockList.clear();
-    mAudioDecoderList.clear();
-    mVideoDecoderList.clear();
-    mAudioSinkList.clear();
-    mVideoSinkList.clear();
-    // TODO: check right place to call joinThreadPool
-    // android::IPCThreadState::self()->joinThreadPool();
-  }
+    void TearDown() override
+    {
+        mAVClockList.clear();
+        mAudioDecoderList.clear();
+        mVideoDecoderList.clear();
+        mAudioSinkList.clear();
+        mVideoSinkList.clear();
+        //TODO: check right place to call joinThreadPool
+        //android::IPCThreadState::self()->joinThreadPool();
+    }
 };
 
 std::vector<std::tuple<IAVClock::Id, sp<IAVClock>,
@@ -388,13 +382,11 @@ public:
   Status onSpaceAvailable() override { return Status::ok(); }
 };
 
-void checkCompleteStateTransition(sp<IAVClock> avClock,
-                                  sp<AVClockEventListener> eventListener,
-                                  sp<AVClockControllerListener> controlListener,
-                                  com::rdk::hal::State oldState,
-                                  com::rdk::hal::State intermediateState,
-                                  com::rdk::hal::State newState) {
-  ::com::rdk::hal::State currentState;
+void checkCompleteStateTransition(sp<IAVClock> avClock, sp<AVClockEventListener> eventListener,
+                                      sp<AVClockControllerListener> controlListener, com::rdk::hal::State oldState,
+                                      com::rdk::hal::State intermediateState, com::rdk::hal::State newState)
+    {
+        ::com::rdk::hal::State currentState;
 
   UT_ASSERT_TRUE(
       eventListener->checkStateTransition(oldState, intermediateState));
@@ -419,11 +411,13 @@ void checkCompleteStateTransition(sp<IAVClock> avClock,
   controlListener->resetStateChanges();
 }
 
-android::sp<IAVClockController> AVClockPrimeTest::setupAndStartClock() {
-  android::sp<IAVClockController> clockController;
-  try {
-    // Open the AVClock
-    AVCLOCK_OPEN_SUCCESS(mClockHandle, mClockController, clockController, true);
+
+android::sp<IAVClockController> AVClockPrimeTest::setupAndStartClock() 
+{
+    android::sp<IAVClockController> clockController;
+    try {
+        // Open the AVClock
+        AVCLOCK_OPEN_SUCCESS(mClockHandle, mClockController, clockController, true);
 
     // Set the AVClock Mode
     AVCLOCK_SET_CLOCK_MODE_SUCCESS(mClockHandle, clockController, mClockMode,
@@ -453,13 +447,6 @@ android::sp<IAVClockController> AVClockPrimeTest::setupAndStartClock() {
    void AVClockPrimeTest::shutdownClock(android::sp<IAVClockController> clockcontroller)
    {
     try {
-
-        for (const auto& [_avClockId, avClockHandle, controlListener, eventListener] : VTS_L3_AVClock::mAVClockList)
-        {
-            /* Un-register the events */
-            AVCLOCK_UNREGISTER_EVENT_SUCCESS(avClockHandle, eventListener);
-        }
-
         // Stop the AVClock
         AVCLOCK_STOP_SUCCESS(mClockHandle, clockcontroller, true);
 
@@ -558,15 +545,13 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig videoCfg,
     AVCLOCK_SET_VIDEO_SINK_SUCCESS(mClockHandle, avClockController,
                                    videoCfg.sinkId, true);
 
-    videoDecoderTest decodeTest(
-        videoCfg.decId, videoCfg.decHandle, videoCfg.decCtrlListener,
-        videoCfg.decEventListener, mBufferManager, videoCfg.secureDecode,
-        videoCfg.tunnelMode, videoCfg.decTestConfig, mBufferHelper,
-        isVideoSinkAttached);
-    std::thread decodeThread(&videoDecoderTest::run, &decodeTest, false);
-
-    auto decConfig = videoCfg.decTestConfig;
-    auto sinkConfig = videoCfg.sinkTestConfig;
+        videoDecoderTest decodeTest(videoCfg.decId, videoCfg.decHandle, videoCfg.decCtrlListener,
+                                    videoCfg.decEventListener, mBufferManager, videoCfg.secureDecode,
+                                    videoCfg.tunnelMode, videoCfg.decTestConfig, mBufferHelper, isVideoSinkAttached);
+        std::thread decodeThread(&videoDecoderTest::run, &decodeTest, false);
+        
+        auto decConfig = videoCfg.decTestConfig;
+        auto sinkConfig = videoCfg.sinkTestConfig;
 
     SinkTest sinkTest(videoCfg.sinkId, videoCfg.sinkHandle,
                       videoCfg.sinkCtrlListener, videoCfg.sinkEventListener,
@@ -692,17 +677,15 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
             clockTest->runAudioTest(audioCfg, avClockController);
           });
 
-      sp<IAVClock> clockHandle = clockTest->getClockHandle();
-      double playbackRate = clockTest->getPlaybackRate();
-
-      // TBD will below sleep with wait event after spec update.
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-      std::thread validatepts(
-          [clockTest, clockHandle, avClockController, playbackRate]() mutable {
-            clockTest->validateClockTime(clockHandle, avClockController,
-                                         playbackRate);
-          });
+            sp<IAVClock> clockHandle = clockTest->getClockHandle();
+            double playbackRate = clockTest->getPlaybackRate();
+            
+            // TBD will below sleep with wait event after spec update.
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            
+            std::thread validatepts([clockTest, clockHandle, avClockController, playbackRate]() mutable{
+            clockTest->validateClockTime(clockHandle, avClockController, playbackRate);
+            });
 
       if (validatepts.joinable()) {
         validatepts.join();
@@ -807,17 +790,15 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
             clockTest->runVideoTest(videoCfg, avClockController);
           });
 
-      sp<IAVClock> clockHandle = clockTest->getClockHandle();
-      double playbackRate = clockTest->getPlaybackRate();
-
-      // TBD will below sleep with wait event after spec update.
-      std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-      std::thread validatepts(
-          [clockTest, clockHandle, avClockController, playbackRate]() mutable {
-            clockTest->validateClockTime(clockHandle, avClockController,
-                                         playbackRate);
-          });
+            sp<IAVClock> clockHandle = clockTest->getClockHandle();
+            double playbackRate = clockTest->getPlaybackRate();
+            
+            // TBD will below sleep with wait event after spec update.
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            
+            std::thread validatepts([clockTest, clockHandle, avClockController, playbackRate]() mutable{
+            clockTest->validateClockTime(clockHandle, avClockController, playbackRate);
+            });
 
       if (validatepts.joinable()) {
         validatepts.join();
@@ -837,30 +818,28 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
   }
 }
 
-void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest, long pcrValue,
-                     sp<IAVClockController> &avClockController) {
-  PcrConfig config{pcrValue};
-  try {
-    // Launch PCR test in a thread using the existing pcrPrimeTest instance
-    std::thread primePcrThread(
-        [clockTest, config, avClockController]() mutable {
-          try {
-            clockTest->runPcrTest(config, avClockController);
-          } catch (const std::exception &ex) {
-            UT_LOG_ERROR("Exception in PCR test thread: %s", ex.what());
-          }
+
+void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest, long pcrValue, sp<IAVClockController>& avClockController)
+{   
+    PcrConfig config{ pcrValue };
+    try {
+        // Launch PCR test in a thread using the existing pcrPrimeTest instance
+        std::thread primePcrThread([clockTest, config, avClockController]() mutable {
+            try {
+                clockTest->runPcrTest(config, avClockController);
+            } catch (const std::exception& ex) {
+                UT_LOG_ERROR("Exception in PCR test thread: %s", ex.what());
+            }
         });
 
-    sp<IAVClock> clockHandle = clockTest->getClockHandle();
-    double playbackRate = clockTest->getPlaybackRate();
-
-    // TBD will below sleep with wait event after spec update.
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-    std::thread validatepts(
-        [clockTest, clockHandle, avClockController, playbackRate]() mutable {
-          clockTest->validateClockTime(clockHandle, avClockController,
-                                       playbackRate);
+        sp<IAVClock> clockHandle = clockTest->getClockHandle();
+        double playbackRate = clockTest->getPlaybackRate();
+            
+        // TBD will below sleep with wait event after spec update.
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            
+        std::thread validatepts([clockTest, clockHandle, avClockController, playbackRate]() mutable{
+        clockTest->validateClockTime(clockHandle, avClockController, playbackRate);
         });
 
     if (validatepts.joinable()) {
@@ -890,16 +869,14 @@ void runAudioPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
   vector<testConfiguration_t> testConfiguration;
   const char *DecodeStreams = "PrimeAudio";
 
-  vts_audiodecoder_parse_testconfig(gAudioPrimeTestConfiguration,
-                                    gAudioModuleName, gTestGroup, DecodeStreams,
-                                    testConfiguration);
-
-  for (auto &test : testConfiguration) {
-    std::thread audioclockthread([&, test] {
-      UT_LOG_INFO("Input string %s", test.input);
-      runAudioClockTest(clockTest, test, isSecureMode, isTunnel,
-                        isConcurrentMode, clockController);
-    });
+        vts_audiodecoder_parse_testconfig(gAudioPrimeTestConfiguration, gAudioModuleName, gTestGroup, DecodeStreams, testConfiguration);
+        
+        for(auto& test: testConfiguration)
+        {
+            std::thread audioclockthread([&, test] {
+            UT_LOG_INFO("Input string %s", test.input);
+            runAudioClockTest(clockTest, test, isSecureMode, isTunnel, isConcurrentMode, clockController);
+            });
 
     // Join immediately after starting
     if (audioclockthread.joinable())
@@ -926,15 +903,15 @@ void runVideoPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
   vts_videosink_parse_testconfig(gVideoPrimeTestConfiguration, VIDEODECODERMGR,
                                  gTestGroup, DecodeStreams, sinkConfigs);
 
-  for (size_t i = 0; i < decoderConfigs.size(); ++i) {
-    auto &decoderConfig = decoderConfigs[i];
-    auto &sinkConfig = sinkConfigs[i];
-
-    std::thread videoclockthread([&, sinkConfig] {
-      UT_LOG_INFO("Video Input string %s", sinkConfig.input);
-      runVideoClockTest(clockTest, decoderConfig, sinkConfig, isSecureMode,
-                        isTunnel, isConcurrentMode, clockController);
-    });
+        for (size_t i = 0; i < decoderConfigs.size(); ++i)
+        {
+            auto& decoderConfig = decoderConfigs[i];
+            auto& sinkConfig = sinkConfigs[i];
+            
+            std::thread videoclockthread([&, sinkConfig] {
+                 UT_LOG_INFO("Video Input string %s", sinkConfig.input);
+                 runVideoClockTest(clockTest, decoderConfig, sinkConfig, isSecureMode, isTunnel, isConcurrentMode, clockController);
+            });
 
     // Join immediately after starting
     if (videoclockthread.joinable())
@@ -992,53 +969,51 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
       t3.detach();
   };
 
-  auto waitForReady = [&](bool &flag, const char *name) {
-    std::unique_lock<std::mutex> lock(mtx);
-    if (!cv.wait_for(lock, std::chrono::milliseconds(200),
-                     [&] { return flag; })) {
-      UT_LOG_ERROR(
-          "Timeout %s thread: Timed out after 5 minutes please increase time",
-          name);
-      return false;
-    }
-    return true;
-  };
+    auto waitForReady = [&] (bool &flag, const char *name) {
+        std::unique_lock<std::mutex> lock(mtx);
+        if (!cv.wait_for(lock, std::chrono::milliseconds(200), [&] { return flag; })) {
+            UT_LOG_ERROR("Timeout %s thread: Timed out after 5 minutes please increase time", name);
+            return false;
+        }
+        return true;
+    };
 
   auto &avClockList = VTS_L3_AVClock::mAVClockList;
   auto &avBufferManager = VTS_L3_AVClock::mAVBufferManager;
   auto &avBufferHelper = VTS_L3_AVClock::mAVbufferHelper;
 
-  if (isConcurrentMode) {
-    for (const auto &[_clockId, clockHandle, controlListener, eventListener] :
-         avClockList) {
-      if (avClockList.size() == 1) {
-        UT_LOG_INFO("Platform Supports One Instacne Skipping Concurrent Case "
-                    "same as Sequential");
-        break;
-      }
-      auto clockTest = std::make_shared<AVClockPrimeTest>(
-          _clockId, clockHandle, clockMode, controlListener, avBufferManager,
-          avBufferHelper, playbackRate);
+    if(isConcurrentMode)
+    {
+        for (const auto& [_clockId, clockHandle, controlListener, eventListener] : avClockList)
+        {   
+            if(avClockList.size() == 1)
+            {
+                UT_LOG_INFO("Platform Supports One Instacne Skipping Concurrent Case same as Sequential");
+                break;
+            }
+        auto clockTest = std::make_shared<AVClockPrimeTest>(
+                              _clockId, clockHandle, clockMode, controlListener,
+                                avBufferManager, avBufferHelper, playbackRate);
+        
+        // Store in vector
+        clockTests.push_back(clockTest);
+        auto storedClockTest = clockTests.back();
+        
+        // Setup and start clock
+        auto clockController = storedClockTest->setupAndStartClock();
+        clockControllerList.push_back(clockController);
+                     
+        // Prime Audio Only
+        if (primetype == primeaudio) {
+            runaudioprimethread = std::thread([&, storedClockTest]() mutable {
+                {
+                    std::lock_guard<std::mutex> lock(mtx);
+                    audioReady = true;
+                }
+                cv.notify_all();
+                runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel, isConcurrentMode, clockControllerList.back());
 
-      // Store in vector
-      clockTests.push_back(clockTest);
-      auto storedClockTest = clockTests.back();
-
-      // Setup and start clock
-      auto clockController = storedClockTest->setupAndStartClock();
-      clockControllerList.push_back(clockController);
-
-      // Prime Audio Only
-      if (primetype == primeaudio) {
-        runaudioprimethread = std::thread([&, storedClockTest]() mutable {
-          {
-            std::lock_guard<std::mutex> lock(mtx);
-            audioReady = true;
-          }
-          cv.notify_all();
-          runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, clockControllerList.back());
-        });
+            });
 
         if (!waitForReady(audioReady, "Audio")) {
           cleanupAndReturn(runaudioprimethread, runvideoprimethread,
@@ -1208,32 +1183,34 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
         t.join();
     }
 
-    for (size_t i = 0; i < clockTests.size(); ++i) {
-      auto &_clockTest = clockTests[i];
-      auto &_clockController = clockControllerList[i];
-      _clockTest->shutdownClock(_clockController.get());
-    }
-  } else {
-    for (const auto &[_clockId, clockHandle, controlListener, eventListener] :
-         avClockList) {
-      auto clockTest = std::make_shared<AVClockPrimeTest>(
-          _clockId, clockHandle, clockMode, controlListener, avBufferManager,
-          avBufferHelper, playbackRate);
+       for (size_t i = 0; i < clockTests.size(); ++i)
+       {
+            auto& _clockTest = clockTests[i];
+            auto& _clockController = clockControllerList[i];
+            _clockTest->shutdownClock(_clockController.get());
+       }
+}
+else
+{
+    for (const auto& [_clockId, clockHandle, controlListener, eventListener] : avClockList)
+    {   
+        auto clockTest = std::make_shared<AVClockPrimeTest>(
+                              _clockId, clockHandle, clockMode, controlListener,
+                                avBufferManager, avBufferHelper, playbackRate);
 
-      // Call the method on the instance
-      auto avclockController = clockTest->setupAndStartClock();
-
-      // Prime Audio Only
-      if (primetype == primeaudio) {
-        runaudioprimethread = std::thread([&, clockTest] {
-          {
-            std::lock_guard<std::mutex> lock(mtx);
-            audioReady = true;
-          }
-          runAudioPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode,
-                            avclockController);
-          cv.notify_all();
-        });
+        // Call the method on the instance
+        auto avclockController = clockTest->setupAndStartClock();
+                     
+        // Prime Audio Only
+        if (primetype == primeaudio) {
+            runaudioprimethread = std::thread([&, clockTest] {
+                {
+                    std::lock_guard<std::mutex> lock(mtx);
+                    audioReady = true;
+                }
+                runAudioPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode, avclockController);
+                cv.notify_all();
+            });
 
         if (!waitForReady(audioReady, "Audio")) {
           cleanupAndReturn(runaudioprimethread, runvideoprimethread,
@@ -1389,3132 +1366,2892 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
       if (runpcrprimethread.joinable())
         runpcrprimethread.join();
 
-      // Shutdown the clock after tests
-      UT_LOG_DEBUG("Entering to shutdownClock");
-      clockTest->shutdownClock(avclockController);
-      UT_LOG_DEBUG("Exiting to shutdownClock");
+        // Shutdown the clock after tests
+        UT_LOG_DEBUG("Entering to shutdownClock");
+        clockTest->shutdownClock(avclockController);
+        UT_LOG_DEBUG("Exiting to shutdownClock");
     }
   }
 }
 
 /**
- * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in Auto
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 001@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoAudioOnly) {
-  const char *testName = "PrimeClock_AutoAudioOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in Auto
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 002@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoVideoOnly) {
-  const char *testName = "PrimeClock_AutoVideoOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in
- * AudioMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 003@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AudioMasterAudioOnly) {
-  const char *testName = "PrimeClock_AudioMasterAudioOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in
- * VideoMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 004@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_VideoMasterVideoOnly) {
-  const char *testName = "PrimeClock_VideoMasterVideoOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in
- * AudioMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 005@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AudioMasterVideoOnly) {
-  const char *testName = "PrimeClock_AudioMasterVideoOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in
- * VideoMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 006@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_VideoMasterAudioOnly) {
-  const char *testName = "PrimeClock_VideoMasterAudioOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for PCR Stream in PCR
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 007@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_PCRMode) {
-  const char *testName = "PrimeClock_PCRMode";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::PCR;
-  contentprimetype primetype = primepcr;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Audio, Video Streams
- * in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 008@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoAudioBeforeVideo) {
-  const char *testName = "PrimeClock_AutoAudioBeforeVideo";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudiobeforevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Video, Audio Streams
- * in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 009@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoVideoBeforeAudio) {
-  const char *testName = "PrimeClock_AutoVideoBeforeAudio";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideobeforeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback Speed functionality for Audio
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 010@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoSetAudioPlayRateNormalSpeed) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback Pause functionality for Audio
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 011@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoSetAudioPlayRatePause) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 0.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback FastForward functionality for
- * Audio Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 012@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoSetAudioPlayRateFastForward) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 2.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback Speed functionality for Video
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 013@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoSetVideoPlayRateNormalSpeed) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback Pause functionality for Video
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 014@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoSetVideoPlayRatePause) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 0.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback FastForward functionality for
- * Video Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 015@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoSetVideoPlayRateFastForward) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 2.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in Auto
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 0016@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoAudioOnly) {
-  const char *testName = "PrimeClock_AutoAudioOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in Auto
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 017@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoVideoOnly) {
-  const char *testName = "PrimeClock_AutoVideoOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in
- * AudioMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 018@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AudioMasterAudioOnly) {
-  const char *testName = "PrimeClock_AudioMasterAudioOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in
- * VideoMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 019@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_VideoMasterVideoOnly) {
-  const char *testName = "PrimeClock_VideoMasterVideoOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in
- * AudioMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 020@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AudioMasterVideoOnly) {
-  const char *testName = "PrimeClock_AudioMasterVideoOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in
- * VideoMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 021@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_VideoMasterAudioOnly) {
-  const char *testName = "PrimeClock_VideoMasterAudioOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for PCR Stream in PCR
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 022@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_PCRMode) {
-  const char *testName = "PrimeClock_PCRMode";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::PCR;
-  contentprimetype primetype = primepcr;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Audio, Video Streams
- * in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 023@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoAudioBeforeVideo) {
-  const char *testName = "PrimeClock_AutoAudioBeforeVideo";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudiobeforevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Video, Audio Streams
- * in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 024@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoVideoBeforeAudio) {
-  const char *testName = "PrimeClock_AutoVideoBeforeAudio";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideobeforeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, secure)
- *
- * This test verifies the basic AVClock Playback Speed functionality for Audio
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 025@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoSetAudioPlayRateNormalSpeed) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, secure)
- *
- * This test verifies the basic AVClock Playback Pause functionality for Audio
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 026@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoSetAudioPlayRatePause) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 0.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, secure)
- *
- * This test verifies the basic AVClock Playback FastForward functionality for
- * Audio Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 027@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoSetAudioPlayRateFastForward) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 2.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, secure)
- *
- * This test verifies the basic AVClock Playback Speed functionality for Video
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 028@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoSetVideoPlayRateNormalSpeed) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, secure)
- *
- * This test verifies the basic AVClock Playback Pause functionality for Video
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 029@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoSetVideoPlayRatePause) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 0.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, non-tunnel, secure)
- *
- * This test verifies the basic AVClock Playback FastForward functionality for
- * Video Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 030@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoSetVideoPlayRateFastForward) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = false;
-  double playbackrate = 2.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in Auto
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 031@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoAudioOnly) {
-  const char *testName = "PrimeClock_AutoAudioOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in Auto
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 032@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoVideoOnly) {
-  const char *testName = "PrimeClock_AutoVideoOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in
- * AudioMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 033@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AudioMasterAudioOnly) {
-  const char *testName = "PrimeClock_AudioMasterAudioOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in
- * VideoMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 034@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_VideoMasterVideoOnly) {
-  const char *testName = "PrimeClock_VideoMasterVideoOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in
- * AudioMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 035@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AudioMasterVideoOnly) {
-  const char *testName = "PrimeClock_AudioMasterVideoOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in
- * VideoMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 036@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_VideoMasterAudioOnly) {
-  const char *testName = "PrimeClock_VideoMasterAudioOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for PCR Stream in PCR
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 037@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_PCRMode) {
-  const char *testName = "PrimeClock_PCRMode";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::PCR;
-  contentprimetype primetype = primepcr;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Audio, Video Streams
- * in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 0038@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoAudioBeforeVideo) {
-  const char *testName = "PrimeClock_AutoAudioBeforeVideo";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudiobeforevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Video, Audio Streams
- * in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 0039@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoVideoBeforeAudio) {
-  const char *testName = "PrimeClock_AutoVideoBeforeAudio";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideobeforeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback Speed functionality for Audio
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 040@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoSetAudioPlayRateNormalSpeed) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback Pause functionality for Audio
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 041@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoSetAudioPlayRatePause) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 0.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback FastForward functionality for
- * Audio Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 042@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoSetAudioPlayRateFastForward) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 2.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback Speed functionality for Video
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 043@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoSetVideoPlayRateNormalSpeed) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback Pause functionality for Video
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 044@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoSetVideoPlayRatePause) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 0.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback FastForward functionality for
- * Video Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 045@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoSetVideoPlayRateFastForward) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
-  bool isSecureMode = false;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in Auto
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 046@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoAudioOnly) {
-  const char *testName = "PrimeClock_AutoAudioOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in Auto
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 047@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoVideoOnly) {
-  const char *testName = "PrimeClock_AutoVideoOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in
- * AudioMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 048@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AudioMasterAudioOnly) {
-  const char *testName = "PrimeClock_AudioMasterAudioOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in
- * VideoMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 049@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_VideoMasterVideoOnly) {
-  const char *testName = "PrimeClock_VideoMasterVideoOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in
- * AudioMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 050@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AudioMasterVideoOnly) {
-  const char *testName = "PrimeClock_AudioMasterVideoOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in
- * VideoMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 051@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_VideoMasterAudioOnly) {
-  const char *testName = "PrimeClock_VideoMasterAudioOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for PCR Stream in PCR
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 052@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_PCRMode) {
-  const char *testName = "PrimeClock_PCRMode";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::PCR;
-  contentprimetype primetype = primepcr;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Audio, Video Streams
- * in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 053@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoAudioBeforeVideo) {
-  const char *testName = "PrimeClock_AutoAudioBeforeVideo";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudiobeforevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Video, Audio Streams
- * in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 054@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoVideoBeforeAudio) {
-  const char *testName = "PrimeClock_AutoVideoBeforeAudio";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideobeforeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, secure)
- *
- * This test verifies the basic AVClock Playback Speed functionality for Audio
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 055@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoSetAudioPlayRateNormalSpeed) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, secure)
- *
- * This test verifies the basic AVClock Playback Pause functionality for Audio
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 056@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoSetAudioPlayRatePause) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 0.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, secure)
- *
- * This test verifies the basic AVClock Playback FastForward functionality for
- * Audio Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 057@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoSetAudioPlayRateFastForward) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 2.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, secure)
- *
- * This test verifies the basic AVClock Playback Speed functionality for Video
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 058@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoSetVideoPlayRateNormalSpeed) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, secure)
- *
- * This test verifies the basic AVClock Playback Pause functionality for Video
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 059@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoSetVideoPlayRatePause) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 0.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (sequential, tunnel, secure)
- *
- * This test verifies the basic AVClock Playback FastForward functionality for
- * Video Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 060@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoSetVideoPlayRateFastForward) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
-  bool isSecureMode = true;
-  bool isConcurrentMode = false;
-  bool isTunnel = true;
-  double playbackrate = 2.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in Auto
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 061@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoAudioOnly) {
-  const char *testName = "PrimeClock_AutoAudioOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in Auto
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 062@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoVideoOnly) {
-  const char *testName = "PrimeClock_AutoVideoOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in
- * AudioMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 063@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AudioMasterAudioOnly) {
-  const char *testName = "PrimeClock_AudioMasterAudioOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in
- * VideoMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 064@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_VideoMasterVideoOnly) {
-  const char *testName = "PrimeClock_VideoMasterVideoOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in
- * AudioMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 065@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AudioMasterVideoOnly) {
-  const char *testName = "PrimeClock_AudioMasterVideoOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in
- * VideoMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 066@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_VideoMasterAudioOnly) {
-  const char *testName = "PrimeClock_VideoMasterAudioOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for PCR Stream in PCR
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 067@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_PCRMode) {
-  const char *testName = "PrimeClock_PCRMode";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::PCR;
-  contentprimetype primetype = primepcr;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Audio, Video Streams
- * in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 068@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoAudioBeforeVideo) {
-  const char *testName = "PrimeClock_AutoAudioBeforeVideo";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudiobeforevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Video, Audio Streams
- * in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 069@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoVideoBeforeAudio) {
-  const char *testName = "PrimeClock_AutoVideoBeforeAudio";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideobeforeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback Speed functionality for Audio
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 070@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRateNormalSpeed) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback Pause functionality for Audio
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 071@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRatePause) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 0.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback FastForward functionality for
- * Audio Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 072@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRateFastForward) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 2.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback Speed functionality for Video
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 073@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRateNormalSpeed) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback Pause functionality for Video
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 074@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRatePause) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 0.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback FastForward functionality for
- * Video Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 075@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRateFastForward) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 2.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in Auto
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 076@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoAudioOnly) {
-  const char *testName = "PrimeClock_AutoAudioOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in Auto
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 077@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoVideoOnly) {
-  const char *testName = "PrimeClock_AutoVideoOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in
- * AudioMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 078@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AudioMasterAudioOnly) {
-  const char *testName = "PrimeClock_AudioMasterAudioOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in
- * VideoMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 079@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_VideoMasterVideoOnly) {
-  const char *testName = "PrimeClock_VideoMasterVideoOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in
- * AudioMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 080@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AudioMasterVideoOnly) {
-  const char *testName = "PrimeClock_AudioMasterVideoOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in
- * VideoMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 081@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_VideoMasterAudioOnly) {
-  const char *testName = "PrimeClock_VideoMasterAudioOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for PCR Stream in PCR
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 082@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_PCRMode) {
-  const char *testName = "PrimeClock_PCRMode";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::PCR;
-  contentprimetype primetype = primepcr;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Audio, Video Streams
- * in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 083@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoAudioBeforeVideo) {
-  const char *testName = "PrimeClock_AutoAudioBeforeVideo";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudiobeforevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Video, Audio Streams
- * in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 084@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoVideoBeforeAudio) {
-  const char *testName = "PrimeClock_AutoVideoBeforeAudio";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideobeforeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
- *
- * This test verifies the basic AVClock Playback Speed functionality for Audio
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 085@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRateNormalSpeed) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
- *
- * This test verifies the basic AVClock Playback Pause functionality for Audio
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 086@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRatePause) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 0.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
- *
- * This test verifies the basic AVClock Playback FastForward functionality for
- * Audio Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 087@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRateFastForward) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
- *
- * This test verifies the basic AVClock Playback Speed functionality for Video
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 088@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRateNormalSpeed) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
- *
- * This test verifies the basic AVClock Playback Pause functionality for Video
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 089@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRatePause) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 0.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
- *
- * This test verifies the basic AVClock Playback FastForward functionality for
- * Video Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 090@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRateFastForward) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = false;
-  double playbackrate = 2.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in Auto
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 091@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoAudioOnly) {
-  const char *testName = "PrimeClock_AutoAudioOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in Auto
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 092@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoVideoOnly) {
-  const char *testName = "PrimeClock_AutoVideoOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in
- * AudioMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 093@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AudioMasterAudioOnly) {
-  const char *testName = "PrimeClock_AudioMasterAudioOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in
- * VideoMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 094@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_VideoMasterVideoOnly) {
-  const char *testName = "PrimeClock_VideoMasterVideoOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in
- * AudioMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 095@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AudioMasterVideoOnly) {
-  const char *testName = "PrimeClock_AudioMasterVideoOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in
- * VideoMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 096@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_VideoMasterAudioOnly) {
-  const char *testName = "PrimeClock_VideoMasterAudioOnly";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for PCR Stream in PCR
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 097@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_PCRMode) {
-  const char *testName = "PrimeClock_PCRMode";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::PCR;
-  contentprimetype primetype = primepcr;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Audio, Video Streams
- * in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 0098@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoAudioBeforeVideo) {
-  const char *testName = "PrimeClock_AutoAudioBeforeVideo";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudiobeforevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
- *
- * This test verifies the basic AVClock functionality for Video, Audio Streams
- * in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 0099@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoVideoBeforeAudio) {
-  const char *testName = "PrimeClock_AutoVideoBeforeAudio";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideobeforeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback Speed functionality for Audio
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 0100@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRateNormalSpeed) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback Pause functionality for Audio
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 101@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRatePause) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 0.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback FastForward functionality for
- * Audio Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 102@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRateFastForward) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 2.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback Speed functionality for Video
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 103@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRateNormalSpeed) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 2.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback Pause functionality for Video
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 104@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRatePause) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 0.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
- *
- * This test verifies the basic AVClock Playback FastForward functionality for
- * Video Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 105@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRateFastForward) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
-  bool isSecureMode = false;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 2.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in Auto
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 106@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoAudioOnly) {
-  const char *testName = "PrimeClock_AutoAudioOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in Auto
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 107@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoVideoOnly) {
-  const char *testName = "PrimeClock_AutoVideoOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in
- * AudioMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 108@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AudioMasterAudioOnly) {
-  const char *testName = "PrimeClock_AudioMasterAudioOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in
- * VideoMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 109@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_VideoMasterVideoOnly) {
-  const char *testName = "PrimeClock_VideoMasterVideoOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Video Stream in
- * AudioMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 110@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AudioMasterVideoOnly) {
-  const char *testName = "PrimeClock_AudioMasterVideoOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Audio Stream in
- * VideoMaster clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 111@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_VideoMasterAudioOnly) {
-  const char *testName = "PrimeClock_VideoMasterAudioOnly";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for PCR Stream in PCR
- * clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 112@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_PCRMode) {
-  const char *testName = "PrimeClock_PCRMode";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::PCR;
-  contentprimetype primetype = primepcr;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Audio, Video Streams
- * in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 113@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoAudioBeforeVideo) {
-  const char *testName = "PrimeClock_AutoAudioBeforeVideo";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudiobeforevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, secure)
- *
- * This test verifies the basic AVClock functionality for Video, Audio Streams
- * in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 114@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoVideoBeforeAudio) {
-  const char *testName = "PrimeClock_AutoVideoBeforeAudio";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideobeforeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, secure)
- *
- * This test verifies the basic AVClock Playback Speed functionality for Audio
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 115@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRateNormalSpeed) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, secure)
- *
- * This test verifies the basic AVClock Playback Pause functionality for Audio
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 116@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRatePause) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 0.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, secure)
- *
- * This test verifies the basic AVClock Playback FastForward functionality for
- * Audio Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 117@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRateFastForward) {
-  const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 2.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primeaudio;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, secure)
- *
- * This test verifies the basic AVClock Playback Speed functionality for Video
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 118@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRateNormalSpeed) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 1.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, secure)
- *
- * This test verifies the basic AVClock Playback Pause functionality for Video
- * Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 119@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRatePause) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 0.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
-}
-
-/**
- * @brief Test the AVClock functionality (concurrent, tunnel, secure)
- *
- * This test verifies the basic AVClock Playback FastForward functionality for
- * Video Streams in Auto clock Mode.
- *
- * **Test Group ID:** 03@n
- * **Test Case ID:** 120@n
- *
- * **Test Procedure:**
- * Refer to UT specification documentation
- * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
- */
-UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRateFastForward) {
-  const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
-  bool isSecureMode = true;
-  bool isConcurrentMode = true;
-  bool isTunnel = true;
-  double playbackrate = 2.0;
-  avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
-  contentprimetype primetype = primevideo;
-
-  runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
-                      clockMode, primetype, playbackrate);
+* @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 001@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoAudioOnly)
+{
+    const char *testName = "PrimeClock_AutoAudioOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 002@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoVideoOnly)
+{
+    const char *testName = "PrimeClock_AutoVideoOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in AudioMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 003@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AudioMasterAudioOnly)
+{
+    const char *testName = "PrimeClock_AudioMasterAudioOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in VideoMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 004@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_VideoMasterVideoOnly)
+{
+    const char *testName = "PrimeClock_VideoMasterVideoOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in AudioMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 005@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AudioMasterVideoOnly)
+{
+    const char *testName = "PrimeClock_AudioMasterVideoOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in VideoMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 006@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_VideoMasterAudioOnly)
+{
+    const char *testName = "PrimeClock_VideoMasterAudioOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for PCR Stream in PCR clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 007@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_PCRMode)
+{
+    const char *testName = "PrimeClock_PCRMode";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::PCR;
+    contentprimetype primetype = primepcr; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Audio, Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 008@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoAudioBeforeVideo)
+{
+    const char *testName = "PrimeClock_AutoAudioBeforeVideo";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudiobeforevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Video, Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 009@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoVideoBeforeAudio)
+{
+    const char *testName = "PrimeClock_AutoVideoBeforeAudio";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideobeforeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback Speed functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 010@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoSetAudioPlayRateNormalSpeed)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback Pause functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 011@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoSetAudioPlayRatePause)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 0.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback FastForward functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 012@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoSetAudioPlayRateFastForward)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 2.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback Speed functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 013@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoSetVideoPlayRateNormalSpeed)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback Pause functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 014@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoSetVideoPlayRatePause)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 0.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback FastForward functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 015@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoSetVideoPlayRateFastForward)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 2.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 0016@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoAudioOnly)
+{
+    const char *testName = "PrimeClock_AutoAudioOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 017@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoVideoOnly)
+{
+    const char *testName = "PrimeClock_AutoVideoOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in AudioMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 018@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AudioMasterAudioOnly)
+{
+    const char *testName = "PrimeClock_AudioMasterAudioOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in VideoMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 019@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_VideoMasterVideoOnly)
+{
+    const char *testName = "PrimeClock_VideoMasterVideoOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in AudioMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 020@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AudioMasterVideoOnly)
+{
+    const char *testName = "PrimeClock_AudioMasterVideoOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in VideoMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 021@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_VideoMasterAudioOnly)
+{
+    const char *testName = "PrimeClock_VideoMasterAudioOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for PCR Stream in PCR clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 022@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_PCRMode)
+{
+    const char *testName = "PrimeClock_PCRMode";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::PCR;
+    contentprimetype primetype = primepcr; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Audio, Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 023@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoAudioBeforeVideo)
+{
+    const char *testName = "PrimeClock_AutoAudioBeforeVideo";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudiobeforevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Video, Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 024@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoVideoBeforeAudio)
+{
+    const char *testName = "PrimeClock_AutoVideoBeforeAudio";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideobeforeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, secure)
+*
+* This test verifies the basic AVClock Playback Speed functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 025@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoSetAudioPlayRateNormalSpeed)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, secure)
+*
+* This test verifies the basic AVClock Playback Pause functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 026@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoSetAudioPlayRatePause)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 0.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, secure)
+*
+* This test verifies the basic AVClock Playback FastForward functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 027@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoSetAudioPlayRateFastForward)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 2.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, secure)
+*
+* This test verifies the basic AVClock Playback Speed functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 028@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoSetVideoPlayRateNormalSpeed)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, secure)
+*
+* This test verifies the basic AVClock Playback Pause functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 029@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoSetVideoPlayRatePause)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 0.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, non-tunnel, secure)
+*
+* This test verifies the basic AVClock Playback FastForward functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 030@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_sec_AutoSetVideoPlayRateFastForward)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = false;
+    double playbackrate = 2.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 031@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoAudioOnly)
+{
+    const char *testName = "PrimeClock_AutoAudioOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 032@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoVideoOnly)
+{
+    const char *testName = "PrimeClock_AutoVideoOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in AudioMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 033@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AudioMasterAudioOnly)
+{
+    const char *testName = "PrimeClock_AudioMasterAudioOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in VideoMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 034@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_VideoMasterVideoOnly)
+{
+    const char *testName = "PrimeClock_VideoMasterVideoOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in AudioMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 035@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AudioMasterVideoOnly)
+{
+    const char *testName = "PrimeClock_AudioMasterVideoOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in VideoMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 036@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_VideoMasterAudioOnly)
+{
+    const char *testName = "PrimeClock_VideoMasterAudioOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for PCR Stream in PCR clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 037@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_PCRMode)
+{
+    const char *testName = "PrimeClock_PCRMode";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::PCR;
+    contentprimetype primetype = primepcr; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Audio, Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 0038@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoAudioBeforeVideo)
+{
+    const char *testName = "PrimeClock_AutoAudioBeforeVideo";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudiobeforevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Video, Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 0039@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoVideoBeforeAudio)
+{
+    const char *testName = "PrimeClock_AutoVideoBeforeAudio";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideobeforeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback Speed functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 040@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoSetAudioPlayRateNormalSpeed)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback Pause functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 041@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoSetAudioPlayRatePause)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 0.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback FastForward functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 042@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoSetAudioPlayRateFastForward)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 2.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback Speed functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 043@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoSetVideoPlayRateNormalSpeed)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback Pause functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 044@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoSetVideoPlayRatePause)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 0.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback FastForward functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 045@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_nonsec_AutoSetVideoPlayRateFastForward)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
+    bool isSecureMode = false;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 046@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoAudioOnly)
+{
+    const char *testName = "PrimeClock_AutoAudioOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 047@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoVideoOnly)
+{
+    const char *testName = "PrimeClock_AutoVideoOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in AudioMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 048@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AudioMasterAudioOnly)
+{
+    const char *testName = "PrimeClock_AudioMasterAudioOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in VideoMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 049@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_VideoMasterVideoOnly)
+{
+    const char *testName = "PrimeClock_VideoMasterVideoOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in AudioMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 050@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AudioMasterVideoOnly)
+{
+    const char *testName = "PrimeClock_AudioMasterVideoOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in VideoMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 051@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_VideoMasterAudioOnly)
+{
+    const char *testName = "PrimeClock_VideoMasterAudioOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for PCR Stream in PCR clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 052@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_PCRMode)
+{
+    const char *testName = "PrimeClock_PCRMode";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::PCR;
+    contentprimetype primetype = primepcr; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Audio, Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 053@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoAudioBeforeVideo)
+{
+    const char *testName = "PrimeClock_AutoAudioBeforeVideo";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudiobeforevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Video, Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 054@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoVideoBeforeAudio)
+{
+    const char *testName = "PrimeClock_AutoVideoBeforeAudio";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideobeforeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, secure)
+*
+* This test verifies the basic AVClock Playback Speed functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 055@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoSetAudioPlayRateNormalSpeed)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, secure)
+*
+* This test verifies the basic AVClock Playback Pause functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 056@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoSetAudioPlayRatePause)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 0.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, secure)
+*
+* This test verifies the basic AVClock Playback FastForward functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 057@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoSetAudioPlayRateFastForward)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 2.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, secure)
+*
+* This test verifies the basic AVClock Playback Speed functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 058@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoSetVideoPlayRateNormalSpeed)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, secure)
+*
+* This test verifies the basic AVClock Playback Pause functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 059@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoSetVideoPlayRatePause)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 0.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (sequential, tunnel, secure)
+*
+* This test verifies the basic AVClock Playback FastForward functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 060@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoSetVideoPlayRateFastForward)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
+    bool isSecureMode = true;
+    bool isConcurrentMode = false;
+    bool isTunnel = true;
+    double playbackrate = 2.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 061@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoAudioOnly)
+{
+    const char *testName = "PrimeClock_AutoAudioOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 062@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoVideoOnly)
+{
+    const char *testName = "PrimeClock_AutoVideoOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in AudioMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 063@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AudioMasterAudioOnly)
+{
+    const char *testName = "PrimeClock_AudioMasterAudioOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in VideoMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 064@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_VideoMasterVideoOnly)
+{
+    const char *testName = "PrimeClock_VideoMasterVideoOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in AudioMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 065@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AudioMasterVideoOnly)
+{
+    const char *testName = "PrimeClock_AudioMasterVideoOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in VideoMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 066@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_VideoMasterAudioOnly)
+{
+    const char *testName = "PrimeClock_VideoMasterAudioOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for PCR Stream in PCR clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 067@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_PCRMode)
+{
+    const char *testName = "PrimeClock_PCRMode";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::PCR;
+    contentprimetype primetype = primepcr; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Audio, Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 068@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoAudioBeforeVideo)
+{
+    const char *testName = "PrimeClock_AutoAudioBeforeVideo";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudiobeforevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Video, Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 069@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoVideoBeforeAudio)
+{
+    const char *testName = "PrimeClock_AutoVideoBeforeAudio";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideobeforeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback Speed functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 070@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRateNormalSpeed)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback Pause functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 071@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRatePause)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 0.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback FastForward functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 072@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRateFastForward)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 2.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback Speed functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 073@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRateNormalSpeed)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback Pause functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 074@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRatePause)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 0.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback FastForward functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 075@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRateFastForward)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 2.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 076@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoAudioOnly)
+{
+    const char *testName = "PrimeClock_AutoAudioOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 077@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoVideoOnly)
+{
+    const char *testName = "PrimeClock_AutoVideoOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in AudioMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 078@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AudioMasterAudioOnly)
+{
+    const char *testName = "PrimeClock_AudioMasterAudioOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in VideoMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 079@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_VideoMasterVideoOnly)
+{
+    const char *testName = "PrimeClock_VideoMasterVideoOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in AudioMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 080@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AudioMasterVideoOnly)
+{
+    const char *testName = "PrimeClock_AudioMasterVideoOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in VideoMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 081@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_VideoMasterAudioOnly)
+{
+    const char *testName = "PrimeClock_VideoMasterAudioOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for PCR Stream in PCR clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 082@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_PCRMode)
+{
+    const char *testName = "PrimeClock_PCRMode";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::PCR;
+    contentprimetype primetype = primepcr; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Audio, Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 083@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoAudioBeforeVideo)
+{
+    const char *testName = "PrimeClock_AutoAudioBeforeVideo";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudiobeforevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Video, Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 084@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoVideoBeforeAudio)
+{
+    const char *testName = "PrimeClock_AutoVideoBeforeAudio";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideobeforeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
+*
+* This test verifies the basic AVClock Playback Speed functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 085@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRateNormalSpeed)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
+*
+* This test verifies the basic AVClock Playback Pause functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 086@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRatePause)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 0.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
+*
+* This test verifies the basic AVClock Playback FastForward functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 087@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRateFastForward)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
+*
+* This test verifies the basic AVClock Playback Speed functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 088@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRateNormalSpeed)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
+*
+* This test verifies the basic AVClock Playback Pause functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 089@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRatePause)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 0.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, non-tunnel, secure)
+*
+* This test verifies the basic AVClock Playback FastForward functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 090@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRateFastForward)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = false;
+    double playbackrate = 2.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 091@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoAudioOnly)
+{
+    const char *testName = "PrimeClock_AutoAudioOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 092@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoVideoOnly)
+{
+    const char *testName = "PrimeClock_AutoVideoOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in AudioMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 093@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AudioMasterAudioOnly)
+{
+    const char *testName = "PrimeClock_AudioMasterAudioOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in VideoMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 094@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_VideoMasterVideoOnly)
+{
+    const char *testName = "PrimeClock_VideoMasterVideoOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in AudioMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 095@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AudioMasterVideoOnly)
+{
+    const char *testName = "PrimeClock_AudioMasterVideoOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in VideoMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 096@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_VideoMasterAudioOnly)
+{
+    const char *testName = "PrimeClock_VideoMasterAudioOnly";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for PCR Stream in PCR clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 097@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_PCRMode)
+{
+    const char *testName = "PrimeClock_PCRMode";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::PCR;
+    contentprimetype primetype = primepcr; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Audio, Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 0098@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoAudioBeforeVideo)
+{
+    const char *testName = "PrimeClock_AutoAudioBeforeVideo";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudiobeforevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
+*
+* This test verifies the basic AVClock functionality for Video, Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 0099@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoVideoBeforeAudio)
+{
+    const char *testName = "PrimeClock_AutoVideoBeforeAudio";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideobeforeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback Speed functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 0100@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRateNormalSpeed)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback Pause functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 101@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRatePause)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 0.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback FastForward functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 102@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRateFastForward)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 2.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback Speed functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 103@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRateNormalSpeed)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 2.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback Pause functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 104@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRatePause)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 0.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, non-secure)
+*
+* This test verifies the basic AVClock Playback FastForward functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 105@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRateFastForward)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
+    bool isSecureMode = false;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 2.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 106@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoAudioOnly)
+{
+    const char *testName = "PrimeClock_AutoAudioOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 107@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoVideoOnly)
+{
+    const char *testName = "PrimeClock_AutoVideoOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in AudioMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 108@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AudioMasterAudioOnly)
+{
+    const char *testName = "PrimeClock_AudioMasterAudioOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in VideoMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 109@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_VideoMasterVideoOnly)
+{
+    const char *testName = "PrimeClock_VideoMasterVideoOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Video Stream in AudioMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 110@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AudioMasterVideoOnly)
+{
+    const char *testName = "PrimeClock_AudioMasterVideoOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUDIO_MASTER;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Audio Stream in VideoMaster clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 111@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_VideoMasterAudioOnly)
+{
+    const char *testName = "PrimeClock_VideoMasterAudioOnly";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::VIDEO_MASTER;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for PCR Stream in PCR clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 112@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_PCRMode)
+{
+    const char *testName = "PrimeClock_PCRMode";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::PCR;
+    contentprimetype primetype = primepcr; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Audio, Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 113@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoAudioBeforeVideo)
+{
+    const char *testName = "PrimeClock_AutoAudioBeforeVideo";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudiobeforevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, secure)
+*
+* This test verifies the basic AVClock functionality for Video, Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 114@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoVideoBeforeAudio)
+{
+    const char *testName = "PrimeClock_AutoVideoBeforeAudio";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideobeforeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, secure)
+*
+* This test verifies the basic AVClock Playback Speed functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 115@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRateNormalSpeed)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, secure)
+*
+* This test verifies the basic AVClock Playback Pause functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 116@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRatePause)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 0.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, secure)
+*
+* This test verifies the basic AVClock Playback FastForward functionality for Audio Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 117@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRateFastForward)
+{
+    const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 2.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primeaudio; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, secure)
+*
+* This test verifies the basic AVClock Playback Speed functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 118@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRateNormalSpeed)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 1.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, secure)
+*
+* This test verifies the basic AVClock Playback Pause functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 119@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRatePause)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 0.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
+}
+
+/**
+* @brief Test the AVClock functionality (concurrent, tunnel, secure)
+*
+* This test verifies the basic AVClock Playback FastForward functionality for Video Streams in Auto clock Mode.
+*
+* **Test Group ID:** 03@n
+* **Test Case ID:** 120@n
+*
+* **Test Procedure:**
+* Refer to UT specification documentation [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
+*/
+UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRateFastForward)
+{
+    const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
+    bool isSecureMode = true;
+    bool isConcurrentMode = true;
+    bool isTunnel = true;
+    double playbackrate = 2.0;
+    avclock::ClockMode clockMode = avclock::ClockMode::AUTO;
+    contentprimetype primetype = primevideo; 
+    
+    runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode, clockMode, primetype, playbackrate);
 }
 /** @} */ // End of AUDIO_SINK_HALTEST L3 File
 /** @} */ // End of AUDIO_SINK_HALTEST
