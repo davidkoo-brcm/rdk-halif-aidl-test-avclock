@@ -265,7 +265,6 @@ class AVClockControllerListener : public BnAVClockControllerListener {
         mutable std::mutex mMutex;
         std::condition_variable mCV;
         std::vector<std::pair< ::com::rdk::hal::State, ::com::rdk::hal::State>> mStateChanges;
-        
     };
 class AVClockEventListener : public BnAVClockEventListener {
     public:
@@ -1171,7 +1170,7 @@ public:
           mClockController(clockController), mBufferManager(bufferManager),
           mBufferHelper(bufferHelper), mPlaybackRate(playbackRate) {}
 
-    int32_t getClockId() const { return mClockId.value; }    
+    int32_t getClockId() const { return mClockId.value; }
     sp<IAVClock> getClockHandle() const { return mClockHandle; }
     double getPlaybackRate() const { return mPlaybackRate; }
 
@@ -1181,7 +1180,7 @@ public:
     void runPcrTest(const PcrConfig pcrCfg, android::sp<IAVClockController>& avclockconrotller);
     android::sp<com::rdk::hal::avclock::IAVClockController> setupAndStartClock();
     void shutdownClock(android::sp<com::rdk::hal::avclock::IAVClockController> clockcontroller);
-    long getMonotonicRawTimestamp();
+    int64_t getMonotonicRawTimestamp();
 
 private:
     // Common members
