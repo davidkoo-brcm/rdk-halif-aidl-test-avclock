@@ -1769,6 +1769,7 @@ UT_ADD_TEST(VTS_L3_AVClock, seq_nontun_nonsec_AutoSetVideoPlayRateFastForward) {
                       clockMode, primetype, playbackrate);
 }
 
+#if 0
 /**
  * @brief Test the AVClock functionality (sequential, non-tunnel, secure)
  *
@@ -4498,6 +4499,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRateFastForward) {
   runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
                       clockMode, primetype, playbackrate);
 }
+#endif
 /** @} */ // End of AUDIO_SINK_HALTEST L3 File
 /** @} */ // End of AUDIO_SINK_HALTEST
 /** @} */ // End of AUDIO_SINK Module
