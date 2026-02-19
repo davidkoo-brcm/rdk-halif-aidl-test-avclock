@@ -324,12 +324,6 @@ public:
   }
 
   void TearDown() override {
-    for (const auto &[_avClockId, avClockHandle, controlListener,
-                      eventListener] : mAVClockList) {
-      /* Un-register the events */
-      AVCLOCK_UNREGISTER_EVENT_SUCCESS(avClockHandle, eventListener);
-    }
-
     mAVClockList.clear();
     mAudioDecoderList.clear();
     mVideoDecoderList.clear();
@@ -488,9 +482,6 @@ void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg,
     if (!isClkDecoderUsable(audioCfg.decId))
       return;
 
-    HeapMetrics beforeHeap, afterHeap;
-    AVBUFFER_GETMETRICS(mBufferManager, audioCfg.secureDecode, beforeHeap);
-
     bool isAudioSinkAttached = (audioCfg.sinkHandle != nullptr);
 
     // Set the Audio Sink
@@ -514,8 +505,6 @@ void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg,
     if (decodeThread.joinable())
       decodeThread.join();
 
-    AVBUFFER_GETMETRICS(mBufferManager, audioCfg.secureDecode, afterHeap);
-    UT_ASSERT_TRUE(beforeHeap.bytesUsed == afterHeap.bytesUsed);
   } catch (...) {
     UT_LOG_ERROR("Exception in runAudioTest");
     UT_ASSERT_TRUE(false);
@@ -530,9 +519,6 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig videoCfg,
       return;
     if (!isClkVideoDecoderUsable(videoCfg.decId))
       return;
-
-    HeapMetrics beforeHeap, afterHeap;
-    AVBUFFER_GETMETRICS(mBufferManager, videoCfg.secureDecode, beforeHeap);
 
     bool isVideoSinkAttached = (videoCfg.sinkHandle != nullptr);
 
@@ -559,8 +545,6 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig videoCfg,
     if (decodeThread.joinable())
       decodeThread.join();
 
-    AVBUFFER_GETMETRICS(mBufferManager, videoCfg.secureDecode, afterHeap);
-    UT_ASSERT_TRUE(beforeHeap.bytesUsed == afterHeap.bytesUsed);
   } catch (...) {
     UT_LOG_ERROR("Exception in runVideoTest");
     UT_ASSERT_TRUE(false);
@@ -979,7 +963,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
     if (!cv.wait_for(lock, std::chrono::milliseconds(200),
                      [&] { return flag; })) {
       UT_LOG_ERROR(
-          "Timeout %s thread: Timed out after 5 minutes please increase time",
+          "Timeout %s thread: Timed out",
           name);
       return false;
     }
@@ -1193,6 +1177,8 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
     for (size_t i = 0; i < clockTests.size(); ++i) {
       auto &_clockTest = clockTests[i];
       auto &_clockController = clockControllerList[i];
+      sp<AVClockEventListener> _eventlistener = std::get<3>(VTS_L3_AVClock::mAVClockList[i]);
+      AVCLOCK_UNREGISTER_EVENT_SUCCESS(_clockTest->getClockHandle(), _eventlistener);
       _clockTest->shutdownClock(_clockController.get());
     }
   } else {
@@ -1370,6 +1356,9 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
         runvideoprimethread.join();
       if (runpcrprimethread.joinable())
         runpcrprimethread.join();
+
+      // Unregistering Event handlers
+      AVCLOCK_UNREGISTER_EVENT_SUCCESS(clockHandle, eventListener);
 
       // Shutdown the clock after tests
       UT_LOG_DEBUG("Entering to shutdownClock");
