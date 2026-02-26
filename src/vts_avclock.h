@@ -265,6 +265,7 @@ class AVClockControllerListener : public BnAVClockControllerListener {
         mutable std::mutex mMutex;
         std::condition_variable mCV;
         std::vector<std::pair< ::com::rdk::hal::State, ::com::rdk::hal::State>> mStateChanges;
+
     };
 class AVClockEventListener : public BnAVClockEventListener {
     public:
