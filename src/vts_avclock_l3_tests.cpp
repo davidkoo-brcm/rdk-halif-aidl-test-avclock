@@ -453,11 +453,17 @@ void AVClockPrimeTest::shutdownClock(
 }
 
 /* Check AVClock Has more than one instance to support concurrent test cases*/
-bool isAVClockSupportsConcurrency() {
+static void isAVClockSupportsConcurrency() {
     bool supported = VTS_L3_AVClock::mAVClockList.size() > 1;
 
     UT_LOG_DEBUG("AVClock concurrent support: %s", supported ? "true" : "false");
-    return supported;
+
+    if(!supported)
+    {
+       GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
+    } else {
+       UT_LOG_INFO("Platform Supports Concurrency");
+    }
 }
 
 
@@ -612,7 +618,7 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 
       if (resultDec && resultSink) {
         auto &[audioDecId, audioDecHandle, audioDecControlListener,
-               audioDecEventListener, audioDecCapabilites] = *resultDec;
+               audioDecEventListener, audioDecCapabilities] = *resultDec;
         auto &[audioSinkId, audioSinkHandle, audioSinkControlListener,
                audioSinkEventListener] = *resultSink;
 
@@ -620,7 +626,7 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                                  audioDecHandle,
                                  audioDecControlListener,
                                  audioDecEventListener,
-                                 audioDecCapabilites,
+                                 audioDecCapabilities,
                                  audioSinkId,
                                  audioSinkHandle,
                                  audioSinkControlListener,
@@ -668,7 +674,7 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
     {
         if(isSecure && !(mAudioList->decCaps->supportsSecure))
         {
-          UT_LOG_INFO("Audio Decoder don't support Secure \n");
+          UT_LOG_WARNING("Audio Decoder don't support Secure \n");
           return;
         }
     }
@@ -794,7 +800,7 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
     {
         if(isSecure && !(mVideoList->decCaps->supportsSecure))
         {
-          UT_LOG_INFO("Video Decoder don't support Secure \n");
+          UT_LOG_WARNING("Video Decoder don't support Secure \n");
           return;
         }
     }
@@ -2975,10 +2981,7 @@ UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoSetVideoPlayRateFastForward) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoAudioOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoAudioOnly";
   bool isSecureMode = false;
@@ -3007,10 +3010,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoAudioOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoVideoOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoVideoOnly";
   bool isSecureMode = false;
@@ -3039,10 +3039,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoVideoOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AudioMasterAudioOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AudioMasterAudioOnly";
   bool isSecureMode = false;
@@ -3071,10 +3068,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AudioMasterAudioOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_VideoMasterVideoOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_VideoMasterVideoOnly";
   bool isSecureMode = false;
@@ -3103,10 +3097,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_VideoMasterVideoOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AudioMasterVideoOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AudioMasterVideoOnly";
   bool isSecureMode = false;
@@ -3135,10 +3126,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AudioMasterVideoOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_VideoMasterAudioOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_VideoMasterAudioOnly";
   bool isSecureMode = false;
@@ -3167,10 +3155,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_VideoMasterAudioOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_PCRMode) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_PCRMode";
   bool isSecureMode = false;
@@ -3199,10 +3184,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_PCRMode) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoAudioBeforeVideo) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoAudioBeforeVideo";
   bool isSecureMode = false;
@@ -3231,10 +3213,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoAudioBeforeVideo) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoVideoBeforeAudio) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoVideoBeforeAudio";
   bool isSecureMode = false;
@@ -3263,10 +3242,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoVideoBeforeAudio) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRateNormalSpeed) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
   bool isSecureMode = false;
@@ -3295,10 +3271,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRateNormalSpeed) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRatePause) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
   bool isSecureMode = false;
@@ -3327,10 +3300,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRatePause) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRateFastForward) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
   bool isSecureMode = false;
@@ -3359,10 +3329,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRateFastForward) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRateNormalSpeed) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
   bool isSecureMode = false;
@@ -3391,10 +3358,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRateNormalSpeed) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRatePause) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
   bool isSecureMode = false;
@@ -3423,10 +3387,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRatePause) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRateFastForward) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
   bool isSecureMode = false;
@@ -3455,10 +3416,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRateFastForward) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoAudioOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoAudioOnly";
   bool isSecureMode = true;
@@ -3487,10 +3445,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoAudioOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoVideoOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoVideoOnly";
   bool isSecureMode = true;
@@ -3519,10 +3474,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoVideoOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AudioMasterAudioOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AudioMasterAudioOnly";
   bool isSecureMode = true;
@@ -3551,10 +3503,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AudioMasterAudioOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_VideoMasterVideoOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_VideoMasterVideoOnly";
   bool isSecureMode = true;
@@ -3583,10 +3532,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_VideoMasterVideoOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AudioMasterVideoOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AudioMasterVideoOnly";
   bool isSecureMode = true;
@@ -3615,10 +3561,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AudioMasterVideoOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_VideoMasterAudioOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_VideoMasterAudioOnly";
   bool isSecureMode = true;
@@ -3647,10 +3590,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_VideoMasterAudioOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_PCRMode) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_PCRMode";
   bool isSecureMode = true;
@@ -3679,10 +3619,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_PCRMode) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoAudioBeforeVideo) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoAudioBeforeVideo";
   bool isSecureMode = true;
@@ -3711,10 +3648,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoAudioBeforeVideo) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoVideoBeforeAudio) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoVideoBeforeAudio";
   bool isSecureMode = true;
@@ -3743,10 +3677,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoVideoBeforeAudio) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRateNormalSpeed) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
   bool isSecureMode = true;
@@ -3775,10 +3706,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRateNormalSpeed) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRatePause) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
   bool isSecureMode = true;
@@ -3807,10 +3735,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRatePause) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRateFastForward) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
   bool isSecureMode = true;
@@ -3839,10 +3764,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRateFastForward) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRateNormalSpeed) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
   bool isSecureMode = true;
@@ -3871,10 +3793,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRateNormalSpeed) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRatePause) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
   bool isSecureMode = true;
@@ -3903,10 +3822,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRatePause) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRateFastForward) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
   bool isSecureMode = true;
@@ -3935,10 +3851,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRateFastForward) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoAudioOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoAudioOnly";
   bool isSecureMode = false;
@@ -3967,10 +3880,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoAudioOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoVideoOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoVideoOnly";
   bool isSecureMode = false;
@@ -3999,10 +3909,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoVideoOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AudioMasterAudioOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AudioMasterAudioOnly";
   bool isSecureMode = false;
@@ -4031,10 +3938,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AudioMasterAudioOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_VideoMasterVideoOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_VideoMasterVideoOnly";
   bool isSecureMode = false;
@@ -4063,10 +3967,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_VideoMasterVideoOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AudioMasterVideoOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AudioMasterVideoOnly";
   bool isSecureMode = false;
@@ -4095,10 +3996,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AudioMasterVideoOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_VideoMasterAudioOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_VideoMasterAudioOnly";
   bool isSecureMode = false;
@@ -4127,10 +4025,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_VideoMasterAudioOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_PCRMode) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_PCRMode";
   bool isSecureMode = false;
@@ -4159,10 +4054,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_PCRMode) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoAudioBeforeVideo) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoAudioBeforeVideo";
   bool isSecureMode = false;
@@ -4191,10 +4083,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoAudioBeforeVideo) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoVideoBeforeAudio) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoVideoBeforeAudio";
   bool isSecureMode = false;
@@ -4223,10 +4112,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoVideoBeforeAudio) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRateNormalSpeed) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
   bool isSecureMode = false;
@@ -4255,10 +4141,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRateNormalSpeed) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRatePause) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
   bool isSecureMode = false;
@@ -4287,10 +4170,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRatePause) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRateFastForward) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
   bool isSecureMode = false;
@@ -4319,10 +4199,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRateFastForward) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRateNormalSpeed) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
   bool isSecureMode = false;
@@ -4351,10 +4228,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRateNormalSpeed) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRatePause) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
   bool isSecureMode = false;
@@ -4383,10 +4257,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRatePause) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRateFastForward) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
   bool isSecureMode = false;
@@ -4415,10 +4286,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRateFastForward) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoAudioOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoAudioOnly";
   bool isSecureMode = true;
@@ -4447,10 +4315,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoAudioOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoVideoOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoVideoOnly";
   bool isSecureMode = true;
@@ -4479,10 +4344,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoVideoOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AudioMasterAudioOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AudioMasterAudioOnly";
   bool isSecureMode = true;
@@ -4511,10 +4373,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AudioMasterAudioOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_VideoMasterVideoOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_VideoMasterVideoOnly";
   bool isSecureMode = true;
@@ -4543,10 +4402,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_VideoMasterVideoOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AudioMasterVideoOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AudioMasterVideoOnly";
   bool isSecureMode = true;
@@ -4575,10 +4431,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AudioMasterVideoOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_VideoMasterAudioOnly) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_VideoMasterAudioOnly";
   bool isSecureMode = true;
@@ -4607,10 +4460,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_VideoMasterAudioOnly) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_PCRMode) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_PCRMode";
   bool isSecureMode = true;
@@ -4639,10 +4489,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_PCRMode) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoAudioBeforeVideo) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoAudioBeforeVideo";
   bool isSecureMode = true;
@@ -4671,10 +4518,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoAudioBeforeVideo) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoVideoBeforeAudio) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoVideoBeforeAudio";
   bool isSecureMode = true;
@@ -4703,10 +4547,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoVideoBeforeAudio) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRateNormalSpeed) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
   bool isSecureMode = true;
@@ -4735,10 +4576,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRateNormalSpeed) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRatePause) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
   bool isSecureMode = true;
@@ -4767,10 +4605,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRatePause) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRateFastForward) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
   bool isSecureMode = true;
@@ -4799,10 +4634,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRateFastForward) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRateNormalSpeed) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
   bool isSecureMode = true;
@@ -4831,10 +4663,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRateNormalSpeed) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRatePause) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
   bool isSecureMode = true;
@@ -4863,10 +4692,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRatePause) {
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRateFastForward) {
 
-  if(!isAVClockSupportsConcurrency())
-  {
-     GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
-  }
+  isAVClockSupportsConcurrency();
 
   const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
   bool isSecureMode = true;
