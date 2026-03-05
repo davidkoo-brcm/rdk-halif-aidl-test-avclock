@@ -133,6 +133,7 @@ struct AudioConfig {
     sp<IAudioDecoder> decHandle;
     sp<AudioDecoderControllerListener> decCtrlListener;
     sp<AudioDecoderEventListener> decEventListener;
+    audiodecoder::Capabilities *decCaps;
     IAudioSink::Id sinkId;
     sp<IAudioSink> sinkHandle;
     sp<AudioSinkControllerListener> sinkCtrlListener;
@@ -147,6 +148,7 @@ struct VideoConfig {
     sp<IVideoDecoder> decHandle;
     sp<VideoDecoderControllerListener> decCtrlListener;
     sp<VideoDecoderEventListener> decEventListener;
+    videodecoder::Capabilities *decCaps;
     IVideoSink::Id sinkId;
     sp<IVideoSink> sinkHandle;
     sp<VideoSinkControllerListener> sinkCtrlListener;

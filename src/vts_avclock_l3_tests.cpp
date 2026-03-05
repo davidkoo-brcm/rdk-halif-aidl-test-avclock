@@ -452,6 +452,22 @@ void AVClockPrimeTest::shutdownClock(
   }
 }
 
+/* Check AVClock Has more than one instance to support concurrent test cases*/
+static void isAVClockSupportsConcurrency() {
+    bool supported = VTS_L3_AVClock::mAVClockList.size() > 1;
+
+    UT_LOG_DEBUG("AVClock concurrent support: %s", supported ? "true" : "false");
+
+    if(!supported)
+    {
+       GTEST_SKIP()<< "[  SKIPPED ] Clock Supports only one instance doesn't support Concurrency\n";
+    } else {
+       UT_LOG_INFO("Platform Supports Concurrency");
+    }
+}
+
+
+
 void AVClockPrimeTest::validateClockTime(
     sp<IAVClock> clockHandle, sp<IAVClockController> &avClockController,
     double playbackrate) {
@@ -596,13 +612,13 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
       // Concurrent Mode: Get decoder and sink using clockId
       auto resultDec =
           getTupleElements(audioDecoderList, clockTest->getClockId(),
-                           std::index_sequence<0, 1, 2, 3>{});
+                           std::index_sequence<0, 1, 2, 3, 4>{});
       auto resultSink = getTupleElements(audioSinkList, clockTest->getClockId(),
                                          std::index_sequence<0, 1, 2, 3>{});
 
       if (resultDec && resultSink) {
         auto &[audioDecId, audioDecHandle, audioDecControlListener,
-               audioDecEventListener] = *resultDec;
+               audioDecEventListener, audioDecCapabilities] = *resultDec;
         auto &[audioSinkId, audioSinkHandle, audioSinkControlListener,
                audioSinkEventListener] = *resultSink;
 
@@ -610,6 +626,7 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                                  audioDecHandle,
                                  audioDecControlListener,
                                  audioDecEventListener,
+                                 audioDecCapabilities,
                                  audioSinkId,
                                  audioSinkHandle,
                                  audioSinkControlListener,
@@ -639,6 +656,7 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                                audioDecHandle,
                                audioDecControlListener,
                                audioDecEventListener,
+                               audioDecCapabilities,
                                audioSinkId,
                                audioSinkHandle,
                                audioSinkControlListener,
@@ -650,6 +668,15 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
       UT_LOG_INFO(
           "Sequential mode: Using decoder %d and sink %d for clockId %d",
           audioDecId, audioSinkId, clockTest->getClockId());
+    }
+
+    if (mAudioList.has_value())
+    {
+        if(isSecure && !(mAudioList->decCaps->supportsSecure))
+        {
+          UT_LOG_WARNING("Audio Decoder don't support Secure \n");
+          return;
+        }
     }
 
     if (mAudioList) {
@@ -709,13 +736,13 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 
       auto resultDec =
           getTupleElements(videoDecoderList, clockTest->getClockId(),
-                           std::index_sequence<0, 1, 2, 3>{});
+                           std::index_sequence<0, 1, 2, 3, 4>{});
       auto resultSink = getTupleElements(videoSinkList, clockTest->getClockId(),
                                          std::index_sequence<0, 1, 2, 3>{});
 
       if (resultDec && resultSink) {
         auto &[videoDecId, videoDecHandle, videoDecControlListener,
-               videoDecEventListener] = *resultDec;
+               videoDecEventListener, videoDecCapabilities] = *resultDec;
         auto &[videoSinkId, videoSinkHandle, videoSinkControlListener,
                videoSinkEventListener] = *resultSink;
 
@@ -723,6 +750,7 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                                  videoDecHandle,
                                  videoDecControlListener,
                                  videoDecEventListener,
+                                 videoDecCapabilities,
                                  videoSinkId,
                                  videoSinkHandle,
                                  videoSinkControlListener,
@@ -753,6 +781,7 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                                videoDecHandle,
                                videoDecControlListener,
                                videoDecEventListener,
+                               videoDecCapabilities,
                                videoSinkId,
                                videoSinkHandle,
                                videoSinkControlListener,
@@ -765,6 +794,15 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
       UT_LOG_INFO(
           "Sequential mode: Using video decoder %d and sink %d for clockId %d",
           videoDecId, videoSinkId, clockTest->getClockId());
+    }
+
+    if (mVideoList.has_value())
+    {
+        if(isSecure && !(mVideoList->decCaps->supportsSecure))
+        {
+          UT_LOG_WARNING("Video Decoder don't support Secure \n");
+          return;
+        }
     }
 
     if (mVideoList) {
@@ -2942,6 +2980,9 @@ UT_ADD_TEST(VTS_L3_AVClock, seq_tun_sec_AutoSetVideoPlayRateFastForward) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoAudioOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoAudioOnly";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -2968,6 +3009,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoAudioOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoVideoOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoVideoOnly";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -2994,6 +3038,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoVideoOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AudioMasterAudioOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AudioMasterAudioOnly";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3020,6 +3067,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AudioMasterAudioOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_VideoMasterVideoOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_VideoMasterVideoOnly";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3046,6 +3096,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_VideoMasterVideoOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AudioMasterVideoOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AudioMasterVideoOnly";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3072,6 +3125,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AudioMasterVideoOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_VideoMasterAudioOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_VideoMasterAudioOnly";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3098,6 +3154,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_VideoMasterAudioOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_PCRMode) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_PCRMode";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3124,6 +3183,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_PCRMode) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoAudioBeforeVideo) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoAudioBeforeVideo";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3150,6 +3212,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoAudioBeforeVideo) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoVideoBeforeAudio) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoVideoBeforeAudio";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3176,6 +3241,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoVideoBeforeAudio) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRateNormalSpeed) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3202,6 +3270,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRateNormalSpeed) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRatePause) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3228,6 +3299,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRatePause) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRateFastForward) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3254,6 +3328,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetAudioPlayRateFastForward) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRateNormalSpeed) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3280,6 +3357,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRateNormalSpeed) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRatePause) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3306,6 +3386,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRatePause) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRateFastForward) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3332,6 +3415,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_nonsec_AutoSetVideoPlayRateFastForward) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoAudioOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoAudioOnly";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -3358,6 +3444,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoAudioOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoVideoOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoVideoOnly";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -3384,6 +3473,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoVideoOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AudioMasterAudioOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AudioMasterAudioOnly";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -3410,6 +3502,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AudioMasterAudioOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_VideoMasterVideoOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_VideoMasterVideoOnly";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -3436,6 +3531,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_VideoMasterVideoOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AudioMasterVideoOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AudioMasterVideoOnly";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -3462,6 +3560,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AudioMasterVideoOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_VideoMasterAudioOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_VideoMasterAudioOnly";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -3488,6 +3589,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_VideoMasterAudioOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_PCRMode) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_PCRMode";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -3514,6 +3618,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_PCRMode) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoAudioBeforeVideo) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoAudioBeforeVideo";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -3540,6 +3647,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoAudioBeforeVideo) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoVideoBeforeAudio) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoVideoBeforeAudio";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -3566,6 +3676,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoVideoBeforeAudio) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRateNormalSpeed) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -3592,6 +3705,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRateNormalSpeed) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRatePause) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -3618,6 +3734,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRatePause) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRateFastForward) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -3644,6 +3763,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetAudioPlayRateFastForward) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRateNormalSpeed) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -3670,6 +3792,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRateNormalSpeed) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRatePause) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -3696,6 +3821,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRatePause) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRateFastForward) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -3722,6 +3850,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_ntun_sec_AutoSetVideoPlayRateFastForward) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoAudioOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoAudioOnly";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3748,6 +3879,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoAudioOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoVideoOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoVideoOnly";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3774,6 +3908,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoVideoOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AudioMasterAudioOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AudioMasterAudioOnly";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3800,6 +3937,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AudioMasterAudioOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_VideoMasterVideoOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_VideoMasterVideoOnly";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3826,6 +3966,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_VideoMasterVideoOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AudioMasterVideoOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AudioMasterVideoOnly";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3852,6 +3995,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AudioMasterVideoOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_VideoMasterAudioOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_VideoMasterAudioOnly";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3878,6 +4024,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_VideoMasterAudioOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_PCRMode) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_PCRMode";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3904,6 +4053,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_PCRMode) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoAudioBeforeVideo) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoAudioBeforeVideo";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3930,6 +4082,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoAudioBeforeVideo) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoVideoBeforeAudio) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoVideoBeforeAudio";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3956,6 +4111,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoVideoBeforeAudio) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRateNormalSpeed) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -3982,6 +4140,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRateNormalSpeed) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRatePause) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -4008,6 +4169,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRatePause) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRateFastForward) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -4034,6 +4198,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetAudioPlayRateFastForward) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRateNormalSpeed) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -4060,6 +4227,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRateNormalSpeed) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRatePause) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -4086,6 +4256,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRatePause) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRateFastForward) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
   bool isSecureMode = false;
   bool isConcurrentMode = true;
@@ -4112,6 +4285,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_nonsec_AutoSetVideoPlayRateFastForward) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoAudioOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoAudioOnly";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -4138,6 +4314,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoAudioOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoVideoOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoVideoOnly";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -4164,6 +4343,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoVideoOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AudioMasterAudioOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AudioMasterAudioOnly";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -4190,6 +4372,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AudioMasterAudioOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_VideoMasterVideoOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_VideoMasterVideoOnly";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -4216,6 +4401,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_VideoMasterVideoOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AudioMasterVideoOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AudioMasterVideoOnly";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -4242,6 +4430,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AudioMasterVideoOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_VideoMasterAudioOnly) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_VideoMasterAudioOnly";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -4268,6 +4459,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_VideoMasterAudioOnly) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_PCRMode) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_PCRMode";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -4294,6 +4488,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_PCRMode) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoAudioBeforeVideo) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoAudioBeforeVideo";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -4320,6 +4517,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoAudioBeforeVideo) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoVideoBeforeAudio) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoVideoBeforeAudio";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -4346,6 +4546,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoVideoBeforeAudio) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRateNormalSpeed) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetAudioPlayRateNormalSpeed";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -4372,6 +4575,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRateNormalSpeed) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRatePause) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetAudioPlayRatePause";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -4398,6 +4604,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRatePause) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRateFastForward) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetAudioPlayRateFastForward";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -4424,6 +4633,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetAudioPlayRateFastForward) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRateNormalSpeed) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetVideoPlayRateNormalSpeed";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -4450,6 +4662,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRateNormalSpeed) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRatePause) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetVideoPlayRatePause";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -4476,6 +4691,9 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRatePause) {
  * [avClock_High-Level-2_TestSpecification.md](../../docs/pages/audioSink_High-Level_TestSpecification.md)
  */
 UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRateFastForward) {
+
+  isAVClockSupportsConcurrency();
+
   const char *testName = "PrimeClock_AutoSetVideoPlayRateFastForward";
   bool isSecureMode = true;
   bool isConcurrentMode = true;
@@ -4487,6 +4705,7 @@ UT_ADD_TEST(VTS_L3_AVClock, con_tun_sec_AutoSetVideoPlayRateFastForward) {
   runAVClockPrimeTest(testName, isSecureMode, isTunnel, isConcurrentMode,
                       clockMode, primetype, playbackrate);
 }
+
 /** @} */ // End of AUDIO_SINK_HALTEST L3 File
 /** @} */ // End of AUDIO_SINK_HALTEST
 /** @} */ // End of AUDIO_SINK Module
