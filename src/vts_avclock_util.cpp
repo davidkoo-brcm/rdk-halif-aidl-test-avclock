@@ -116,7 +116,7 @@ bool vts_avclock_helper_areElementsUnique(const std::vector<int32_t>& ids)
 
 void vts_avclock_helper_validateCapabilities(int avClockId, const avclock::Capabilities& capabilities) {
     // Example: Check profile for expected capabilities (adjust based on actual Capabilities fields)
-    std::string profilePath = "IAVClockManager.IAVClock." + std::to_string(avClockId);
+    std::string profilePath = std::string(AVCLOCKMGR_IAVCLOCK) + "." + std::to_string(avClockId);
     // UT_KVP_PROFILE_* calls to validate capabilities (e.g., supported clock modes, sinks)
     UT_LOG_INFO("Validating capabilities for AVClock ID: %d (profile: %s)", avClockId, profilePath.c_str());
     // Add assertions based on profile or capabilities fields
@@ -144,7 +144,7 @@ bool vts_avclock_helper_validatePropertyValue(int avClockId, const std::optional
     switch (property) {
         case avclock::Property::RESOURCE_ID: {
             // Example: Validate RESOURCE_ID matches avClockId or profile
-            std::string profilePath = "IAVClockManager.IAVClock." + std::to_string(avClockId);
+            std::string profilePath = std::string(AVCLOCKMGR_IAVCLOCK) + "." + std::to_string(avClockId);
             uint32_t expectedId = UT_KVP_PROFILE_GET_UINT32(profilePath.c_str());
             UT_ASSERT_EQUAL(value, static_cast<int>(expectedId));
             break;
