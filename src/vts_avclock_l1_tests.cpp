@@ -135,7 +135,7 @@ UT_ADD_TEST(VTS_L1_AVClock, getAVClockIds_pos)
     }
 
     // Step 06: Expected clock IDs from HAL Feature Profile
-    const char* profile_path = "IAVClockManager.IAVClock";
+    const char* profile_path = AVCLOCKMGR_IAVCLOCK;
     size_t expectedCount = UT_KVP_PROFILE_GET_LIST_COUNT(profile_path);
     UT_ASSERT_EQUAL(initialClockIds.size(), expectedCount);
 
@@ -153,11 +153,10 @@ UT_ADD_TEST(VTS_L1_AVClock, getAVClockIds_pos)
     }
 }
 
-#if 0
 /**
  * @brief Test the positive scenario of retrieving AVClock using AVClockManager
  *
- * This test verifies that the AVClockManager service can successfully retrieve a list of AVClock IDs and subsequently obtain each AVClock instance using these IDs. It ensures that the service returns valid AVClock objects and that the status of each operation is successful.
+ * This test verifies that the AVClockManager service can successfully retrieve AVClock IDs, validates they match the hfp-avclock.yaml profile, and obtains AVClock instances for each ID.
  *
  * **Test Group ID:** Basic: 01@n
  * **Test Case ID:** 002@n
@@ -168,46 +167,61 @@ UT_ADD_TEST(VTS_L1_AVClock, getAVClockIds_pos)
  * **User Interaction:** None@n
  * @n
  * **Test Procedure:**@n
- * | Variation / Step | Description | Test Data | Expected Result | Notes |
- * | :----: | --------- | ---------- |-------------- | ----- |
- * | 01 | Retrieve AVClock IDs from AVClockManager service | avClockIds = [] | Status is OK, avClockIds is not empty | Should be successful |
- * | 02 | Iterate over each AVClock ID and retrieve the corresponding AVClock | avClockId = value, avClock = nullptr | Status is OK, avClock is not nullptr | Should Pass |
+ * |Variation / Step|Description|Test Data|Expected Result|Notes|
+ * |----------------|-----------|---------|---------------|-----|
+ * |01|Retrieve AVClock IDs from API|None|Should retrieve a non-empty list of IDs|Should Pass|
+ * |02|Verify IDs match the hfp-avclock.yaml profile|clockIds, gAVClock_hfp|IDs should match profile exactly|Should Pass|
+ * |03|Get AVClock instance for each clock ID|clockId, avclock|avclock should not be nullptr|Should Pass|
  */
 UT_ADD_TEST(VTS_L1_AVClock, getAVClock_pos)
 {
-    android::sp<IAVClock> avclock_1;
-    android::sp<IAVClock> avclock_2;
+    android::sp<IAVClock> avclock;
     std::vector<IAVClock::Id> clockIds;
-    std::optional<PropertyValue> resource_id_1;
-    std::optional<PropertyValue> resource_id_2;
-    com::rdk::hal::avclock::Property property = com::rdk::hal::avclock::Property::RESOURCE_ID;
+    std::vector<int32_t> clockIdValues;
+    std::unordered_set<int> clockIds_from_profile;
 
-    /* Get the AV clock IDs */
+    /* Step 01: Get the AV Clock IDs from API */
     AVCLOCK_MANAGER_GETAVCLOCKIDS(clockIds);
+    UT_ASSERT_FALSE(clockIds.empty());
 
-    UT_ASSERT_TRUE(!clockIds.empty());
+    /* Extract ID values */
+    for (const auto& obj : clockIds)
+    {
+        clockIdValues.push_back(obj.value);
+    }
 
+    /* Verify uniqueness of IDs */
+    UT_ASSERT_TRUE(vts_avclock_helper_areElementsUnique(clockIdValues));
+
+    /* Step 02: Verify IDs match the HAL FEATURE PROFILE (hfp-avclock.yaml) */
+    const char* profile_path = AVCLOCKMGR_IAVCLOCK;
+    size_t expectedCount = UT_KVP_PROFILE_GET_LIST_COUNT(profile_path);
+    UT_ASSERT_EQUAL(clockIds.size(), expectedCount);
+
+    /* Insert expected IDs from profile into set */
+    for (size_t i = 0; i < expectedCount; ++i)
+    {
+        std::string avclockid_path = std::string(profile_path) + "." + std::to_string(i);
+        clockIds_from_profile.insert(UT_KVP_PROFILE_GET_UINT32(avclockid_path.c_str()));
+    }
+
+    /* Verify profile IDs are also unique (set size should match vector size) */
+    UT_ASSERT_EQUAL(clockIds_from_profile.size(), expectedCount);
+
+    /* Verify each retrieved ID exists in profile */
+    for (int id : clockIdValues)
+    {
+        UT_ASSERT_NOT_EQUAL(clockIds_from_profile.find(id), clockIds_from_profile.end());
+    }
+
+    /* Step 03: Get AVClock instance for each clock ID */
     for (const auto& _clockId : clockIds)
     {
-        /* Get AV clock handle (first invocation) */
-        AVCLOCK_MANAGER_GETAVCLOCK_SUCCESS(_clockId, avclock_1);
-        /* Get the resource ID */
-        AVCLOCK_GET_PROPERTY_SUCCESS(avclock_1, property, resource_id_1);
-
-        /* Get AV clock handle (second invocation) */
-        AVCLOCK_MANAGER_GETAVCLOCK_SUCCESS(_clockId, avclock_2);
-        /* Get the resource ID */
-        AVCLOCK_GET_PROPERTY_SUCCESS(avclock_2, property, resource_id_2);
-
-        UT_ASSERT_TRUE(resource_id_1->value != nullptr);
-        UT_ASSERT_TRUE(resource_id_2->value != nullptr);
-        int32_t _resource_id_1 = resource_id_1->value.intValue;
-        int32_t _resource_id_2 = resource_id_2->value.intValue;
-
-        UT_ASSERT_EQUAL(_resource_id_1, _resource_id_2);
+        avclock = nullptr; // Clear previous handle
+        AVCLOCK_MANAGER_GETAVCLOCK_SUCCESS(_clockId, avclock);
+        UT_ASSERT_TRUE(avclock != nullptr);
     }
 }
-#endif
 /**
  * @brief Test the behavior of getAVClock with invalid AVClock IDs
  *

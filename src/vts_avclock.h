@@ -88,6 +88,7 @@
 #include "vts_videodecoder.h"
 
 #include "vts_avclock_init.h"
+#include "vts_avclock_parse_hfp.h"
 #include "vts_audiosink_parse_hfp.h"
 
 #include "com/rdk/hal/avclock/IAVClockManager.h"
@@ -133,6 +134,7 @@ struct AudioConfig {
     sp<IAudioDecoder> decHandle;
     sp<AudioDecoderControllerListener> decCtrlListener;
     sp<AudioDecoderEventListener> decEventListener;
+    audiodecoder::Capabilities *decCaps;
     IAudioSink::Id sinkId;
     sp<IAudioSink> sinkHandle;
     sp<AudioSinkControllerListener> sinkCtrlListener;
@@ -147,6 +149,7 @@ struct VideoConfig {
     sp<IVideoDecoder> decHandle;
     sp<VideoDecoderControllerListener> decCtrlListener;
     sp<VideoDecoderEventListener> decEventListener;
+    videodecoder::Capabilities *decCaps;
     IVideoSink::Id sinkId;
     sp<IVideoSink> sinkHandle;
     sp<VideoSinkControllerListener> sinkCtrlListener;
@@ -265,7 +268,6 @@ class AVClockControllerListener : public BnAVClockControllerListener {
         mutable std::mutex mMutex;
         std::condition_variable mCV;
         std::vector<std::pair< ::com::rdk::hal::State, ::com::rdk::hal::State>> mStateChanges;
-        
     };
 class AVClockEventListener : public BnAVClockEventListener {
     public:
@@ -356,10 +358,12 @@ class AVClockEventListener : public BnAVClockEventListener {
         ::android::binder::Status status; \
         UT_LOG_INFO("Calling getAVClock(IN:avClockId:[%d], OUT:avClock[])", avClockId.value); \
         status = gAVClockManagerService->getAVClock(avClockId, &avClock); \
-        UT_LOG_INFO("Result getAVClock(IN:avClockId:[%d], OUT:avClock:[0x%X]), status:[isOK:%s, exception:%s]", \
-                    avClockId.value, avClock.get(), \
+        UT_LOG_INFO("Result getAVClock(IN:avClockId:[%d], OUT:avClock:[%p]), status:[isOK:%s, exception:%s]", \
+                    avClockId.value, static_cast<void*>(avClock.get()), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
+        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
     } while (0)
 
 #define AVCLOCK_GET_PROPERTY_SUCCESS(avClock, property, propertyValue) \
@@ -1171,7 +1175,7 @@ public:
           mClockController(clockController), mBufferManager(bufferManager),
           mBufferHelper(bufferHelper), mPlaybackRate(playbackRate) {}
 
-    int32_t getClockId() const { return mClockId.value; }    
+    int32_t getClockId() const { return mClockId.value; }
     sp<IAVClock> getClockHandle() const { return mClockHandle; }
     double getPlaybackRate() const { return mPlaybackRate; }
 
@@ -1181,7 +1185,7 @@ public:
     void runPcrTest(const PcrConfig pcrCfg, android::sp<IAVClockController>& avclockconrotller);
     android::sp<com::rdk::hal::avclock::IAVClockController> setupAndStartClock();
     void shutdownClock(android::sp<com::rdk::hal::avclock::IAVClockController> clockcontroller);
-    long getMonotonicRawTimestamp();
+    int64_t getMonotonicRawTimestamp();
 
 private:
     // Common members

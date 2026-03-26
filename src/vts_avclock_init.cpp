@@ -54,6 +54,7 @@
 #include "vts_avclock_init.h"
 #include "vts_avclock_parse_testconfig.h"
 
+
 sp<IAVClockManager> gAVClockManagerService;
 void *gAVClockTestConfiguration = nullptr;
 void *gAudioPrimeTestConfiguration = nullptr;
@@ -64,9 +65,15 @@ UT_status_t VTS_AVClock_init()
     gAVClockTestConfiguration = vts_kvp_create_instance(VTS_AVCLOCK_TEST_CONFIG_PATH);
     gAudioPrimeTestConfiguration = vts_kvp_create_instance(VTS_PRIMEAUDIO_TEST_CONFIG_PATH);
     gVideoPrimeTestConfiguration = vts_kvp_create_instance(VTS_PRIMEVIDEO_TEST_CONFIG_PATH);
-  
+
     if(getAVClockService() != UT_STATUS_OK)
     {
+        return UT_STATUS_FAILURE;
+    }
+
+    if(vts_avclock_parseAVClockHFP() != UT_STATUS_OK)
+    {
+        UT_LOG_ERROR("Failed to process the AVClock HFP file");
         return UT_STATUS_FAILURE;
     }
 

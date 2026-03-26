@@ -80,8 +80,7 @@ struct avclockmanager
 
 extern std::vector<avclockmanager> gAVClock_hfp;
 
-#define AVCLOCKMGR "IAVClockManager"
-#define AVCLOCKMGR_IAVCLOCK "IAVClockManager.IAVClock"
+#define AVCLOCKMGR_IAVCLOCK "avclock.IAVClock"
 
 UT_status_t vts_avclock_parseAVClockHFP();
 
