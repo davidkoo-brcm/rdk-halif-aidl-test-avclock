@@ -667,7 +667,7 @@ void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg,
         audioCfg.decId, audioCfg.decHandle, audioCfg.decCtrlListener,
         audioCfg.decEventListener, mBufferManager, mBufferHelper,
         audioCfg.secureDecode, audioCfg.testConfig, isAudioSinkAttached);
-    std::thread decodeThread(&AudioDecoderTest::run, &decodeTest, false);
+    std::thread decodeThread(&AudioDecoderTest::run, &decodeTest, true);
 
     UT_LOG_INFO("AudioSink Thread about to start");
     AudioSinkTest sinkTest(
@@ -708,7 +708,7 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig videoCfg,
         videoCfg.decEventListener, mBufferManager, videoCfg.secureDecode,
         videoCfg.tunnelMode, videoCfg.decTestConfig, mBufferHelper,
         isVideoSinkAttached);
-    std::thread decodeThread(&videoDecoderTest::run, &decodeTest, false);
+    std::thread decodeThread(&videoDecoderTest::run, &decodeTest, true);
 
     auto decConfig = videoCfg.decTestConfig;
     auto sinkConfig = videoCfg.sinkTestConfig;
