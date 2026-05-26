@@ -59,30 +59,36 @@
  */
 
 #include "vts_avclock.h"
+#include "vts_audiosink.h"
+#include "vts_audiosink_parse_hfp.h"
 
 extern sp<IAVClockManager> gAVClockManagerService;
 
+
 bool isClkSinkUsable(const IAudioSink::Id& sinkId)
 {
-    for (const auto& _sink : gAudiosinks_hfp)
-    {
-        if (std::find(_sink.availableIds.begin(), _sink.availableIds.end(), sinkId.value) != _sink.availableIds.end())
-        {
-            return true;
-        }
-    }
-    return false;
+    return std::find(
+        gAudiosinksHFP.availableIds.begin(),
+        gAudiosinksHFP.availableIds.end(),
+        sinkId.value
+    ) != gAudiosinksHFP.availableIds.end();
 }
 
 bool isClkDecoderUsable(const IAudioDecoder::Id& decoderId)
 {
-    if (gAudiosinks_hfp.empty()) {
+    const auto& availableDecoders = gAudiosinksHFP.availableDecoderIds;
+
+    if (availableDecoders.empty()) {
         return false;
     }
 
-    const auto& availableDecoders = gAudiosinks_hfp[0].availableDecoderIds;
-    return std::find(availableDecoders.begin(), availableDecoders.end(), decoderId.value) != availableDecoders.end();
+    return std::find(
+        availableDecoders.begin(),
+        availableDecoders.end(),
+        decoderId.value
+    ) != availableDecoders.end();
 }
+
 
 bool isClkVideoSinkUsable(const IVideoSink::Id& sinkId)
 {
@@ -96,7 +102,7 @@ bool isClkVideoDecoderUsable(const IVideoDecoder::Id& decoderId)
                             decoderId.value) != gAvailableVideodecoders_hfp.end();
 }
 
-int getAVClockService()
+/*int getAVClockService()
 {
     gAVClockManagerService = android::interface_cast<IAVClockManager>(
         defaultServiceManager()->getService(String16(IAVClockManager::serviceName().c_str())));
@@ -106,7 +112,7 @@ int getAVClockService()
         return UT_STATUS_FAILURE;
     }
     return UT_STATUS_OK;
-}
+}*/
 
 bool vts_avclock_helper_areElementsUnique(const std::vector<int32_t>& ids)
 {

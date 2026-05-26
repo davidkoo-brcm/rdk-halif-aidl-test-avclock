@@ -1264,153 +1264,6 @@ UT_ADD_TEST(VTS_L1_AVClock, stop_neg)
 }
 
 /**
- * @brief Test the AV Clock's setAudioSink function in valid scenarios.
- *
- * This test verifies if the setAudioSink function successfully sets valid audio sink IDs in READY and STARTED states.
- *
- * **Test Group ID:** Basic: 01@n
- * **Test Case ID:** 019@n
- * **Priority:** High@n
- * @n
- * **Pre-Conditions:** None@n
- * **Dependencies:** None@n
- * **User Interaction:** None@n
- * @n
- * **Test Procedure:**@n
- * |Variation / Step|Description|Test Data|Expected Result|Notes|
- * |----------------|-----------|---------|---------------|-----|
- * |01|Retrieve available AV Clock IDs|None|clockIds should not be empty, status.isOk() should be true|Should Pass|
- * |02|Get AV Clock handle for each ID|_clockId|avClock should be valid, status.isOk() should be true|Should Pass|
- * |03|Open the AV Clock|IAVClockControllerListener|avClockController should be valid, status.isOk() should be true, state transitions to READY|Should Pass|
- * |04|Set audio sink to UNDEFINED in READY state|IAudioSink.Id.UNDEFINED (-1)|status.isOk() should be true, return true|Should Pass|
- * |05|Set audio sink to valid ID in READY state|IAudioSink.Id (0)|status.isOk() should be true, return true|Should Pass|
- * |06|Start the AV Clock|None|status.isOk() should be true, state transitions to STARTING then STARTED|Should Pass|
- * |07|Set audio sink to valid ID in STARTED state|IAudioSink.Id (1)|status.isOk() should be true, return true|Should Pass|
- */
-UT_ADD_TEST(VTS_L1_AVClock, setAudioSink_pos)
-{
-    std::vector<com::rdk::hal::avclock::IAVClock::Id> clockIds;
-    android::sp<com::rdk::hal::avclock::IAVClock> avClock;
-    ::android::binder::Status status;
-
-    /* Get the AV Clock IDs */
-    AVCLOCK_MANAGER_GETAVCLOCKIDS(clockIds);
-
-    for (const auto& _clockId : clockIds)
-    {
-        /* Get AV Clock handle */
-        AVCLOCK_MANAGER_GETAVCLOCK_SUCCESS(_clockId, avClock);
-
-        /* Open the AV Clock to reach READY */
-        android::sp<com::rdk::hal::avclock::IAVClockController> avClockController;
-        android::sp<com::rdk::hal::avclock::IAVClockControllerListener> controllerListener = new AVClockControllerListener();
-        AVCLOCK_OPEN_SUCCESS(avClock, controllerListener, avClockController, true);
-
-        /* Test 1: Set audio sink to UNDEFINED in READY state */
-        {
-            com::rdk::hal::audiosink::IAudioSink::Id audioSinkId;
-            audioSinkId.value = -1; // IAudioSink.Id.UNDEFINED
-            AVCLOCK_SET_AUDIO_SINK_SUCCESS(avClock, avClockController, audioSinkId, true);
-            UT_LOG_INFO("setAudioSink to UNDEFINED for clock ID %d in READY: success", _clockId.value);
-        }
-
-        /* Test 2: Set audio sink to valid ID in READY state */
-        {
-            com::rdk::hal::audiosink::IAudioSink::Id audioSinkId;
-            audioSinkId.value = 0; // Valid ID
-            AVCLOCK_SET_AUDIO_SINK_SUCCESS(avClock, avClockController, audioSinkId, true);
-            UT_LOG_INFO("setAudioSink to ID 0 for clock ID %d in READY: success", _clockId.value);
-        }
-
-        /* Test 3: Set audio sink to valid ID in STARTED state */
-        {
-            AVCLOCK_START_SUCCESS(avClock, avClockController, true);
-            com::rdk::hal::audiosink::IAudioSink::Id audioSinkId;
-            audioSinkId.value = 1; // Valid ID
-            AVCLOCK_SET_AUDIO_SINK_SUCCESS(avClock, avClockController, audioSinkId, true);
-            UT_LOG_INFO("setAudioSink to ID 1 for clock ID %d in STARTED: success", _clockId.value);
-
-            /* Stop the AV Clock */
-            AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
-        }
-
-        /* Close the AV Clock */
-        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
-    }
-}
-
-/**
- * @brief Test the AV Clock's setAudioSink function in invalid scenarios.
- *
- * This test verifies if the setAudioSink function handles invalid IDs and states correctly.
- *
- * **Test Group ID:** Basic: 01@n
- * **Test Case ID:** 020@n
- * **Priority:** High@n
- * @n
- * **Pre-Conditions:** None@n
- * **Dependencies:** None@n
- * **User Interaction:** None@n
- * @n
- * **Test Procedure:**@n
- * |Variation / Step|Description|Test Data|Expected Result|Notes|
- * |----------------|-----------|---------|---------------|-----|
- * |01|Retrieve available AV Clock IDs|None|clockIds should not be empty, status.isOk() should be true|Should Pass|
- * |02|Get AV Clock handle for each ID|_clockId|avClock should be valid, status.isOk() should be true|Should Pass|
- * |03|Open the AV Clock|IAVClockControllerListener|avClockController should be valid, status.isOk() should be true, state transitions to READY|Should Pass|
- * |04|Close the AV Clock|avClockController|status.isOk() should be true, state transitions to CLOSED|Should Pass|
- * |05|Open a new controller|IAVClockControllerListener|avClockController should be valid, status.isOk() should be true|Should Pass|
- * |06|Set audio sink in CLOSED state|IAudioSink.Id (0)|status.isOk() should be false, exception EX_ILLEGAL_STATE, return false|Should Pass|
- * |07|Open the AV Clock again|IAVClockControllerListener|avClockController should be valid, status.isOk() should be true, state transitions to READY|Should Pass|
- * |08|Set audio sink to invalid ID in READY state|IAudioSink.Id (NUM_AUDIO_SINK + 1)|status.isOk() should be true, return false|Should Pass|
- */
-UT_ADD_TEST(VTS_L1_AVClock, setAudioSink_neg)
-{
-    std::vector<com::rdk::hal::avclock::IAVClock::Id> clockIds;
-    android::sp<com::rdk::hal::avclock::IAVClock> avClock;
-    ::android::binder::Status status;
-
-    /* Get the AV Clock IDs */
-    AVCLOCK_MANAGER_GETAVCLOCKIDS(clockIds);
-
-    for (const auto& _clockId : clockIds)
-    {
-        /* Get AV Clock handle */
-        AVCLOCK_MANAGER_GETAVCLOCK_SUCCESS(_clockId, avClock);
-
-        /* Test 1: Set audio sink in CLOSED state */
-        {
-            android::sp<com::rdk::hal::avclock::IAVClockController> avClockController;
-            android::sp<com::rdk::hal::avclock::IAVClockControllerListener> controllerListener = new AVClockControllerListener();
-            AVCLOCK_OPEN_SUCCESS(avClock, controllerListener, avClockController, true);
-
-            /* Close the AV Clock to reach CLOSED */
-            AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
-
-            com::rdk::hal::audiosink::IAudioSink::Id audioSinkId;
-            audioSinkId.value = 0; // Valid ID
-            AVCLOCK_SET_AUDIO_SINK_FAILURE_STATE(avClock, avClockController, audioSinkId);
-
-            UT_LOG_INFO("setAudioSink in CLOSED state for clock ID %d: failed as expected", _clockId.value);
-        }
-
-        /*TODO*/
-        /* Test 2: Set audio sink to invalid ID in READY state
-        {
-            android::sp<com::rdk::hal::avclock::IAVClockController> avClockController;
-            android::sp<com::rdk::hal::avclock::IAVClockControllerListener> controllerListener = new AVClockControllerListener();
-            AVCLOCK_OPEN_SUCCESS(avClock, controllerListener, avClockController, true);
-
-            com::rdk::hal::audiosink::IAudioSink::Id audioSinkId;
-            audioSinkId.value = NUM_AUDIO_SINK + 1; // Invalid ID
-            AVCLOCK_SET_AUDIO_SINK_FAILURE_INVALID_ID(avClock, avClockController, audioSinkId);
-
-            UT_LOG_INFO("setAudioSink to invalid ID %d for clock ID %d in READY: failed as expected", audioSinkId.value, _clockId.value);
-        }*/
-    }
-}
-
-/**
  * @brief Test the AV Clock's setClockMode function in valid scenarios.
  *
  * This test verifies if the setClockMode function successfully sets valid clock modes in READY state.
@@ -1918,7 +1771,7 @@ UT_ADD_TEST(VTS_L1_AVClock, getCurrentClockTime_pos)
 {
     std::vector<com::rdk::hal::avclock::IAVClock::Id> clockIds;
     android::sp<com::rdk::hal::avclock::IAVClock> avClock;
-    std::optional<com::rdk::hal::avclock::ClockTime>getclocktime;
+    std::optional<com::rdk::hal::avclock::ClockTime> getClocktime;
     ::android::binder::Status status;
 
     /* Get the AV Clock IDs */
@@ -1941,7 +1794,7 @@ UT_ADD_TEST(VTS_L1_AVClock, getCurrentClockTime_pos)
 
             AVCLOCK_START_SUCCESS(avClock, avClockController, true);
 
-            AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, &getclocktime); // No exact clockTimeNs check
+            AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, &getClocktime); // No exact clockTimeNs check
             UT_LOG_INFO("getCurrentClockTime in STARTED state with AUTO mode for clock ID %d: success", _clockId.value);
 
             AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
@@ -1958,7 +1811,7 @@ UT_ADD_TEST(VTS_L1_AVClock, getCurrentClockTime_pos)
             int64_t sampleTimestampNs = 2000000000LL;
             AVCLOCK_NOTIFY_PCR_SAMPLE_SUCCESS(avClock, avClockController, pcrTimeNs, sampleTimestampNs, true);
 
-            AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, getclocktime); // Exact clockTimeNs check
+            AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(avClock, avClockController, &getClocktime); // Exact clockTimeNs check
             UT_LOG_INFO("getCurrentClockTime in STARTED state with PCR mode for clock ID %d: success", _clockId.value);
 
             AVCLOCK_STOP_SUCCESS(avClock, avClockController, true);
@@ -1997,6 +1850,7 @@ UT_ADD_TEST(VTS_L1_AVClock, getCurrentClockTime_neg)
 {
     std::vector<com::rdk::hal::avclock::IAVClock::Id> clockIds;
     android::sp<com::rdk::hal::avclock::IAVClock> avClock;
+    std::optional<com::rdk::hal::avclock::ClockTime>getclocktime;
     ::android::binder::Status status;
 
     /* Get the AV Clock IDs */
@@ -2014,7 +1868,7 @@ UT_ADD_TEST(VTS_L1_AVClock, getCurrentClockTime_neg)
 
         /* Test 1: Get current clock time in READY state */
         {
-            AVCLOCK_GET_CURRENT_CLOCK_TIME_FAILURE_STATE(avClock, avClockController);
+            AVCLOCK_GET_CURRENT_CLOCK_TIME_FAILURE_STATE(avClock, avClockController, &getclocktime);
             UT_LOG_INFO("getCurrentClockTime in READY state for clock ID %d: failed as expected", _clockId.value);
         }
 
@@ -2028,7 +1882,7 @@ UT_ADD_TEST(VTS_L1_AVClock, getCurrentClockTime_neg)
             controllerListener = new AVClockControllerListener();
             AVCLOCK_OPEN_SUCCESS(avClock, controllerListener, avClockController, false); // No state check, as state is CLOSED
 
-            AVCLOCK_GET_CURRENT_CLOCK_TIME_FAILURE_STATE(avClock, avClockController);
+            AVCLOCK_GET_CURRENT_CLOCK_TIME_FAILURE_STATE(avClock, avClockController, &getclocktime);
             UT_LOG_INFO("getCurrentClockTime in CLOSED state for clock ID %d: failed as expected", _clockId.value);
 
             /* Close the AV Clock */

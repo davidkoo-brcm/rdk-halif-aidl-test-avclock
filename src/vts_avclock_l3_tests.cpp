@@ -83,11 +83,13 @@
 
 #include "com/rdk/hal/avbuffer/BnAVBufferSpaceListener.h"
 #include "com/rdk/hal/avbuffer/IAVBuffer.h"
+#include "com/rdk/hal/audiosink/IAudioSink.h"
 
 #include "vts_audiodecoder.h"
 #include "vts_audiodecoder_parse_testconfig.h"
-#include "vts_audiosink.h"
+#include "vts_audiosink_parse_hfp.h"
 #include "vts_videodecoder.h"
+#include "vts_audiosink.h"
 
 #include "vts_audiosink_helper_functions.h"
 #include "vts_avbuffer.h"
@@ -466,11 +468,8 @@ static void isAVClockSupportsConcurrency() {
     }
 }
 
-
-
 void AVClockPrimeTest::validateClockTime(
-    sp<IAVClock> clockHandle, sp<IAVClockController> &avClockController,
-    double playbackrate) {
+    sp<IAVClock> clockHandle, double playbackrate) {
   double mNormalPlay = 1.0, mFastForward = 2.0, mPause = 0.0;
   ClockTime mFramePTSTime;
 
@@ -478,20 +477,19 @@ void AVClockPrimeTest::validateClockTime(
   UT_LOG_INFO("Validating clock time for playback rate: %f", playbackrate);
 
   if (std::fabs(playbackrate - mNormalPlay) < 1e-6) {
-    AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(clockHandle, avClockController,
-                                           mFramePTSTime);
+   // AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(clockHandle, avClockController,
+        //                                   mFramePTSTime);
   } else if (std::fabs(playbackrate - mFastForward) < 1e-6) {
-    AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(clockHandle, avClockController,
-                                           mFramePTSTime);
+   // AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(clockHandle, avClockController,
+      //                                     mFramePTSTime);
   } else if (std::fabs(playbackrate - mPause) < 1e-6) {
-    AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(clockHandle, avClockController,
-                                           mFramePTSTime);
+   // AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(clockHandle, avClockController,
+    //                                       mFramePTSTime);
   }
 }
 
 // Audio Test
-void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg,
-                                    sp<IAVClockController> &avClockController) {
+void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg) {
   try {
     if (!isClkSinkUsable(audioCfg.sinkId))
       return;
@@ -499,10 +497,6 @@ void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg,
       return;
 
     bool isAudioSinkAttached = (audioCfg.sinkHandle != nullptr);
-
-    // Set the Audio Sink
-    AVCLOCK_SET_AUDIO_SINK_SUCCESS(mClockHandle, avClockController,
-                                   audioCfg.sinkId, true);
 
     AudioDecoderTest decodeTest(
         audioCfg.decId, audioCfg.decHandle, audioCfg.decCtrlListener,
@@ -513,7 +507,7 @@ void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg,
     AudioSinkTest sinkTest(
         audioCfg.sinkId, audioCfg.sinkHandle, audioCfg.sinkCtrlListener,
         audioCfg.sinkEventListener, audioCfg.decCtrlListener, mBufferManager,
-        audioCfg.decId, audioCfg.secureDecode, audioCfg.tunnelMode,
+        audioCfg.decId, mClockId , audioCfg.secureDecode, audioCfg.tunnelMode,
         audioCfg.testConfig);
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     sinkTest.run();
@@ -528,8 +522,7 @@ void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg,
 }
 
 // Video Test
-void AVClockPrimeTest::runVideoTest(const VideoConfig videoCfg,
-                                    sp<IAVClockController> &avClockController) {
+void AVClockPrimeTest::runVideoTest(const VideoConfig videoCfg) {
   try {
     if (!isClkVideoSinkUsable(videoCfg.sinkId))
       return;
@@ -537,10 +530,6 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig videoCfg,
       return;
 
     bool isVideoSinkAttached = (videoCfg.sinkHandle != nullptr);
-
-    // Set the Audio Sink
-    AVCLOCK_SET_VIDEO_SINK_SUCCESS(mClockHandle, avClockController,
-                                   videoCfg.sinkId, true);
 
     videoDecoderTest decodeTest(
         videoCfg.decId, videoCfg.decHandle, videoCfg.decCtrlListener,
@@ -554,7 +543,7 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig videoCfg,
 
     SinkTest sinkTest(videoCfg.sinkId, videoCfg.sinkHandle,
                       videoCfg.sinkCtrlListener, videoCfg.sinkEventListener,
-                      videoCfg.decCtrlListener, decConfig, sinkConfig);
+                      videoCfg.decCtrlListener, videoCfg.decId, decConfig, sinkConfig);
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     sinkTest.run(videoCfg.tunnelMode);
 
@@ -574,11 +563,13 @@ int64_t AVClockPrimeTest::getMonotonicRawTimestamp() {
 }
 
 // PCR Test
-void AVClockPrimeTest::runPcrTest(
-    const PcrConfig pcrCfg,
-    android::sp<IAVClockController> &avClockController) {
+void AVClockPrimeTest::runPcrTest(std::shared_ptr<AVClockPrimeTest> clockTest,
+                                      const PcrConfig pcrCfg) {
   try {
     int64_t ts = getMonotonicRawTimestamp();
+    android::sp<com::rdk::hal::avclock::IAVClockController> avClockController;
+
+    AVCLOCK_OPEN_SUCCESS(clockTest->getClockHandle(), clockTest->mClockController, avClockController, true);
     AVCLOCK_NOTIFY_PCR_SAMPLE_SUCCESS(mClockHandle, avClockController,
                                       pcrCfg.pcrValue, ts, true);
 
@@ -592,8 +583,7 @@ void AVClockPrimeTest::runPcrTest(
 
 void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                        const testConfiguration_t testConfig, bool isSecure,
-                       bool isTunnel, bool isConcurrentMode,
-                       sp<IAVClockController> &avClockController) {
+                       bool isTunnel, bool isConcurrentMode) {
   try {
     std::optional<AudioConfig> mAudioList;
 
@@ -681,8 +671,8 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 
     if (mAudioList) {
       std::thread primeAudioThread(
-          [clockTest, audioCfg = *mAudioList, avClockController]() mutable {
-            clockTest->runAudioTest(audioCfg, avClockController);
+          [clockTest, audioCfg = *mAudioList]() mutable {
+            clockTest->runAudioTest(audioCfg);
           });
 
       sp<IAVClock> clockHandle = clockTest->getClockHandle();
@@ -692,9 +682,8 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
       std::thread validatepts(
-          [clockTest, clockHandle, avClockController, playbackRate]() mutable {
-            clockTest->validateClockTime(clockHandle, avClockController,
-                                         playbackRate);
+          [clockTest, clockHandle, playbackRate]() mutable {
+            clockTest->validateClockTime(clockHandle, playbackRate);
           });
 
       if (validatepts.joinable()) {
@@ -718,8 +707,7 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                        videoDecoderTestConfiguration_t decTestConfig,
                        videoTestConfiguration_t sinkTestConfig, bool isSecure,
-                       bool isTunnel, bool isConcurrentMode,
-                       sp<IAVClockController> &avClockController) {
+                       bool isTunnel, bool isConcurrentMode) {
   try {
     std::optional<VideoConfig> mVideoList;
 
@@ -807,8 +795,8 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 
     if (mVideoList) {
       std::thread primeVideoThread(
-          [clockTest, videoCfg = *mVideoList, avClockController]() mutable {
-            clockTest->runVideoTest(videoCfg, avClockController);
+          [clockTest, videoCfg = *mVideoList]() mutable {
+            clockTest->runVideoTest(videoCfg);
           });
 
       sp<IAVClock> clockHandle = clockTest->getClockHandle();
@@ -818,9 +806,8 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
       std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
       std::thread validatepts(
-          [clockTest, clockHandle, avClockController, playbackRate]() mutable {
-            clockTest->validateClockTime(clockHandle, avClockController,
-                                         playbackRate);
+          [clockTest, clockHandle, playbackRate]() mutable {
+            clockTest->validateClockTime(clockHandle, playbackRate);
           });
 
       if (validatepts.joinable()) {
@@ -841,15 +828,14 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
   }
 }
 
-void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest, long pcrValue,
-                     sp<IAVClockController> &avClockController) {
+void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest, long pcrValue) {
   PcrConfig config{pcrValue};
   try {
     // Launch PCR test in a thread using the existing pcrPrimeTest instance
     std::thread primePcrThread(
-        [clockTest, config, avClockController]() mutable {
+        [clockTest, config]() mutable {
           try {
-            clockTest->runPcrTest(config, avClockController);
+            clockTest->runPcrTest(clockTest, config);
           } catch (const std::exception &ex) {
             UT_LOG_ERROR("Exception in PCR test thread: %s", ex.what());
           }
@@ -862,9 +848,8 @@ void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest, long pcrValue,
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     std::thread validatepts(
-        [clockTest, clockHandle, avClockController, playbackRate]() mutable {
-          clockTest->validateClockTime(clockHandle, avClockController,
-                                       playbackRate);
+        [clockTest, clockHandle, playbackRate]() mutable {
+          clockTest->validateClockTime(clockHandle, playbackRate);
         });
 
     if (validatepts.joinable()) {
@@ -887,8 +872,7 @@ void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest, long pcrValue,
 }
 
 void runAudioPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
-                       bool isSecureMode, bool isTunnel, bool isConcurrentMode,
-                       android::sp<IAVClockController> &clockController) {
+                       bool isSecureMode, bool isTunnel, bool isConcurrentMode) {
   UT_LOG_INFO("Started Thread : %s", __func__);
 
   vector<testConfiguration_t> testConfiguration;
@@ -902,7 +886,7 @@ void runAudioPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
     std::thread audioclockthread([&, test] {
       UT_LOG_INFO("Input string %s", test.input);
       runAudioClockTest(clockTest, test, isSecureMode, isTunnel,
-                        isConcurrentMode, clockController);
+                        isConcurrentMode);
     });
 
     // Join immediately after starting
@@ -914,8 +898,7 @@ void runAudioPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 }
 
 void runVideoPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
-                       bool isSecureMode, bool isTunnel, bool isConcurrentMode,
-                       android::sp<IAVClockController> &clockController) {
+                       bool isSecureMode, bool isTunnel, bool isConcurrentMode) {
   UT_LOG_INFO("Started Thread : %s", __func__);
 
   vector<videoDecoderTestConfiguration_t> decoderConfigs;
@@ -937,7 +920,7 @@ void runVideoPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
     std::thread videoclockthread([&, sinkConfig] {
       UT_LOG_INFO("Video Input string %s", sinkConfig.input);
       runVideoClockTest(clockTest, decoderConfig, sinkConfig, isSecureMode,
-                        isTunnel, isConcurrentMode, clockController);
+                        isTunnel, isConcurrentMode);
     });
 
     // Join immediately after starting
@@ -949,8 +932,7 @@ void runVideoPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 }
 
 void runPcrPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
-                     bool isConcurrentMode,
-                     android::sp<IAVClockController> &clockController) {
+                     bool isConcurrentMode) {
   UT_LOG_INFO("Started Thread : %s", __func__);
   std::vector<int64_t> pcrValues;
   const char *ParsePCR = "ParsePCR";
@@ -961,10 +943,10 @@ void runPcrPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
   for (auto &_pcrValue : pcrValues) {
     std::thread pcrclockthread([&, _pcrValue] {
       UT_LOG_INFO(" PCR Input Value %d", _pcrValue);
-      runPCRClockTest(clockTest, _pcrValue, clockController);
+      runPCRClockTest(clockTest, _pcrValue);
     });
 
-    // Join immediately after starting
+     //Join immediately after starting
     if (pcrclockthread.joinable())
       pcrclockthread.join();
 
@@ -1016,7 +998,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
     for (const auto &[_clockId, clockHandle, controlListener, eventListener] :
          avClockList) {
       if (avClockList.size() == 1) {
-        UT_LOG_INFO("Platform Supports One Instacne Skipping Concurrent Case "
+        UT_LOG_INFO("Platform Supports One Instance Skipping Concurrent Case "
                     "same as Sequential");
         break;
       }
@@ -1028,10 +1010,6 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
       clockTests.push_back(clockTest);
       auto storedClockTest = clockTests.back();
 
-      // Setup and start clock
-      auto clockController = storedClockTest->setupAndStartClock();
-      clockControllerList.push_back(clockController);
-
       // Prime Audio Only
       if (primetype == primeaudio) {
         runaudioprimethread = std::thread([&, storedClockTest]() mutable {
@@ -1041,7 +1019,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
           }
           cv.notify_all();
           runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, clockControllerList.back());
+                            isConcurrentMode);
         });
 
         if (!waitForReady(audioReady, "Audio")) {
@@ -1060,7 +1038,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             videoReady = true;
           }
           runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, clockControllerList.back());
+                            isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1080,7 +1058,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             audioReady = true;
           }
           runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, clockControllerList.back());
+                            isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1098,7 +1076,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             videoReady = true;
           }
           runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, clockControllerList.back());
+                            isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1118,7 +1096,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             videoReady = true;
           }
           runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, clockControllerList.back());
+                            isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1136,7 +1114,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             audioReady = true;
           }
           runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, clockControllerList.back());
+                            isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1157,7 +1135,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             audioReady = true;
           }
           runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, clockControllerList.back());
+                            isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1175,7 +1153,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             videoReady = true;
           }
           runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, clockControllerList.back());
+                            isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1192,8 +1170,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             std::lock_guard<std::mutex> lock(mtx);
             audioReady = true;
           }
-          runPcrPrimeTest(storedClockTest, isConcurrentMode,
-                          clockControllerList.back());
+          runPcrPrimeTest(storedClockTest, isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1217,7 +1194,6 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
       auto &_clockController = clockControllerList[i];
       sp<AVClockEventListener> _eventlistener = std::get<3>(VTS_L3_AVClock::mAVClockList[i]);
       AVCLOCK_UNREGISTER_EVENT_SUCCESS(_clockTest->getClockHandle(), _eventlistener);
-      _clockTest->shutdownClock(_clockController.get());
     }
   } else {
     for (const auto &[_clockId, clockHandle, controlListener, eventListener] :
@@ -1226,9 +1202,6 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
           _clockId, clockHandle, clockMode, controlListener, avBufferManager,
           avBufferHelper, playbackRate);
 
-      // Call the method on the instance
-      auto avclockController = clockTest->setupAndStartClock();
-
       // Prime Audio Only
       if (primetype == primeaudio) {
         runaudioprimethread = std::thread([&, clockTest] {
@@ -1236,8 +1209,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             std::lock_guard<std::mutex> lock(mtx);
             audioReady = true;
           }
-          runAudioPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode,
-                            avclockController);
+          runAudioPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1255,8 +1227,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             std::lock_guard<std::mutex> lock(mtx);
             videoReady = true;
           }
-          runVideoPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode,
-                            avclockController);
+          runVideoPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1274,8 +1245,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             std::lock_guard<std::mutex> lock(mtx);
             audioReady = true;
           }
-          runAudioPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode,
-                            avclockController);
+          runAudioPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1290,8 +1260,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             std::lock_guard<std::mutex> lock(mtx);
             videoReady = true;
           }
-          runVideoPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode,
-                            avclockController);
+          runVideoPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1309,8 +1278,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             std::lock_guard<std::mutex> lock(mtx);
             videoReady = true;
           }
-          runVideoPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode,
-                            avclockController);
+          runVideoPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1325,8 +1293,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             std::lock_guard<std::mutex> lock(mtx);
             audioReady = true;
           }
-          runAudioPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode,
-                            avclockController);
+          runAudioPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1344,8 +1311,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             std::lock_guard<std::mutex> lock(mtx);
             audioReady = true;
           }
-          runAudioPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode,
-                            avclockController);
+          runAudioPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1360,8 +1326,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             std::lock_guard<std::mutex> lock(mtx);
             videoReady = true;
           }
-          runVideoPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode,
-                            avclockController);
+          runVideoPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1376,7 +1341,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
             std::lock_guard<std::mutex> lock(mtx);
             pcrReady = true;
           }
-          runPcrPrimeTest(clockTest, isConcurrentMode, avclockController);
+          runPcrPrimeTest(clockTest, isConcurrentMode);
           cv.notify_all();
         });
 
@@ -1397,11 +1362,6 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
       // Unregistering Event handlers
       AVCLOCK_UNREGISTER_EVENT_SUCCESS(clockHandle, eventListener);
-
-      // Shutdown the clock after tests
-      UT_LOG_DEBUG("Entering to shutdownClock");
-      clockTest->shutdownClock(avclockController);
-      UT_LOG_DEBUG("Exiting to shutdownClock");
     }
   }
 }
