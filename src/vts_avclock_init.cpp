@@ -54,7 +54,6 @@
 #include "vts_avclock_init.h"
 #include "vts_avclock_parse_testconfig.h"
 
-
 sp<IAVClockManager> gAVClockManagerService;
 void *gAVClockTestConfiguration = nullptr;
 void *gAudioPrimeTestConfiguration = nullptr;

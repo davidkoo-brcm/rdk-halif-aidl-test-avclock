@@ -87,7 +87,7 @@ UT_status_t vts_avclock_parse_testconfig(void* pTestInstance, const char *module
         ut_kvp_getStringField(kvpTestInstance, streamName.c_str(), resultKVP, UT_KVP_MAX_ELEMENT_SIZE);
 
         std::string streamNameField(resultKVP);
-        
+
         std::string ptsListKey = streamList + "." + std::to_string(i) + ".PTS";
         int32_t ptsCount = ut_kvp_getListCount(kvpTestInstance, ptsListKey.c_str());
         if(!ptsCount)
