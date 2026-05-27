@@ -95,17 +95,6 @@
 #include "com/rdk/hal/avclock/BnAVClockControllerListener.h"
 #include "com/rdk/hal/avclock/BnAVClockEventListener.h"
 
-#ifndef ENABLE_UT_INFO_LOGGING
-#ifdef UT_LOG_DEBUG
-#undef UT_LOG_DEBUG
-#define UT_LOG_DEBUG(...)
-#endif
-#ifdef UT_LOG_INFO
-#undef UT_LOG_INFO
-#define UT_LOG_INFO(...)
-#endif
-#endif
-
 using android::sp;
 using android::String16;
 using android::defaultServiceManager;
