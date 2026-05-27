@@ -89,6 +89,17 @@ bool isClkDecoderUsable(const IAudioDecoder::Id& decoderId)
     ) != availableDecoders.end();
 }
 
+int getAVClockService()
+{
+    gAVClockManagerService = android::interface_cast<IAVClockManager>(
+        defaultServiceManager()->getService(String16(IAVClockManager::serviceName().c_str())));
+    if (gAVClockManagerService == nullptr)
+    {
+        UT_LOG_ERROR("AVClock Service not available\n");
+        return UT_STATUS_FAILURE;
+    }
+    return UT_STATUS_OK;
+}
 
 bool isClkVideoSinkUsable(const IVideoSink::Id& sinkId)
 {

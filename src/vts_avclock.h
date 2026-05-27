@@ -83,14 +83,15 @@
 #include <optional> // Add for std::optional
 
 #include "vts_audiodecoder.h"
-#include "vts_videosink.h"
 #include "vts_videodecoder.h"
-
+#include "vts_videosink_parse_testconfig.h"
+#include "vts_videosink.h"
 #include "vts_avclock_init.h"
 #include "vts_avclock_parse_hfp.h"
 
 #include "com/rdk/hal/avclock/IAVClockManager.h"
 #include "com/rdk/hal/audiosink/IAudioSink.h"
+#include "com/rdk/hal/videosink/IVideoSink.h"
 #include "com/rdk/hal/avclock/BnAVClockControllerListener.h"
 #include "com/rdk/hal/avclock/BnAVClockEventListener.h"
 
@@ -122,6 +123,8 @@ extern std::vector<int32_t> gAvailableVideodecoders_hfp;
 
 class AudioSinkControllerListener;
 class AudioSinkEventListener;
+class VideoSinkControllerListener;
+class VideoSinkEventListener;
 
 namespace com {
 namespace rdk {
@@ -184,6 +187,7 @@ bool isClkSinkUsable(const com::rdk::hal::audiosink::IAudioSink::Id &maudioSinkI
 bool isClkDecoderUsable(const com::rdk::hal::audiodecoder::IAudioDecoder::Id &maudioDecoderId);
 bool isClkVideoSinkUsable(const com::rdk::hal::videosink::IVideoSink::Id &videoSinkId);
 bool isClkVideoDecoderUsable(const com::rdk::hal::videodecoder::IVideoDecoder::Id &videoDecoderId);
+int getAVClockService();
 
 // Generic function to return selected elements from a tuple at index
 template <typename TupleType, std::size_t... Indices>
@@ -297,8 +301,8 @@ class AVClockEventListener : public BnAVClockEventListener {
     public:
         AVClockEventListener(int32_t clockID)
            : BnAVClockEventListener(),
-         mCurrentState(::com::rdk::hal::State::CLOSED),
-         mClockID(clockID)
+                 mClockID(clockID),
+                 mCurrentState(::com::rdk::hal::State::CLOSED)
     {
     }
         AVClockEventListener() = default;
