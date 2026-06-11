@@ -470,90 +470,179 @@ static void isAVClockSupportsConcurrency() {
     }
 }
 
+bool AVClockPrimeTest::waitForPrimedEvent(
+    std::condition_variable& cv,
+    std::mutex& mtx,
+    bool& primedFlag,
+    int timeoutSec,
+    contentprimetype primetype)
+{
+    // lambda to convert enum → string
+    std::string tag = [&]() {
+        switch (primetype) {
+            case contentprimetype::primeaudio: return "Audio";
+            case contentprimetype::primevideo: return "Video";
+            case contentprimetype::primeaudiobeforevideo: return "AudioBeforeVideo";
+            case contentprimetype::primevideobeforeaudio: return "VideoBeforeAudio";
+            case contentprimetype::primepcr: return "PCR";
+            default: return "Unknown";
+        }
+    }();
+
+    std::unique_lock<std::mutex> lock(mtx);
+
+    bool received = cv.wait_for(
+        lock,
+        std::chrono::seconds(timeoutSec),
+        [&] { return primedFlag; }
+    );
+
+    if (!received) {
+        UT_LOG_ERROR("%s: Timeout waiting for PRIMED event", tag.c_str());
+        return false;
+    }
+
+    UT_LOG_INFO("%s: PRIMED event received", tag.c_str());
+    return true;
+}
+
 void AVClockPrimeTest::validateClockTime(
     sp<IAVClock> clockHandle,
     sp<IAVClockController>& avClockController,
     double expectedRate,
-    contentprimetype primetype, sp<AVClockControllerListener>& clockControlListener)
+    contentprimetype primetype, sp<AVClockControllerListener>& clockControlListener , threadtype threadType)
 {
     UT_LOG_INFO("%s Called", __FUNCTION__);
-    ClockTime t1;
+    std::optional<com::rdk::hal::avclock::ClockTime> t1;
     std::optional<com::rdk::hal::avclock::ClockTime> t2;
+    bool onPrimeEvent{false} , firstFrameRendered {false};
+    std::thread primeEventThread;
     double mNormalPlay = 1.0, mFastForward = 2.0, mPause = 0.0;
 
     auto& primedCv   = clockControlListener->getPrimedCV();
     auto& primedMtx  = clockControlListener->getPrimedMutex();
     auto& primedFlag = clockControlListener->getPrimedFlag();
 
-    // Lock using listener mutex
-    std::unique_lock<std::mutex> lock(primedMtx);
+    if( primetype == contentprimetype::primeaudio || primetype == contentprimetype::primeaudiobeforevideo)
+    {
+        if (threadType == audio)
+        {
+            UT_LOG_INFO("[WAIT FOR THE ON PRIMED EVENT]");
+            primeEventThread = std::thread([&]() {
+                onPrimeEvent = waitForPrimedEvent(
+                    primedCv, primedMtx, primedFlag, 2, primetype
+                );
+            });
+        }
 
-    // Wait for onPrimed event from listener
-    primedCv.wait(lock, [&] { return primedFlag; });
+    } else if(primetype == contentprimetype::primevideo || primetype == contentprimetype::primevideobeforeaudio) {
 
+        if (threadType == audio)
+        {
+            UT_LOG_INFO("[WAIT FOR THE ON PRIMED EVENT]");
+            primeEventThread = std::thread([&]() {
+                onPrimeEvent = waitForPrimedEvent(
+                    primedCv, primedMtx, primedFlag, 2, primetype
+                );
+            });
+        }
 
-    t1 = clockControlListener->getPrimedClockTime();
+    } else if(primetype == contentprimetype::primepcr) {
 
-    UT_LOG_INFO("Primed clock: %lld at system time: %lld",
-                t1.clockTimeNs, t1.sampleTimestampNs);
+        if (threadType == audio)
+        {
+            UT_LOG_INFO("[WAIT FOR THE ON PRIMED EVENT]");
+            primeEventThread = std::thread([&]() {
+                onPrimeEvent = waitForPrimedEvent(
+                    primedCv, primedMtx, primedFlag, 2, primetype
+                );
+            });
+        }
 
-    lock.unlock();
-
-    //Wait for progression
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-    AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(clockHandle, avClockController, &t2);
-
-    if (!t2.has_value()) {
-        UT_LOG_ERROR("Clock not available after priming");
-        return;
     }
 
-    double clockDelta =
-        static_cast<double>(t2.value().clockTimeNs - t1.clockTimeNs);
+    if(onPrimeEvent)
+    {
+        UT_LOG_INFO("ON PRIMED EVENT Success");
+        t1 = clockControlListener->getPrimedClockTime();
+    } else {
+            UT_LOG_INFO("[WAIT FOR THE FIRST FRAME RENDERED EVENT]");
+            primeEventThread = std::thread([&]() {
+                firstFrameRendered = waitForPrimedEvent(
+                    primedCv, primedMtx, primedFlag, 2, primetype
+                );
+            });
+            AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(clockHandle, avClockController, &t1);
+    }
 
-    double timeDelta =
-        static_cast<double>(t2.value().sampleTimestampNs - t1.sampleTimestampNs);
+    if(onPrimeEvent || firstFrameRendered)
+    {
+        UT_LOG_INFO("Primed clock: %lld at system time: %lld",
+                        t1.value().clockTimeNs, t1.value().sampleTimestampNs);
 
-    double actualRate = clockDelta / timeDelta;
+        //Wait for progression
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    UT_LOG_INFO("ClockDelta: %f TimeDelta: %f Rate: %f",
-                clockDelta, timeDelta, actualRate);
+        AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(clockHandle, avClockController, &t2);
 
-    //Validate against expected playback rate tolerance value between 10% to 15%
-    const double tolerance = 0.15;
+        if (!t2.has_value()) {
+            UT_LOG_ERROR("Clock not available after priming");
+            return;
+        }
 
-    double diff = std::fabs(actualRate - expectedRate);
+        double clockDelta =
+            static_cast<double>(t2.value().clockTimeNs - t1.value().clockTimeNs);
 
-    UT_LOG_INFO("Expected: %f Actual: %f Diff: %f",
+        double timeDelta =
+            static_cast<double>(t2.value().sampleTimestampNs - t1.value().sampleTimestampNs);
+
+        double actualRate = clockDelta / timeDelta;
+
+        UT_LOG_INFO("ClockDelta: %f TimeDelta: %f Rate: %f",
+                    clockDelta, timeDelta, actualRate);
+
+        //Validate against expected playback rate tolerance value between 10% to 15%
+        const double tolerance = 0.15;
+
+        double diff = std::fabs(actualRate - expectedRate);
+
+        UT_LOG_INFO("Expected: %f Actual: %f Diff: %f",
                 expectedRate, actualRate, diff);
 
-    UT_ASSERT_TRUE(diff < tolerance);
+        UT_ASSERT_TRUE(diff < tolerance);
 
-    //Classification using your constants
-    bool isPause  = (actualRate < 0.1);
-    bool isFast   = (actualRate > 1.5);
-    bool isNormal = (!isPause && !isFast);
+        //Classification using your constants
+        bool isPause  = (actualRate < 0.1);
+        bool isFast   = (actualRate > 1.5);
+        bool isNormal = (!isPause && !isFast);
 
-    if (isPause) {
-        UT_LOG_INFO("Detected PAUSE mode");
-    } else if (isFast) {
-        UT_LOG_INFO("Detected FAST FORWARD");
+        if (isPause) {
+            UT_LOG_INFO("Detected PAUSE mode");
+        } else if (isFast) {
+            UT_LOG_INFO("Detected FAST FORWARD");
+        } else {
+            UT_LOG_INFO("Detected NORMAL playback");
+        }
+
+        // Expected classification using your values
+        bool expectedPause  = (std::fabs(expectedRate - mPause) < tolerance);
+        bool expectedFast   = (std::fabs(expectedRate - mFastForward) < tolerance);
+        bool expectedNormal = (std::fabs(expectedRate - mNormalPlay) < tolerance);
+
+        UT_ASSERT_TRUE(
+            (isPause && expectedPause) ||
+            (isFast && expectedFast) ||
+            (isNormal && expectedNormal)
+        );
     } else {
-        UT_LOG_INFO("Detected NORMAL playback");
+      UT_LOG_INFO("On Prime Event & First Frame Rendered Event not received");
     }
 
-    // Expected classification using your values
-    bool expectedPause  = (std::fabs(expectedRate - mPause) < tolerance);
-    bool expectedFast   = (std::fabs(expectedRate - mFastForward) < tolerance);
-    bool expectedNormal = (std::fabs(expectedRate - mNormalPlay) < tolerance);
-
-    UT_ASSERT_TRUE(
-        (isPause && expectedPause) ||
-        (isFast && expectedFast) ||
-        (isNormal && expectedNormal)
-    );
-}
+    if(primeEventThread.joinable())
+    {
+          primeEventThread.join();
+    }
+  }
 
 // Audio Test
 void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg,
@@ -748,10 +837,6 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 
     if (mAudioList) {
       UT_LOG_INFO("Prime Audio Thread about to start");
-      std::thread primeAudioThread(
-          [clockTest, audioCfg = *mAudioList, avClockController]() mutable {
-            clockTest->runAudioTest(audioCfg, avClockController);
-          });
 
       sp<IAVClock> clockHandle = clockTest->getClockHandle();
       double playbackRate = clockTest->getPlaybackRate();
@@ -761,7 +846,12 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
       std::thread validatepts(
           [clockTest, clockHandle, avClockController, playbackRate, primetype, clockControllerListener]() mutable {
             clockTest->validateClockTime(clockHandle, avClockController,
-                                         playbackRate, primetype, clockControllerListener);
+                                         playbackRate, primetype, clockControllerListener, threadtype::audio);
+          });
+
+      std::thread primeAudioThread(
+          [clockTest, audioCfg = *mAudioList, avClockController]() mutable {
+            clockTest->runAudioTest(audioCfg, avClockController);
           });
 
       if (validatepts.joinable()) {
@@ -874,20 +964,21 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 
     if (mVideoList) {
       UT_LOG_INFO("Prime Video Thread about to start");
-      std::thread primeVideoThread(
-          [clockTest, videoCfg = *mVideoList, avClockController]() mutable {
-            clockTest->runVideoTest(videoCfg, avClockController);
-          });
 
       sp<IAVClock> clockHandle = clockTest->getClockHandle();
       double playbackRate = clockTest->getPlaybackRate();
       auto clockControllerListener = clockTest->getControlListener();
 
       UT_LOG_INFO("Prime Video Validation Thread about to start");
+
       std::thread validatepts(
           [clockTest, clockHandle, avClockController, playbackRate, primetype, clockControllerListener]() mutable {
             clockTest->validateClockTime(clockHandle, avClockController,
-                                         playbackRate, primetype, clockControllerListener);
+                                         playbackRate, primetype, clockControllerListener, threadtype::video);
+          });
+      std::thread primeVideoThread(
+          [clockTest, videoCfg = *mVideoList, avClockController]() mutable {
+            clockTest->runVideoTest(videoCfg, avClockController);
           });
 
       if (validatepts.joinable()) {
@@ -914,14 +1005,6 @@ void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest, long pcrValue,
   try {
     // Launch PCR test in a thread using the existing pcrPrimeTest instance
     UT_LOG_INFO("Prime PCR Thread about to start");
-    std::thread primePcrThread(
-        [clockTest, config, avClockController]() mutable {
-          try {
-            clockTest->runPcrTest(config, avClockController);
-          } catch (const std::exception &ex) {
-            UT_LOG_ERROR("Exception in PCR test thread: %s", ex.what());
-          }
-        });
 
     sp<IAVClock> clockHandle = clockTest->getClockHandle();
     double playbackRate = clockTest->getPlaybackRate();
@@ -931,7 +1014,16 @@ void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest, long pcrValue,
     std::thread validatepts(
         [clockTest, clockHandle, avClockController, playbackRate, primetype, clockControllerListener]() mutable {
           clockTest->validateClockTime(clockHandle, avClockController,
-                                       playbackRate, primetype, clockControllerListener);
+                                       playbackRate, primetype, clockControllerListener, threadtype::pcr);
+        });
+
+    std::thread primePcrThread(
+        [clockTest, config, avClockController]() mutable {
+          try {
+            clockTest->runPcrTest(config, avClockController);
+          } catch (const std::exception &ex) {
+            UT_LOG_ERROR("Exception in PCR test thread: %s", ex.what());
+          }
         });
 
     if (validatepts.joinable()) {
