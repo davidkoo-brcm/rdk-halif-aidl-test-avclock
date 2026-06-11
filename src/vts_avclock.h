@@ -267,6 +267,7 @@ class AVClockControllerListener : public BnAVClockControllerListener {
 
         bool checkStateTransition(::com::rdk::hal::State expOldState, ::com::rdk::hal::State expNewState)
         {
+            std::lock_guard<std::mutex> lock(mMutex);
             bool foundClosedToOpening = false;
             for (const auto &[oldState, newState] : mStateChanges)
             {
@@ -339,6 +340,7 @@ class AVClockEventListener : public BnAVClockEventListener {
         }
 
         bool checkStateTransition(::com::rdk::hal::State expOldState, ::com::rdk::hal::State expNewState) {
+            std::lock_guard<std::mutex> lock(mMutex);
             bool foundClosedToOpening = false;
             for (const auto &[oldState, newState] : mStateChanges)
             {
@@ -987,8 +989,8 @@ public:
     double getPlaybackRate() const { return mPlaybackRate; }
 
     void validateClockTime(sp<IAVClock> clockHandle, double playbackrate);
-    void runAudioTest(const AudioConfig audioCfg);
-    void runVideoTest(const VideoConfig videoCfg);
+    void runAudioTest(const AudioConfig& audioCfg);
+    void runVideoTest(const VideoConfig& videoCfg);
     void runPcrTest(std::shared_ptr<AVClockPrimeTest> clockTest, const PcrConfig pcrCfg);
     android::sp<com::rdk::hal::avclock::IAVClockController> setupAndStartClock();
     void shutdownClock(android::sp<com::rdk::hal::avclock::IAVClockController> clockcontroller);

@@ -220,7 +220,7 @@ public:
       // AVCLOCK_GETCAPABILITIES(avClock, capabilities);
 
       mAVClockList.push_back(
-          {_avClockId, avClock, controlListener, eventListener});
+          {_avClockId, std::move(avClock), std::move(controlListener), std::move(eventListener)});
     }
 
     for (const auto &_audioSinkId : audioSinkIds) {
@@ -243,14 +243,14 @@ public:
       // AUDIOSINK_GETCAPABILITIES(audioSink, capabilities);
 
       mAudioSinkList.push_back(
-          {_audioSinkId, audioSink, controlListener, eventListener});
+          {_audioSinkId, std::move(audioSink), std::move(controlListener), std::move(eventListener)});
     }
 
     for (const auto &_audioDecoderId : audioDecoderIds) {
       sp<IAudioDecoder> audioDecoder;
 
-      audiodecoder::Capabilities *capabilities =
-          new audiodecoder::Capabilities();
+      std::unique_ptr<audiodecoder::Capabilities> capabilitiesOwner(new audiodecoder::Capabilities());
+      audiodecoder::Capabilities *capabilities = capabilitiesOwner.get();
 
       sp<AudioDecoderEventListener> eventListener =
           new AudioDecoderEventListener();
@@ -275,15 +275,15 @@ public:
           _audioDecoderId.value, audioDecoder.get(), controlListener.get(),
           eventListener.get());
 
-      mAudioDecoderList.push_back({_audioDecoderId, audioDecoder,
-                                   controlListener, eventListener,
-                                   capabilities});
+      mAudioDecoderList.push_back({_audioDecoderId, std::move(audioDecoder),
+                                   std::move(controlListener), std::move(eventListener),
+                                   capabilitiesOwner.release()});
     }
 
     for (const auto &_videoDecoderId : videoDecoderIds) {
       sp<IVideoDecoder> videoDecoder;
-      videodecoder::Capabilities *capabilities =
-          new videodecoder::Capabilities();
+      std::unique_ptr<videodecoder::Capabilities> capabilitiesOwner(new videodecoder::Capabilities());
+      videodecoder::Capabilities *capabilities = capabilitiesOwner.get();
       sp<VideoDecoderEventListener> eventListener =
           new VideoDecoderEventListener();
       sp<VideoDecoderControllerListener> controlListener =
@@ -295,9 +295,9 @@ public:
 
       VIDEODECODER_GETCAPABILITIES(videoDecoder, capabilities);
 
-      mVideoDecoderList.push_back({_videoDecoderId, videoDecoder,
-                                   controlListener, eventListener,
-                                   capabilities});
+      mVideoDecoderList.push_back({_videoDecoderId, std::move(videoDecoder),
+                                   std::move(controlListener), std::move(eventListener),
+                                   capabilitiesOwner.release()});
       UT_LOG_INFO("Added decoder ID %d to test list", _videoDecoderId.value);
     }
 
@@ -321,9 +321,9 @@ public:
 
       // TODO: VideoSink Get capabilities are yet to implement in the video sink
 
-      mVideoSinkList.push_back({_videoSinkId, videoSink,
-                                videoSinkControlListener,
-                                videoSinkEventListener});
+      mVideoSinkList.push_back({_videoSinkId, std::move(videoSink),
+                                std::move(videoSinkControlListener),
+                                std::move(videoSinkEventListener)});
     }
   }
 
@@ -491,7 +491,7 @@ void AVClockPrimeTest::validateClockTime(
 }
 
 // Audio Test
-void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg) {
+void AVClockPrimeTest::runAudioTest(const AudioConfig& audioCfg) {
   try {
     if (!isClkSinkUsable(audioCfg.sinkId))
       return;
@@ -524,7 +524,7 @@ void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg) {
 }
 
 // Video Test
-void AVClockPrimeTest::runVideoTest(const VideoConfig videoCfg) {
+void AVClockPrimeTest::runVideoTest(const VideoConfig& videoCfg) {
   try {
     if (!isClkVideoSinkUsable(videoCfg.sinkId))
       return;
@@ -584,7 +584,7 @@ void AVClockPrimeTest::runPcrTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 }
 
 void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
-                       const testConfiguration_t testConfig, bool isSecure,
+                       const testConfiguration_t& testConfig, bool isSecure,
                        bool isTunnel, bool isConcurrentMode) {
   try {
     std::optional<AudioConfig> mAudioList;
@@ -707,8 +707,8 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 }
 
 void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
-                       videoDecoderTestConfiguration_t decTestConfig,
-                       videoTestConfiguration_t sinkTestConfig, bool isSecure,
+                       const videoDecoderTestConfiguration_t& decTestConfig,
+                       const videoTestConfiguration_t& sinkTestConfig, bool isSecure,
                        bool isTunnel, bool isConcurrentMode) {
   try {
     std::optional<VideoConfig> mVideoList;
@@ -885,7 +885,7 @@ void runAudioPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                                     testConfiguration);
 
   for (auto &test : testConfiguration) {
-    std::thread audioclockthread([&, test] {
+    std::thread audioclockthread([&, test = std::move(test)] {
       UT_LOG_INFO("Input string %s", test.input);
       runAudioClockTest(clockTest, test, isSecureMode, isTunnel,
                         isConcurrentMode);
@@ -919,7 +919,7 @@ void runVideoPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
     auto &decoderConfig = decoderConfigs[i];
     auto &sinkConfig = sinkConfigs[i];
 
-    std::thread videoclockthread([&, sinkConfig] {
+    std::thread videoclockthread([&, sinkConfig = std::move(sinkConfig)] {
       UT_LOG_INFO("Video Input string %s", sinkConfig.input);
       runVideoClockTest(clockTest, decoderConfig, sinkConfig, isSecureMode,
                         isTunnel, isConcurrentMode);
