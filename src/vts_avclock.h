@@ -1055,6 +1055,8 @@ private:
     IAVBufferHelper* mBufferHelper;
     double mPlaybackRate;
     mutable std::mutex mMutex; // Protect shared state
+    mutable std::mutex mwaitEventMutex; // Protect shared state
+    std::condition_variable mWaitEventNotify;
 };
 
 #endif // __VTS_AVCLOCK_H__

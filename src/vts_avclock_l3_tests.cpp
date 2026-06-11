@@ -477,7 +477,8 @@ bool AVClockPrimeTest::waitForPrimedEvent(
     int timeoutSec,
     contentprimetype primetype)
 {
-    // lambda to convert enum → string
+    UT_LOG_INFO("Called %s", __func__);
+
     std::string tag = [&]() {
         switch (primetype) {
             case contentprimetype::primeaudio: return "Audio";
@@ -490,6 +491,7 @@ bool AVClockPrimeTest::waitForPrimedEvent(
     }();
 
     std::unique_lock<std::mutex> lock(mtx);
+    UT_LOG_INFO("Waiting for the primedFlag Status");
 
     bool received = cv.wait_for(
         lock,
@@ -510,80 +512,85 @@ void AVClockPrimeTest::validateClockTime(
     sp<IAVClock> clockHandle,
     sp<IAVClockController>& avClockController,
     double expectedRate,
-    contentprimetype primetype, sp<AVClockControllerListener>& clockControlListener , threadtype threadType)
+    contentprimetype primetype,
+    sp<AVClockControllerListener>& clockControlListener,
+    threadtype threadType)
 {
     UT_LOG_INFO("%s Called", __FUNCTION__);
+
     std::optional<com::rdk::hal::avclock::ClockTime> t1;
     std::optional<com::rdk::hal::avclock::ClockTime> t2;
-    bool onPrimeEvent{false} , firstFrameRendered {false};
-    std::thread primeEventThread;
+
+    bool onPrimeEvent{false};
+    bool firstFrameRendered{false};
+
     double mNormalPlay = 1.0, mFastForward = 2.0, mPause = 0.0;
 
     auto& primedCv   = clockControlListener->getPrimedCV();
     auto& primedMtx  = clockControlListener->getPrimedMutex();
     auto& primedFlag = clockControlListener->getPrimedFlag();
 
-    if( primetype == contentprimetype::primeaudio || primetype == contentprimetype::primeaudiobeforevideo)
+    // Decide which thread should wait
+    bool shouldWait = false;
+
+    if ((primetype == contentprimetype::primeaudio ||
+         primetype == contentprimetype::primeaudiobeforevideo) &&
+        threadType == threadtype::audio)
     {
-        if (threadType == audio)
-        {
-            UT_LOG_INFO("[WAIT FOR THE ON PRIMED EVENT]");
-            primeEventThread = std::thread([&]() {
-                onPrimeEvent = waitForPrimedEvent(
-                    primedCv, primedMtx, primedFlag, 2, primetype
-                );
-            });
-        }
-
-    } else if(primetype == contentprimetype::primevideo || primetype == contentprimetype::primevideobeforeaudio) {
-
-        if (threadType == audio)
-        {
-            UT_LOG_INFO("[WAIT FOR THE ON PRIMED EVENT]");
-            primeEventThread = std::thread([&]() {
-                onPrimeEvent = waitForPrimedEvent(
-                    primedCv, primedMtx, primedFlag, 2, primetype
-                );
-            });
-        }
-
-    } else if(primetype == contentprimetype::primepcr) {
-
-        if (threadType == audio)
-        {
-            UT_LOG_INFO("[WAIT FOR THE ON PRIMED EVENT]");
-            primeEventThread = std::thread([&]() {
-                onPrimeEvent = waitForPrimedEvent(
-                    primedCv, primedMtx, primedFlag, 2, primetype
-                );
-            });
-        }
-
+        shouldWait = true;
+    }
+    else if ((primetype == contentprimetype::primevideo ||
+              primetype == contentprimetype::primevideobeforeaudio) &&
+             threadType == threadtype::video)
+    {
+        shouldWait = true;
+    }
+    else if (primetype == contentprimetype::primepcr &&
+             threadType == threadtype::pcr)
+    {
+        shouldWait = true;
     }
 
-    if(onPrimeEvent)
+    if (shouldWait)
+    {
+        UT_LOG_INFO("[WAIT FOR THE ON PRIMED EVENT]");
+
+        onPrimeEvent = waitForPrimedEvent(
+            primedCv, primedMtx, primedFlag, 2, primetype
+        );
+    }
+
+    //If primed event received
+    if (onPrimeEvent)
     {
         UT_LOG_INFO("ON PRIMED EVENT Success");
         t1 = clockControlListener->getPrimedClockTime();
-    } else {
-            UT_LOG_INFO("[WAIT FOR THE FIRST FRAME RENDERED EVENT]");
-            primeEventThread = std::thread([&]() {
-                firstFrameRendered = waitForPrimedEvent(
-                    primedCv, primedMtx, primedFlag, 2, primetype
-                );
-            });
-            AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(clockHandle, avClockController, &t1);
+    }
+    else
+    {
+        UT_LOG_INFO("[WAIT FOR THE FIRST FRAME RENDERED EVENT]");
+
+        firstFrameRendered = waitForPrimedEvent(
+            primedCv, primedMtx, primedFlag, 2, primetype
+        );
+
+        AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(
+            clockHandle, avClockController, &t1
+        );
     }
 
-    if(onPrimeEvent || firstFrameRendered)
+    // Proceed only if any event received
+    if (onPrimeEvent || firstFrameRendered)
     {
         UT_LOG_INFO("Primed clock: %lld at system time: %lld",
-                        t1.value().clockTimeNs, t1.value().sampleTimestampNs);
+                    t1.value().clockTimeNs,
+                    t1.value().sampleTimestampNs);
 
-        //Wait for progression
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(clockHandle, avClockController, &t2);
+        AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(
+            clockHandle, avClockController, &t2
+        );
 
         if (!t2.has_value()) {
             UT_LOG_ERROR("Clock not available after priming");
@@ -601,17 +608,14 @@ void AVClockPrimeTest::validateClockTime(
         UT_LOG_INFO("ClockDelta: %f TimeDelta: %f Rate: %f",
                     clockDelta, timeDelta, actualRate);
 
-        //Validate against expected playback rate tolerance value between 10% to 15%
         const double tolerance = 0.15;
-
         double diff = std::fabs(actualRate - expectedRate);
 
         UT_LOG_INFO("Expected: %f Actual: %f Diff: %f",
-                expectedRate, actualRate, diff);
+                    expectedRate, actualRate, diff);
 
         UT_ASSERT_TRUE(diff < tolerance);
 
-        //Classification using your constants
         bool isPause  = (actualRate < 0.1);
         bool isFast   = (actualRate > 1.5);
         bool isNormal = (!isPause && !isFast);
@@ -624,7 +628,6 @@ void AVClockPrimeTest::validateClockTime(
             UT_LOG_INFO("Detected NORMAL playback");
         }
 
-        // Expected classification using your values
         bool expectedPause  = (std::fabs(expectedRate - mPause) < tolerance);
         bool expectedFast   = (std::fabs(expectedRate - mFastForward) < tolerance);
         bool expectedNormal = (std::fabs(expectedRate - mNormalPlay) < tolerance);
@@ -634,15 +637,12 @@ void AVClockPrimeTest::validateClockTime(
             (isFast && expectedFast) ||
             (isNormal && expectedNormal)
         );
-    } else {
-      UT_LOG_INFO("On Prime Event & First Frame Rendered Event not received");
     }
-
-    if(primeEventThread.joinable())
+    else
     {
-          primeEventThread.join();
+        UT_LOG_INFO("On Prime Event & First Frame Rendered Event not received");
     }
-  }
+}
 
 // Audio Test
 void AVClockPrimeTest::runAudioTest(const AudioConfig audioCfg,
