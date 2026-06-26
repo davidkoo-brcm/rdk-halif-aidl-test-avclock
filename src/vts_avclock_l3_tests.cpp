@@ -555,6 +555,11 @@ void AVClockPrimeTest::validateClockTime(
     {
         UT_LOG_INFO("[WAIT FOR THE ON PRIMED EVENT]");
 
+        {
+            std::lock_guard<std::mutex> lock(primedMtx);
+            primedFlag = false;
+        }
+
         onPrimeEvent = waitForPrimedEvent(
             primedCv, primedMtx, primedFlag, 2, primetype
         );
@@ -592,6 +597,7 @@ void AVClockPrimeTest::validateClockTime(
             clockHandle, avClockController, &t2
         );
 
+        UT_ASSERT_TRUE(t2.has_value());
         if (!t2.has_value()) {
             UT_LOG_ERROR("Clock not available after priming");
             return;
@@ -1175,7 +1181,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
     for (const auto &[_clockId, clockHandle, controlListener, eventListener] :
          avClockList) {
       if (avClockList.size() == 1) {
-        UT_LOG_INFO("Platform Supports One Instacne Skipping Concurrent Case "
+        UT_LOG_INFO("Platform Supports One Instance Skipping Concurrent Case "
                     "same as Sequential");
         break;
       }
@@ -1193,14 +1199,14 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
       // Prime Audio Only
       if (primetype == primeaudio) {
-        runaudioprimethread = std::thread([&, storedClockTest]() mutable {
+        runaudioprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
             audioReady = true;
           }
           cv.notify_all();
           runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, primetype, clockControllerList.back());
+                            isConcurrentMode, primetype, ctrl);
         });
 
         if (!waitForReady(audioReady, "Audio")) {
@@ -1213,13 +1219,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
       // Prime Video Only
       else if (primetype == primevideo) {
-        runvideoprimethread = std::thread([&, storedClockTest] {
+        runvideoprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
             videoReady = true;
           }
           runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, primetype, clockControllerList.back());
+                            isConcurrentMode, primetype, ctrl);
           cv.notify_all();
         });
 
@@ -1233,13 +1239,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
       // Audio Before Video
       else if (primetype == primeaudiobeforevideo) {
-        runaudioprimethread = std::thread([&, storedClockTest] {
+        runaudioprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
             audioReady = true;
           }
           runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, primetype, clockControllerList.back());
+                            isConcurrentMode, primetype, ctrl);
           cv.notify_all();
         });
 
@@ -1251,13 +1257,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
         primeThreads.push_back(std::move(runaudioprimethread));
 
-        runvideoprimethread = std::thread([&, storedClockTest] {
+        runvideoprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
             videoReady = true;
           }
           runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, primetype, clockControllerList.back());
+                            isConcurrentMode, primetype, ctrl);
           cv.notify_all();
         });
 
@@ -1271,13 +1277,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
       // Video Before Audio
       else if (primetype == primevideobeforeaudio) {
-        runvideoprimethread = std::thread([&, storedClockTest] {
+        runvideoprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
             videoReady = true;
           }
           runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, primetype, clockControllerList.back());
+                            isConcurrentMode, primetype, ctrl);
           cv.notify_all();
         });
 
@@ -1289,13 +1295,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
         primeThreads.push_back(std::move(runvideoprimethread));
 
-        runaudioprimethread = std::thread([&, storedClockTest] {
+        runaudioprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
             audioReady = true;
           }
           runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, primetype, clockControllerList.back());
+                            isConcurrentMode, primetype, ctrl);
           cv.notify_all();
         });
 
@@ -1310,13 +1316,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
       // PCR Case
       else if (primetype == primepcr) {
-        runaudioprimethread = std::thread([&, storedClockTest] {
+        runaudioprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
-            audioReady = true;
+             audioReady = true;
           }
           runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, primetype, clockControllerList.back());
+                            isConcurrentMode, primetype, ctrl);
           cv.notify_all();
         });
 
@@ -1328,13 +1334,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
         primeThreads.push_back(std::move(runaudioprimethread));
 
-        runvideoprimethread = std::thread([&, storedClockTest] {
+        runvideoprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
             videoReady = true;
           }
           runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, primetype, clockControllerList.back());
+                            isConcurrentMode, primetype, ctrl);
           cv.notify_all();
         });
 
@@ -1346,13 +1352,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
         primeThreads.push_back(std::move(runvideoprimethread));
 
-        runpcrprimethread = std::thread([&, storedClockTest] {
+        runpcrprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
-            audioReady = true;
+            pcrReady = true;
           }
           runPcrPrimeTest(storedClockTest, isConcurrentMode, primetype,
-                          clockControllerList.back());
+                          ctrl);
           cv.notify_all();
         });
 
@@ -1376,7 +1382,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
       auto &_clockController = clockControllerList[i];
       sp<AVClockEventListener> _eventlistener = std::get<3>(VTS_L3_AVClock::mAVClockList[i]);
       AVCLOCK_UNREGISTER_EVENT_SUCCESS(_clockTest->getClockHandle(), _eventlistener);
-      _clockTest->shutdownClock(_clockController.get());
+      _clockTest->shutdownClock(_clockController);
     }
   } else {
     for (const auto &[_clockId, clockHandle, controlListener, eventListener] :

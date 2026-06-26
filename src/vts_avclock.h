@@ -264,7 +264,7 @@ class AVClockControllerListener : public BnAVClockControllerListener {
 
         Status onPrimed(const com::rdk::hal::avclock::ClockTime& currentClockTime) override
         {
-            UT_LOG_INFO("AVClockEventListener: Called onPrimed Event");
+            UT_LOG_INFO("AVClockControllerListener: Called onPrimed Event");
 
             if (currentClockTime.clockTimeNs == 0L && currentClockTime.sampleTimestampNs == 0L)
             {
@@ -274,6 +274,7 @@ class AVClockControllerListener : public BnAVClockControllerListener {
 
             {
                 std::lock_guard<std::mutex> lock(mOnPrimeMutex);
+                mPrimedClockTime = currentClockTime;
                 mIsPrimedEventReceived = true;   //
 
                 UT_LOG_INFO("clockTimeNs = %lld, sampleTimestampNs = %lld",
