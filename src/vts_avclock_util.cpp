@@ -113,18 +113,6 @@ bool isClkVideoDecoderUsable(const IVideoDecoder::Id& decoderId)
                             decoderId.value) != gAvailableVideodecoders_hfp.end();
 }
 
-/*int getAVClockService()
-{
-    gAVClockManagerService = android::interface_cast<IAVClockManager>(
-        defaultServiceManager()->getService(String16(IAVClockManager::serviceName().c_str())));
-    if (gAVClockManagerService == nullptr)
-    {
-        UT_LOG_ERROR("AVClock Service not available\n");
-        return UT_STATUS_FAILURE;
-    }
-    return UT_STATUS_OK;
-}*/
-
 bool vts_avclock_helper_areElementsUnique(const std::vector<int32_t>& ids)
 {
     std::unordered_set<int32_t> unique(ids.begin(), ids.end());

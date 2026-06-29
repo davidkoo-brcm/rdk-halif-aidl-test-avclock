@@ -137,6 +137,12 @@ enum contentprimetype {
     primepcr
 };
 
+enum threadtype {
+    audio,
+    video,
+    pcr
+};
+
 struct AudioConfig {
     IAudioDecoder::Id decId;
     sp<IAudioDecoder> decHandle;
@@ -256,12 +262,28 @@ class AVClockControllerListener : public BnAVClockControllerListener {
             return Status::ok();
         }
 
-        Status onPrimed(const com::rdk::hal::avclock::ClockTime& currentClockTime) override {
-            UT_LOG_INFO("AVClockEventListener: Current Clock Time");
+        Status onPrimed(const com::rdk::hal::avclock::ClockTime& currentClockTime) override
+        {
+            UT_LOG_INFO("AVClockControllerListener: Called onPrimed Event");
+
+            if (currentClockTime.clockTimeNs == 0L && currentClockTime.sampleTimestampNs == 0L)
             {
-                std::lock_guard<std::mutex> lock(mMutex);
+                UT_LOG_ERROR("Invalid ClockTime received");
+                return Status::fromExceptionCode(Status::EX_ILLEGAL_ARGUMENT);
             }
-            mCV.notify_all();
+
+            {
+                std::lock_guard<std::mutex> lock(mOnPrimeMutex);
+                mPrimedClockTime = currentClockTime;
+                mIsPrimedEventReceived = true;   //
+
+                UT_LOG_INFO("clockTimeNs = %lld, sampleTimestampNs = %lld",
+                                 static_cast<long long>(currentClockTime.clockTimeNs),
+                                 static_cast<long long>(currentClockTime.sampleTimestampNs));
+            }
+
+            mOnPrimeEventAvailable.notify_all();
+
             return Status::ok();
         }
 
@@ -280,11 +302,36 @@ class AVClockControllerListener : public BnAVClockControllerListener {
             return foundClosedToOpening;
         }
 
+        // Getter for CV
+        std::condition_variable& getPrimedCV() {
+            return mOnPrimeEventAvailable;
+        }
+
+        // Getter for mutex
+        std::mutex& getPrimedMutex() {
+            return mOnPrimeMutex;
+        }
+
+        //  Getter for flag
+        bool& getPrimedFlag() {
+            return mIsPrimedEventReceived;
+        }
+
+        // Getter for clock time
+        ClockTime getPrimedClockTime() {
+            std::lock_guard<std::mutex> lock(mOnPrimeMutex);
+            return mPrimedClockTime;
+        }
+
     private:
         int32_t mClockID;
         ::com::rdk::hal::State mCurrentState;
         mutable std::mutex mMutex;
         std::condition_variable mCV;
+        mutable std::mutex mOnPrimeMutex;
+        std::condition_variable mOnPrimeEventAvailable;
+        bool mIsPrimedEventReceived{false};
+        ClockTime mPrimedClockTime;
         std::vector<std::pair< ::com::rdk::hal::State, ::com::rdk::hal::State>> mStateChanges;
     };
 class AVClockEventListener : public BnAVClockEventListener {
@@ -988,12 +1035,17 @@ public:
     sp<IAVClock> getClockHandle() const { return mClockHandle; }
     double getPlaybackRate() const { return mPlaybackRate; }
 
-    void validateClockTime(sp<IAVClock> clockHandle, double playbackrate);
-    void runAudioTest(const AudioConfig& audioCfg);
-    void runVideoTest(const VideoConfig& videoCfg);
-    void runPcrTest(std::shared_ptr<AVClockPrimeTest> clockTest, const PcrConfig pcrCfg);
+    sp<AVClockControllerListener> getControlListener() const {
+        return mClockController;
+    }
+
+    void validateClockTime(sp<IAVClock> clockHandle, sp<IAVClockController>& avClockController, double playbackrate, contentprimetype primetype, sp<AVClockControllerListener>& clockControlListener, threadtype threadType);
+    void runAudioTest(const AudioConfig& audioCfg, sp<IAVClockController> &avClockController);
+    void runVideoTest(const VideoConfig& videoCfg, sp<IAVClockController> &avClockController);
+    void runPcrTest(const PcrConfig& pcrCfg, sp<IAVClockController> &avClockController);
     android::sp<com::rdk::hal::avclock::IAVClockController> setupAndStartClock();
     void shutdownClock(android::sp<com::rdk::hal::avclock::IAVClockController> clockcontroller);
+    bool waitForPrimedEvent(std::condition_variable& cv, std::mutex& mtx, bool& primedFlag, int timeoutSec, contentprimetype primetype);
     int64_t getMonotonicRawTimestamp();
 
 private:
@@ -1006,6 +1058,8 @@ private:
     IAVBufferHelper* mBufferHelper;
     double mPlaybackRate;
     mutable std::mutex mMutex; // Protect shared state
+    mutable std::mutex mwaitEventMutex; // Protect shared state
+    std::condition_variable mWaitEventNotify;
 };
 
 #endif // __VTS_AVCLOCK_H__
