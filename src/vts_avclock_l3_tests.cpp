@@ -737,7 +737,7 @@ int64_t AVClockPrimeTest::getMonotonicRawTimestamp() {
 
 // PCR Test
 void AVClockPrimeTest::runPcrTest(
-    const PcrConfig pcrCfg,
+  const PcrConfig& pcrCfg,
     android::sp<IAVClockController> &avClockController) {
   try {
     int64_t ts = getMonotonicRawTimestamp();
