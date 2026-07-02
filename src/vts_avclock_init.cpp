@@ -79,6 +79,16 @@ UT_status_t VTS_AVClock_init()
     return UT_STATUS_OK;
 }
 
+void VTS_AVClock_destroy()
+{
+    vts_kvp_destroy_instance(gAVClockTestConfiguration);
+    gAVClockTestConfiguration = nullptr;
+    vts_kvp_destroy_instance(gAudioPrimeTestConfiguration);
+    gAudioPrimeTestConfiguration = nullptr;
+    vts_kvp_destroy_instance(gVideoPrimeTestConfiguration);
+    gVideoPrimeTestConfiguration = nullptr;
+}
+
 /** @} */ // End of AV_Clock_Halif_Test_Init
 /** @} */ // End of AV_Clock_Halif_Test
 /** @} */ // End of AV_Clock

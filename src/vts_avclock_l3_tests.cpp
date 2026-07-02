@@ -378,10 +378,10 @@ public:
 void checkCompleteStateTransition(sp<IAVClock> avClock,
                                   sp<AVClockEventListener> eventListener,
                                   sp<AVClockControllerListener> controlListener,
-                                  com::rdk::hal::State oldState,
-                                  com::rdk::hal::State intermediateState,
-                                  com::rdk::hal::State newState) {
-  ::com::rdk::hal::State currentState;
+                                  com::rdk::hal::avclock::State oldState,
+                                  com::rdk::hal::avclock::State intermediateState,
+                                  com::rdk::hal::avclock::State newState) {
+  ::com::rdk::hal::avclock::State currentState;
 
   UT_ASSERT_TRUE(
       eventListener->checkStateTransition(oldState, intermediateState));
@@ -737,7 +737,7 @@ int64_t AVClockPrimeTest::getMonotonicRawTimestamp() {
 
 // PCR Test
 void AVClockPrimeTest::runPcrTest(
-  const PcrConfig& pcrCfg,
+    const PcrConfig& pcrCfg,
     android::sp<IAVClockController> &avClockController) {
   try {
     int64_t ts = getMonotonicRawTimestamp();
