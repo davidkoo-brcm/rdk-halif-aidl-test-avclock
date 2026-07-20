@@ -84,7 +84,6 @@
 
 #include "vts_audiodecoder.h"
 #include "vts_videodecoder.h"
-#include "vts_videosink_parse_testconfig.h"
 #include "vts_videosink.h"
 #include "vts_avclock_init.h"
 #include "vts_avclock_parse_hfp.h"
@@ -105,10 +104,6 @@ using namespace com::rdk::hal::avclock;
 using namespace com::rdk::hal::videosink;
 
 extern sp<com::rdk::hal::avclock::IAVClockManager> gAVClockManagerService;
-
-extern std::vector<int32_t> gVideosinks_hfp;
-extern std::vector<int32_t> gAvailableVideosinks_hfp;
-extern std::vector<int32_t> gAvailableVideodecoders_hfp;
 
 class AudioSinkControllerListener;
 class AudioSinkEventListener;
@@ -171,7 +166,6 @@ struct VideoConfig {
     bool secureDecode;
     bool tunnelMode;
     videoDecoderTestConfiguration_t decTestConfig;
-    videoTestConfiguration_t sinkTestConfig;
 };
 
 struct PcrConfig {

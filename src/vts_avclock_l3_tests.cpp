@@ -96,8 +96,8 @@
 
 #include "vts_videosink_helper_functions.h"
 #include "vts_videosink_parse_hfp.h"
-#include "vts_videosink_parse_testconfig.h"
 #include "vts_videosink.h"
+#include "vts_videosink_test.h"
 
 
 #include "vts_avclock_parse_hfp.h"
@@ -711,12 +711,13 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig& videoCfg,
     std::thread decodeThread(&videoDecoderTest::run, &decodeTest, true);
 
     auto decConfig = videoCfg.decTestConfig;
-    auto sinkConfig = videoCfg.sinkTestConfig;
 
     UT_LOG_INFO("VideoSink Thread about to start");
-    SinkTest sinkTest(videoCfg.sinkId, videoCfg.sinkHandle,
-                      videoCfg.sinkCtrlListener, videoCfg.sinkEventListener,
-                      videoCfg.decCtrlListener, videoCfg.decId, decConfig, sinkConfig, isClockInUse);
+    VideoSinkTest sinkTest(videoCfg.sinkId, videoCfg.sinkHandle,
+                 videoCfg.sinkCtrlListener,
+                 videoCfg.sinkEventListener,
+                 videoCfg.decCtrlListener, mBufferManager,
+                 videoCfg.decId, mClockId, decConfig, isClockInUse);
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     sinkTest.run(videoCfg.tunnelMode);
 
@@ -880,7 +881,7 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 
 void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                        const videoDecoderTestConfiguration_t& decTestConfig,
-                       const videoTestConfiguration_t& sinkTestConfig, bool isSecure,
+                       bool isSecure,
                        bool isTunnel, bool isConcurrentMode, contentprimetype primetype,
                        sp<IAVClockController> &avClockController) {
   try {
@@ -920,8 +921,7 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                                  videoSinkEventListener,
                                  isSecure,
                                  isTunnel,
-                                 decTestConfig,
-                                 sinkTestConfig};
+                                 decTestConfig};
 
         UT_LOG_INFO("Concurrent mode: Using video decoder %d and sink %d for "
                     "clockId %d",
@@ -951,8 +951,7 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                                videoSinkEventListener,
                                isSecure,
                                isTunnel,
-                               decTestConfig,
-                               sinkTestConfig};
+                               decTestConfig};
 
       UT_LOG_INFO(
           "Sequential mode: Using video decoder %d and sink %d for clockId %d",
@@ -1084,7 +1083,6 @@ void runVideoPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
   UT_LOG_INFO("Started Thread : %s", __func__);
 
   vector<videoDecoderTestConfiguration_t> decoderConfigs;
-  vector<videoTestConfiguration_t> sinkConfigs;
 
   const char *DecodeStreams = "PrimeVideo";
 
@@ -1092,17 +1090,12 @@ void runVideoPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                                     VIDEODECODERMGR, gTestGroup, DecodeStreams,
                                     decoderConfigs);
 
-  vts_videosink_parse_testconfig(gVideoPrimeTestConfiguration, VIDEODECODERMGR,
-                                 gTestGroup, DecodeStreams, sinkConfigs);
-
-  for (size_t i = 0; i < decoderConfigs.size(); ++i) {
-    auto &decoderConfig = decoderConfigs[i];
-    auto &sinkConfig = sinkConfigs[i];
-
-    std::thread videoclockthread([&, sinkConfig = std::move(sinkConfig)] {
-      UT_LOG_INFO("Video Input string %s", sinkConfig.input);
-      runVideoClockTest(clockTest, decoderConfig, sinkConfig, isSecureMode,
-                        isTunnel, isConcurrentMode, primetype, clockController);
+  for (auto &decoderConfig : decoderConfigs) {
+    std::thread videoclockthread([&, decoderConfig] {
+      UT_LOG_INFO("Video Input string %s", decoderConfig.input);
+      runVideoClockTest(clockTest, decoderConfig, isSecureMode,
+                        isTunnel, isConcurrentMode, primetype,
+                        clockController);
     });
 
     // Join immediately after starting
