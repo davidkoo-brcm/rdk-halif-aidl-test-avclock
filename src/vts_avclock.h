@@ -166,6 +166,7 @@ struct VideoConfig {
     bool secureDecode;
     bool tunnelMode;
     videoDecoderTestConfiguration_t decTestConfig;
+    videoDecoderTestConfiguration_t sinkTestConfig;
 };
 
 struct PcrConfig {
@@ -451,9 +452,9 @@ class AVClockEventListener : public BnAVClockEventListener {
                     com::rdk::hal::avclock::toString(property).c_str(), \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_TRUE(status.isOk()); \
+        UT_ASSERT_FALSE(status.isOk()); \
         UT_ASSERT_FALSE(propertyValue.has_value()); \
-        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_NONE); \
+        UT_ASSERT_EQUAL(status.exceptionCode(), Status::EX_ILLEGAL_ARGUMENT); \
     } while (0)
 
 
@@ -500,7 +501,7 @@ class AVClockEventListener : public BnAVClockEventListener {
                     avClockId.value, \
                     UT_Control_GetMapString(bool_mapTable, status.isOk()), \
                     UT_Control_GetMapString(statusException_mapTable, status.exceptionCode())); \
-        UT_ASSERT_FALSE(status.isOk()); \
+        UT_ASSERT_TRUE(status.isOk()); \
     } while (0)
 
 #define AVCLOCK_GETCAPABILITIES(avClock, capabilities) \
