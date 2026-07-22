@@ -50,6 +50,16 @@ namespace com {
                     printf("[SERVICE] AVClockManager service destroyed\n");
                 }
 
+                int32_t AVClockManager::getInterfaceVersion()
+                {
+                    return IAVClockManager::VERSION;
+                }
+
+                std::string AVClockManager::getInterfaceHash()
+                {
+                    return IAVClockManager::HASHVALUE;
+                }
+
                 android::binder::Status AVClockManager::getAVClockIds(  std::vector<IAVClock::Id>* _aidl_return  )
                 {
                     for (int32_t i = 0;i < NUM_AV_CLOCK; i++)
@@ -104,6 +114,24 @@ namespace com {
                     this->mAVClockState = newState;
                 }
 
+                void AVClock::notifyStateChanged(State oldState, State newState)
+                {
+                    if (this->mAVClockControllerListener != nullptr) {
+                        this->mAVClockControllerListener->onStateChanged(oldState, newState);
+                    }
+
+                    if (this->mAVClockEventListener != nullptr) {
+                        this->mAVClockEventListener->onStateChanged(oldState, newState);
+                    }
+                }
+
+                void AVClock::notifyPrimed(const ClockTime& currentClockTime)
+                {
+                    if (this->mAVClockControllerListener != nullptr) {
+                        this->mAVClockControllerListener->onPrimed(currentClockTime);
+                    }
+                }
+
                 android::binder::Status AVClock::getCapabilities(avclock::Capabilities* _aidl_return)
                 {
                     LOG(DEBUG) << "getCapabilities called for AVClock ID=" << mId.value;
@@ -151,31 +179,10 @@ namespace com {
                         default:
                             LOG(ERROR) << "getProperty: invalid property=" << static_cast<int32_t>(property);
                             *_aidl_return = std::nullopt;
-                            return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
+                            return android::binder::Status::ok();
                     }
 
                     *_aidl_return = value;
-                    return android::binder::Status::ok();
-                }
-
-                android::binder::Status AVClock::setProperty(avclock::Property property, const PropertyValue& propertyValue, bool* _aidl_return)
-                {
-                    if (!propertyValue.value)
-                    {
-                        *_aidl_return = false;
-                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
-                    }
-
-                    switch (property) {
-                        case ::com::rdk::hal::avclock::Property::RESOURCE_ID:
-                        case ::com::rdk::hal::avclock::Property::METRIC_AV_SYNC_ACCURACY_MS:
-                        case ::com::rdk::hal::avclock::Property::METRIC_AV_RESYNC_COUNT:
-                            *_aidl_return = false; // readonly properties
-                            break; // valid property
-                        default:
-                            *_aidl_return = false;
-                            return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
-                    }
                     return android::binder::Status::ok();
                 }
 
@@ -184,7 +191,7 @@ namespace com {
                     if(avClockControllerListener == nullptr)
                     {
                         *_aidl_return = nullptr;
-                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
+                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_NULL_POINTER);
                     }
                     if(this->getState() != State::CLOSED)
                     {
@@ -192,25 +199,21 @@ namespace com {
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
 
+                    this->mAVClockControllerListener = avClockControllerListener;
+
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-                    if (this->mEventListener)
-                    {
-                        this->mAVClockEventListener->onStateChanged(this->getState(), State::OPENING);
-                    }
-
+                    const State oldState = this->getState();
                     this->setState(State::OPENING);
+                    this->notifyStateChanged(oldState, State::OPENING);
 
                     *_aidl_return = new AVClockController(this->mId, this);
 
                     std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
-                    if (this->mEventListener)
-                    {
-                        this->mAVClockEventListener->onStateChanged(this->getState(), State::READY);
-                    }
-
+                    const State openingState = this->getState();
                     this->setState(State::READY);
+                    this->notifyStateChanged(openingState, State::READY);
                     return android::binder::Status::ok();
                 }
 
@@ -231,21 +234,17 @@ namespace com {
                     /* To simulate State Transitions */
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-                    if (this->mAVClockEventListener)
-                    {
-                        this->mAVClockEventListener->onStateChanged(this->getState(), State::CLOSING);
-                    }
-
+                    const State oldState = this->getState();
                     this->setState(State::CLOSING);
+                    this->notifyStateChanged(oldState, State::CLOSING);
 
                     std::this_thread::sleep_for(std::chrono::milliseconds(250));
                     *_aidl_return = true;
 
-                    if (this->mAVClockEventListener)
-                    {
-                        this->mAVClockEventListener->onStateChanged(this->getState(), State::CLOSED);
-                    }
+                    const State closingState = this->getState();
                     this->setState(State::CLOSED);
+                    this->notifyStateChanged(closingState, State::CLOSED);
+                    this->mAVClockControllerListener = nullptr;
                     return android::binder::Status::ok();
                 }
 
@@ -259,7 +258,7 @@ namespace com {
                     if (this->mAVClockEventListener != nullptr)
                     {
                         *_aidl_return = false;
-                        return android::binder::Status::ok();
+                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
                     *_aidl_return = true;
                     this->mAVClockEventListener = avClockEventListener;
@@ -278,12 +277,22 @@ namespace com {
                         IInterface::asBinder(this->mAVClockEventListener) != IInterface::asBinder(avClockEventListener))
                     {
                         *_aidl_return = false;
-                        return android::binder::Status::ok();
+                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
                     }
                     *_aidl_return = true;
                     this->mAVClockEventListener = nullptr;
                     this->mEventListener = false;
                     return android::binder::Status::ok();
+                }
+
+                int32_t AVClock::getInterfaceVersion()
+                {
+                    return IAVClock::VERSION;
+                }
+
+                std::string AVClock::getInterfaceHash()
+                {
+                    return IAVClock::HASHVALUE;
                 }
 
                 AVClockController::AVClockController(IAVClock::Id id, AVClock *parentClock)
@@ -293,9 +302,6 @@ namespace com {
 
                     this->mClockMode = ClockMode::AUTO;
                     this->mPlayBackRate = 1.0;
-                    this->mAudioSinkId.value = -1;
-                    this->mSupplementaryAudioSinkId.value = -1;
-                    this->mVideoSinkId.value = -1;
 
                     this->mPCRSamples = {{0, 0}};
 
@@ -312,6 +318,27 @@ namespace com {
                     printf("[SERVICE] AVClockController service destroyed\n");
                 }
 
+                android::binder::Status AVClockController::setProperty(const ::com::rdk::hal::avclock::Property property, const ::com::rdk::hal::PropertyValue& propertyValue, bool* _aidl_return)
+                {
+                    if (_aidl_return == nullptr) {
+                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_NULL_POINTER);
+                    }
+
+                    *_aidl_return = false;
+                    if (!propertyValue.value) {
+                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
+                    }
+
+                    switch (property) {
+                        case ::com::rdk::hal::avclock::Property::RESOURCE_ID:
+                        case ::com::rdk::hal::avclock::Property::METRIC_AV_SYNC_ACCURACY_MS:
+                        case ::com::rdk::hal::avclock::Property::METRIC_AV_RESYNC_COUNT:
+                            return android::binder::Status::fromExceptionCode(android::binder::Status::EX_UNSUPPORTED_OPERATION);
+                        default:
+                            return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_ARGUMENT);
+                    }
+                }
+
                 android::binder::Status AVClockController::start()
                 {
                     if(this->mParentClock->getState() != State::READY)
@@ -321,18 +348,15 @@ namespace com {
                     /* To simulate State Transitions */
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-                    if (this->mParentClock->mEventListener)
-                    {
-                        this->mParentClock->mAVClockEventListener->onStateChanged(this->mParentClock->getState(), State::STARTING);
-                    }
+                    const State oldState = this->mParentClock->getState();
                     this->mParentClock->setState(State::STARTING);
+                    this->mParentClock->notifyStateChanged(oldState, State::STARTING);
 
                     std::this_thread::sleep_for(std::chrono::milliseconds(250));
-                    if (this->mParentClock->mEventListener)
-                    {
-                        this->mParentClock->mAVClockEventListener->onStateChanged(this->mParentClock->getState(), State::STARTED);
-                    }
+
+                    const State startingState = this->mParentClock->getState();
                     this->mParentClock->setState(State::STARTED);
+                    this->mParentClock->notifyStateChanged(startingState, State::STARTED);
                     return android::binder::Status::ok();
                 }
 
@@ -346,104 +370,24 @@ namespace com {
                     /* To simulate State Transitions */
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-                    if (this->mParentClock->mEventListener)
-                    {
-                        this->mParentClock->mAVClockEventListener->onStateChanged(this->mParentClock->getState(), State::STOPPING);
-                    }
+                    const State oldState = this->mParentClock->getState();
                     this->mParentClock->setState(State::STOPPING);
+                    this->mParentClock->notifyStateChanged(oldState, State::STOPPING);
 
                     std::this_thread::sleep_for(std::chrono::milliseconds(250));
 
-                    if (this->mParentClock->mEventListener)
-                    {
-                        this->mParentClock->mAVClockEventListener->onStateChanged(this->mParentClock->getState(), State::READY);
-                    }
+                    const State stoppingState = this->mParentClock->getState();
                     this->mParentClock->setState(State::READY);
-                    return android::binder::Status::ok();
-                }
-
-                android::binder::Status AVClockController::setAudioSink(  const com::rdk::hal::audiosink::IAudioSink::Id& audioSinkId, bool* _aidl_return  )
-                {
-                    *_aidl_return = false;
-                    if(this->mParentClock->getState() != State::READY && this->mParentClock->getState() != State::STARTED)
-                    {
-                        *_aidl_return = false;
-                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
-                    }
-
-                    if(audioSinkId.value >=-1 && audioSinkId.value <= NUM_AUDIO_SINK)
-                    {
-                        this->mAudioSinkId = audioSinkId;
-                        *_aidl_return = true;
-                    }
-                    return android::binder::Status::ok();
-                }
-
-                android::binder::Status AVClockController::getAudioSink(  com::rdk::hal::audiosink::IAudioSink::Id* _aidl_return  )
-                {
-                    if(this->mParentClock->getState() != State::READY && this->mParentClock->getState() != State::STARTED)
-                    {
-                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
-                    }
-                    *_aidl_return = this->mAudioSinkId;
-                    return android::binder::Status::ok();
-                }
-
-                android::binder::Status AVClockController::setSupplementaryAudioSink(  const com::rdk::hal::audiosink::IAudioSink::Id& supplementaryAudioSinkId, bool* _aidl_return  )
-                {
-                    *_aidl_return = false;
-                    if(this->mParentClock->getState() != State::READY && this->mParentClock->getState() != State::STARTED)
-                    {
-                        *_aidl_return = false;
-                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
-                    }
-
-                    if(supplementaryAudioSinkId.value >=-1 && supplementaryAudioSinkId.value <= NUM_AUDIO_SINK_SUPPLEMENTARY)
-                    {
-                        this->mSupplementaryAudioSinkId = supplementaryAudioSinkId;
-                        *_aidl_return = true;
-                    }
-                    return android::binder::Status::ok();
-                }
-
-                android::binder::Status AVClockController::getSupplementaryAudioSink(  com::rdk::hal::audiosink::IAudioSink::Id* _aidl_return  )
-                {
-                    if(this->mParentClock->getState() != State::READY && this->mParentClock->getState() != State::STARTED)
-                    {
-                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
-                    }
-                    *_aidl_return = this->mSupplementaryAudioSinkId;
-                    return android::binder::Status::ok();
-                }
-
-                android::binder::Status AVClockController::setVideoSink(  const com::rdk::hal::videosink::IVideoSink::Id& videoSinkId, bool* _aidl_return  )
-                {
-                    *_aidl_return = false;
-                    if(this->mParentClock->getState() != State::READY && this->mParentClock->getState() != State::STARTED)
-                    {
-                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
-                    }
-
-                    if(videoSinkId.value >=-1 && videoSinkId.value <= NUM_VIDEO_SINK)
-                    {
-                        this->mVideoSinkId = videoSinkId;
-                        *_aidl_return = true;
-                    }
-                    return android::binder::Status::ok();
-                }
-
-                android::binder::Status AVClockController::getVideoSink(  com::rdk::hal::videosink::IVideoSink::Id* _aidl_return  )
-                {
-                    if(this->mParentClock->getState() != State::READY && this->mParentClock->getState() != State::STARTED)
-                    {
-                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
-                    }
-                    *_aidl_return = this->mVideoSinkId;
+                    this->mParentClock->notifyStateChanged(stoppingState, State::READY);
                     return android::binder::Status::ok();
                 }
 
                 android::binder::Status AVClockController::setClockMode(  ClockMode clockMode, bool* _aidl_return  )
                 {
+                    if (_aidl_return == nullptr) {
+                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_NULL_POINTER);
+                    }
+
                     if(this->mParentClock->getState() != State::READY)
                     {
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
@@ -489,11 +433,21 @@ namespace com {
 
                     this->mPCRSamples = { PCRSample{pcrTimeNs, sampleTimestampNs} };
                     *_aidl_return = true;
+
+                    ClockTime currentClockTime;
+                    currentClockTime.clockTimeNs = pcrTimeNs;
+                    currentClockTime.sampleTimestampNs = sampleTimestampNs;
+                    this->mParentClock->notifyPrimed(currentClockTime);
+
                     return android::binder::Status::ok();
                 }
 
-                android::binder::Status AVClockController::getCurrentClockTime(  ClockTime* _aidl_return  )
+                android::binder::Status AVClockController::getCurrentClockTime(::std::optional<ClockTime>* _aidl_return)
                 {
+                    if (_aidl_return == nullptr) {
+                        return android::binder::Status::fromExceptionCode(android::binder::Status::EX_NULL_POINTER);
+                    }
+
                     if(this->mParentClock->getState() != State::STARTED)
                     {
                         return android::binder::Status::fromExceptionCode(android::binder::Status::EX_ILLEGAL_STATE);
@@ -513,8 +467,10 @@ namespace com {
                         clockTimeNs = nowNs;
                     }
 
-                    _aidl_return->clockTimeNs = clockTimeNs;
-                    _aidl_return->sampleTimestampNs = nowNs;
+                    ClockTime currentClockTime;
+                    currentClockTime.clockTimeNs = clockTimeNs;
+                    currentClockTime.sampleTimestampNs = nowNs;
+                    *_aidl_return = currentClockTime;
 
                     return android::binder::Status::ok();
                 }
@@ -568,6 +524,16 @@ namespace com {
                     }
                     *_aidl_return = this->mPlayBackRate;
                     return android::binder::Status::ok();
+                }
+
+                int32_t AVClockController::getInterfaceVersion()
+                {
+                    return IAVClockController::VERSION;
+                }
+
+                std::string AVClockController::getInterfaceHash()
+                {
+                    return IAVClockController::HASHVALUE;
                 }
             }
         }

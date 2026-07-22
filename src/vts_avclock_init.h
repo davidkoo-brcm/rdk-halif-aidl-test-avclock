@@ -62,7 +62,7 @@ extern void *gAudioPrimeTestConfiguration;
 extern void *gVideoPrimeTestConfiguration;
 
 UT_status_t VTS_AVClock_init();
-
+void VTS_AVClock_destroy();
 
 #endif //__VTS_AVCLOCK_INIT_H__
 /** @} */ // End of AV_Clock_Halif_Test_Init_header

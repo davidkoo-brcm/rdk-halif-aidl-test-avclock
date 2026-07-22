@@ -20,7 +20,7 @@
 # *
 #** ******************************************************************************
 
-videodecoder:
+videosink:
   stream_download_path: "" #`URL` path to download the video test streams
   input_streams_path: "assets/streams/input" #Target path where input streams are stored
   reference_streams_path: "assets/streams/reference/" #Target path for reference decoded streams
@@ -31,82 +31,46 @@ videodecoder:
         discontinuityPTS: -1
       Inputs:
         Streams:
-          - Codec: H264
-            Name: H264_HD_30_YUV420
+          - codec: H264_AVC
+            Name: H264_HIGH_1920x1080_DR_SDR_DR_BT709_60p_PIXEL_FORMAT_YCBCR420_734
             rms_diff_threshold: 0.5
             decode_time_threshold: 10000000
+            sink_backpressure: false # Enable backpressure to the sink
             sink_discardFramesUntilPts: -1
             sink_underflow_pts: -1
-            sink_resumeTriggerPts: -1
-            sink_repeatPerFrame: 1
-            sink_flush_pts: -1
-            sink_flush_reset_pts: -1
-            sink_eos_pts: -1
-            sink_interFrameDelayMs: -1
-            sink_discontinuityPTS: -1
-          - Codec: H264_AVC
-            Name: H264_HD_30_YUV444
+          - codec: H265_HEVC
+            Name: H265_HIGH_1920x1080_DR_SDR_DR_BT709_30p_PIXEL_FORMAT_YCBCR420_734
             rms_diff_threshold: 0.5
             decode_time_threshold: 10000000
+            sink_backpressure: false # Enable backpressure to the sink
             sink_discardFramesUntilPts: -1
             sink_underflow_pts: -1
-            sink_resumeTriggerPts: -1
-            sink_repeatPerFrame: 1
-            sink_flush_pts: -1
-            sink_flush_reset_pts: -1
-            sink_eos_pts: -1
-            sink_interFrameDelayMs: -1
-            sink_discontinuityPTS: -1
-          - Codec: H264_AVC
-            Name: H264_HD_60_YUV420
+          - codec: H265_HEVC
+            Name: H265_MAIN10_1920x1080_DR_DOLBY_VISION_300NITS_BT2020_23976p_PIXEL_FORMAT_YCBCR420
             rms_diff_threshold: 0.5
             decode_time_threshold: 10000000
+            sink_backpressure: false # Enable backpressure to the sink
             sink_discardFramesUntilPts: -1
             sink_underflow_pts: -1
-            sink_resumeTriggerPts: -1
-            sink_repeatPerFrame: 1
-            sink_flush_pts: -1
-            sink_flush_reset_pts: -1
-            sink_eos_pts: -1
-            sink_interFrameDelayMs: -1
-            sink_discontinuityPTS: -1
-          - Codec: H264_AVC
-            Name: H264_HD_60_YUV444
+          - codec: VP9
+            Name: VP9_HIGH_1920x1080_DR_SDR_DR_BT709_30p_PIXEL_FORMAT_YCBCR420_734
             rms_diff_threshold: 0.5
             decode_time_threshold: 10000000
+            sink_backpressure: false # Enable backpressure to the sink
             sink_discardFramesUntilPts: -1
             sink_underflow_pts: -1
-            sink_resumeTriggerPts: -1
-            sink_repeatPerFrame: 1
-            sink_flush_pts: -1
-            sink_flush_reset_pts: -1
-            sink_eos_pts: -1
-            sink_interFrameDelayMs: -1
-            sink_discontinuityPTS: -1
-          - Codec: H264_AVC
-            Name: H264_SD_30_YUV420
-            rms_diff_threshold: 0.5
-            decode_time_threshold: 10000000
-            sink_discardFramesUntilPts: -1
-            sink_underflow_pts: -1
-            sink_resumeTriggerPts: -1
-            sink_repeatPerFrame: 1
-            sink_flush_pts: -1
-            sink_flush_reset_pts: -1
-            sink_eos_pts: -1
-            sink_interFrameDelayMs: -1
-            sink_discontinuityPTS: -1
-          - Codec: H264_AVC
-            Name: H264_SD_30_YUV444
-            rms_diff_threshold: 0.5
-            decode_time_threshold: 10000000
-            sink_discardFramesUntilPts: -1
-            sink_underflow_pts: -1
-            sink_resumeTriggerPts: -1
-            sink_repeatPerFrame: 1
-            sink_flush_pts: -1
-            sink_flush_reset_pts: -1
-            sink_eos_pts: -1
-            sink_interFrameDelayMs: -1
-            sink_discontinuityPTS: -1
+
+# Ensure PrimeVideo-selected fixed-resolution streams provide this key
+# expected by videodecoder parser.
+VideoStreams:
+  H264_HIGH_1920x1080_DR_SDR_DR_BT709_60p_PIXEL_FORMAT_YCBCR420_734:
+    resolution_changes: []
+  H265_HIGH_1920x1080_DR_SDR_DR_BT709_30p_PIXEL_FORMAT_YCBCR420_734:
+    resolution_changes: []
+  H265_MAIN10_1920x1080_DR_DOLBY_VISION_300NITS_BT2020_23976p_PIXEL_FORMAT_YCBCR420:
+    resolution_changes: []
+  VP9_HIGH_1920x1080_DR_SDR_DR_BT709_30p_PIXEL_FORMAT_YCBCR420_734:
+    resolution_changes: []
+
+
 
