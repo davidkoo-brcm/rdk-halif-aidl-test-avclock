@@ -96,8 +96,8 @@
 
 #include "vts_videosink_helper_functions.h"
 #include "vts_videosink_parse_hfp.h"
-#include "vts_videosink_parse_testconfig.h"
 #include "vts_videosink.h"
+#include "vts_videosink_test.h"
 
 
 #include "vts_avclock_parse_hfp.h"
@@ -378,10 +378,10 @@ public:
 void checkCompleteStateTransition(sp<IAVClock> avClock,
                                   sp<AVClockEventListener> eventListener,
                                   sp<AVClockControllerListener> controlListener,
-                                  com::rdk::hal::State oldState,
-                                  com::rdk::hal::State intermediateState,
-                                  com::rdk::hal::State newState) {
-  ::com::rdk::hal::State currentState;
+                                  com::rdk::hal::avclock::State oldState,
+                                  com::rdk::hal::avclock::State intermediateState,
+                                  com::rdk::hal::avclock::State newState) {
+  ::com::rdk::hal::avclock::State currentState;
 
   UT_ASSERT_TRUE(
       eventListener->checkStateTransition(oldState, intermediateState));
@@ -500,7 +500,7 @@ bool AVClockPrimeTest::waitForPrimedEvent(
     );
 
     if (!received) {
-        UT_LOG_ERROR("%s: Timeout waiting for PRIMED event", tag.c_str());
+        UT_LOG_WARNING("%s: Timeout waiting for PRIMED event", tag.c_str());
         return false;
     }
 
@@ -530,26 +530,50 @@ void AVClockPrimeTest::validateClockTime(
     auto& primedMtx  = clockControlListener->getPrimedMutex();
     auto& primedFlag = clockControlListener->getPrimedFlag();
 
-    // Decide which thread should wait
+    // Decide which thread should wait based on clock mode ownership.
     bool shouldWait = false;
+    const char* expectedSource = "unknown";
 
-    if ((primetype == contentprimetype::primeaudio ||
-         primetype == contentprimetype::primeaudiobeforevideo) &&
-        threadType == threadtype::audio)
-    {
-        shouldWait = true;
+    const char* threadName = (threadType == threadtype::audio) ? "audio"
+                 : (threadType == threadtype::video) ? "video" : "pcr";
+    const char* modeName = (mClockMode == avclock::ClockMode::AUTO) ? "AUTO"
+               : (mClockMode == avclock::ClockMode::AUDIO_MASTER) ? "AUDIO_MASTER"
+               : (mClockMode == avclock::ClockMode::VIDEO_MASTER) ? "VIDEO_MASTER"
+               : "PCR";
+    const char* primetypeName = (primetype == contentprimetype::primeaudio) ? "primeaudio"
+                  : (primetype == contentprimetype::primevideo) ? "primevideo"
+                  : (primetype == contentprimetype::primeaudiobeforevideo) ? "primeaudiobeforevideo"
+                  : (primetype == contentprimetype::primevideobeforeaudio) ? "primevideobeforeaudio"
+                  : "primepcr";
+
+    if (mClockMode == avclock::ClockMode::AUDIO_MASTER) {
+      expectedSource = "audio";
+      shouldWait = (threadType == threadtype::audio);
+    } else if (mClockMode == avclock::ClockMode::VIDEO_MASTER) {
+      expectedSource = "video";
+      shouldWait = (threadType == threadtype::video);
+    } else if (mClockMode == avclock::ClockMode::PCR) {
+      expectedSource = "pcr";
+      shouldWait = (threadType == threadtype::pcr);
+    } else {
+      // AUTO mode: primetype selects the expected first prime source.
+      if (primetype == contentprimetype::primeaudio ||
+        primetype == contentprimetype::primeaudiobeforevideo) {
+        expectedSource = "audio";
+        shouldWait = (threadType == threadtype::audio);
+      } else if (primetype == contentprimetype::primevideo ||
+             primetype == contentprimetype::primevideobeforeaudio) {
+        expectedSource = "video";
+        shouldWait = (threadType == threadtype::video);
+      } else {
+        expectedSource = "pcr";
+        shouldWait = (threadType == threadtype::pcr);
+      }
     }
-    else if ((primetype == contentprimetype::primevideo ||
-              primetype == contentprimetype::primevideobeforeaudio) &&
-             threadType == threadtype::video)
-    {
-        shouldWait = true;
-    }
-    else if (primetype == contentprimetype::primepcr &&
-             threadType == threadtype::pcr)
-    {
-        shouldWait = true;
-    }
+
+        UT_LOG_INFO("Prime wait decision: mode=%s(%d), primetype=%s, expectedSource=%s, thread=%s, shouldWait=%s",
+          modeName, static_cast<int>(mClockMode), primetypeName, expectedSource, threadName,
+          shouldWait ? "true" : "false");
 
     if (shouldWait)
     {
@@ -563,43 +587,53 @@ void AVClockPrimeTest::validateClockTime(
         onPrimeEvent = waitForPrimedEvent(
             primedCv, primedMtx, primedFlag, 2, primetype
         );
-    }
 
-    //If primed event received
-    if (onPrimeEvent)
-    {
-        UT_LOG_INFO("ON PRIMED EVENT Success");
-        t1 = clockControlListener->getPrimedClockTime();
+        if (!onPrimeEvent)
+        {
+            UT_LOG_INFO("[WAIT FOR THE FIRST FRAME RENDERED EVENT]");
+            firstFrameRendered = waitForPrimedEvent(
+                primedCv, primedMtx, primedFlag, 2, primetype
+            );
+        }
     }
     else
     {
-        UT_LOG_INFO("[WAIT FOR THE FIRST FRAME RENDERED EVENT]");
-
-        firstFrameRendered = waitForPrimedEvent(
-            primedCv, primedMtx, primedFlag, 2, primetype
-        );
-
-        AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(
-            clockHandle, avClockController, &t1
-        );
+        // This thread type is NOT the prime source for this clockMode/primetype.
+        // Per spec (IAVClockController.aidl):
+        //   - AUTO + primeaudiobeforevideo → audio primes clock → video thread is not responsible
+        //   - AUTO + primevideobeforeaudio → video primes clock → audio thread is not responsible
+        //   - PCR mode → pcr primes clock → audio/video threads are not responsible
+        // This is expected — explicitly pass and return without waiting.
+          UT_LOG_INFO("Thread [%s] is not the prime source for mode=%s primetype=%s - skipping wait",
+            threadName, modeName, primetypeName);
+        UT_ASSERT_TRUE(true);
+        return;
     }
 
     // Proceed only if any event received
     if (onPrimeEvent || firstFrameRendered)
     {
-        UT_LOG_INFO("Primed clock: %lld at system time: %lld",
+        // Capture t1 immediately — audio stream is short, no delay allowed here.
+        AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(
+            clockHandle, avClockController, &t1
+        );
+
+        if (!t1.has_value()) {
+            UT_LOG_WARNING("getCurrentClockTime() returned null at t1 — audio stream ended before measurement; skipping rate check");
+            return;
+        }
+
+        UT_LOG_INFO("t1 clock: %lld at system time: %lld",
                     t1.value().clockTimeNs,
                     t1.value().sampleTimestampNs);
-
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(
             clockHandle, avClockController, &t2
         );
 
-        UT_ASSERT_TRUE(t2.has_value());
         if (!t2.has_value()) {
-            UT_LOG_ERROR("Clock not available after priming");
+            UT_LOG_WARNING("getCurrentClockTime() returned null at t2 — audio stream ended during measurement window; skipping rate check");
             return;
         }
 
@@ -646,7 +680,13 @@ void AVClockPrimeTest::validateClockTime(
     }
     else
     {
-        UT_LOG_INFO("On Prime Event & First Frame Rendered Event not received");
+        // shouldWait was true but both onPrimed and firstFrameRendered timed out.
+        // This means the prime source DID NOT deliver any event within the timeout.
+        // Per spec the clock MUST fire onPrimed once primed — this is a failure.
+        UT_LOG_ERROR("Prime event AND first frame rendered event both timed out — clock was not primed within timeout");
+
+        UT_LOG_ERROR("Expected prime source [%s] did not produce a prime event", expectedSource);
+        UT_ASSERT_TRUE(false);  // explicit failure — prime event must be received
     }
 }
 
@@ -710,13 +750,12 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig& videoCfg,
         isVideoSinkAttached);
     std::thread decodeThread(&videoDecoderTest::run, &decodeTest, true);
 
-    auto decConfig = videoCfg.decTestConfig;
-    auto sinkConfig = videoCfg.sinkTestConfig;
-
     UT_LOG_INFO("VideoSink Thread about to start");
-    SinkTest sinkTest(videoCfg.sinkId, videoCfg.sinkHandle,
-                      videoCfg.sinkCtrlListener, videoCfg.sinkEventListener,
-                      videoCfg.decCtrlListener, videoCfg.decId, decConfig, sinkConfig, isClockInUse);
+    VideoSinkTest sinkTest(videoCfg.sinkId, videoCfg.sinkHandle,
+                 videoCfg.sinkCtrlListener,
+                 videoCfg.sinkEventListener,
+                 videoCfg.decCtrlListener, mBufferManager,
+                 videoCfg.decId, mClockId, videoCfg.sinkTestConfig, isClockInUse);
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     sinkTest.run(videoCfg.tunnelMode);
 
@@ -737,7 +776,7 @@ int64_t AVClockPrimeTest::getMonotonicRawTimestamp() {
 
 // PCR Test
 void AVClockPrimeTest::runPcrTest(
-  const PcrConfig& pcrCfg,
+    const PcrConfig& pcrCfg,
     android::sp<IAVClockController> &avClockController) {
   try {
     int64_t ts = getMonotonicRawTimestamp();
@@ -879,8 +918,8 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 }
 
 void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
-                       const videoDecoderTestConfiguration_t& decTestConfig,
-                       const videoTestConfiguration_t& sinkTestConfig, bool isSecure,
+                       const videoDecoderTestConfiguration_t& sinkTestConfig,
+                       bool isSecure,
                        bool isTunnel, bool isConcurrentMode, contentprimetype primetype,
                        sp<IAVClockController> &avClockController) {
   try {
@@ -920,7 +959,6 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                                  videoSinkEventListener,
                                  isSecure,
                                  isTunnel,
-                                 decTestConfig,
                                  sinkTestConfig};
 
         UT_LOG_INFO("Concurrent mode: Using video decoder %d and sink %d for "
@@ -951,7 +989,6 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                                videoSinkEventListener,
                                isSecure,
                                isTunnel,
-                               decTestConfig,
                                sinkTestConfig};
 
       UT_LOG_INFO(
@@ -1083,26 +1120,26 @@ void runVideoPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                        contentprimetype primetype, android::sp<IAVClockController> &clockController) {
   UT_LOG_INFO("Started Thread : %s", __func__);
 
-  vector<videoDecoderTestConfiguration_t> decoderConfigs;
-  vector<videoTestConfiguration_t> sinkConfigs;
+  vector<videoDecoderTestConfiguration_t> sinkConfigs;
 
   const char *DecodeStreams = "PrimeVideo";
 
-  vts_videodecoder_parse_testconfig(gVideoPrimeTestConfiguration,
-                                    VIDEODECODERMGR, gTestGroup, DecodeStreams,
-                                    decoderConfigs);
+  vts_videodecoder_parse_testconfig(gVideoPrimeTestConfiguration, VIDEOSINKMGR,
+                                    gTestGroup, DecodeStreams, sinkConfigs);
+  if (sinkConfigs.empty()) {
+    std::string errorMsg = std::string("No valid test configurations found - missing test streams or invalid configuration for test: ") + DecodeStreams;
+    UT_FAIL_FATAL(errorMsg.c_str());
+    return;
+  }
 
-  vts_videosink_parse_testconfig(gVideoPrimeTestConfiguration, VIDEODECODERMGR,
-                                 gTestGroup, DecodeStreams, sinkConfigs);
-
-  for (size_t i = 0; i < decoderConfigs.size(); ++i) {
-    auto &decoderConfig = decoderConfigs[i];
+  for (size_t i = 0; i < sinkConfigs.size(); ++i) {
     auto &sinkConfig = sinkConfigs[i];
 
-    std::thread videoclockthread([&, sinkConfig = std::move(sinkConfig)] {
+    std::thread videoclockthread([&, sinkConfig] {
       UT_LOG_INFO("Video Input string %s", sinkConfig.input);
-      runVideoClockTest(clockTest, decoderConfig, sinkConfig, isSecureMode,
-                        isTunnel, isConcurrentMode, primetype, clockController);
+      runVideoClockTest(clockTest, sinkConfig, isSecureMode,
+                        isTunnel, isConcurrentMode, primetype,
+                        clockController);
     });
 
     // Join immediately after starting

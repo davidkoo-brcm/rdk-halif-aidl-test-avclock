@@ -402,10 +402,10 @@ UT_ADD_TEST(VTS_L1_AVClock, getState_pos)
         AVCLOCK_MANAGER_GETAVCLOCK_SUCCESS(_clockId, avClock);
 
         /* Retrieve and validate the initial state */
-        ::com::rdk::hal::State state;
+        ::com::rdk::hal::avclock::State state;
         AVCLOCK_GET_STATE(avClock, state);
-        UT_LOG_INFO("Initial state for clock ID %d: %s", _clockId.value, com::rdk::hal::toString(state).c_str());
-        UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::CLOSED); // Expect CLOSED initially
+        UT_LOG_INFO("Initial state for clock ID %d: %s", _clockId.value, com::rdk::hal::avclock::toString(state).c_str());
+        UT_ASSERT_EQUAL(state, ::com::rdk::hal::avclock::State::CLOSED); // Expect CLOSED initially
 
         /* Open the AV Clock to test state transition */
         android::sp<com::rdk::hal::avclock::IAVClockController> avClockController = nullptr;
@@ -415,8 +415,8 @@ UT_ADD_TEST(VTS_L1_AVClock, getState_pos)
 
         /* Verify state after opening */
         AVCLOCK_GET_STATE(avClock, state);
-        UT_LOG_INFO("State after open for clock ID %d: %s", _clockId.value, com::rdk::hal::toString(state).c_str());
-        UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::READY); // Expect stable READY state
+        UT_LOG_INFO("State after open for clock ID %d: %s", _clockId.value, com::rdk::hal::avclock::toString(state).c_str());
+        UT_ASSERT_EQUAL(state, ::com::rdk::hal::avclock::State::READY); // Expect stable READY state
         // Note: Transitory state OPENING may occur briefly but is not tested in L1.
 
         /* Close the AV Clock */
@@ -424,8 +424,8 @@ UT_ADD_TEST(VTS_L1_AVClock, getState_pos)
 
         /* Verify state after closing */
         AVCLOCK_GET_STATE(avClock, state);
-        UT_LOG_INFO("State after close for clock ID %d: %s", _clockId.value, com::rdk::hal::toString(state).c_str());
-        UT_ASSERT_EQUAL(state, ::com::rdk::hal::State::CLOSED); // Expect stable CLOSED state
+        UT_LOG_INFO("State after close for clock ID %d: %s", _clockId.value, com::rdk::hal::avclock::toString(state).c_str());
+        UT_ASSERT_EQUAL(state, ::com::rdk::hal::avclock::State::CLOSED); // Expect stable CLOSED state
         // Note: Transitory state CLOSING may occur briefly but is not tested in L1.
     }
 }
@@ -569,6 +569,8 @@ UT_ADD_TEST(VTS_L1_AVClock, setProperty_neg)
 {
     std::vector<com::rdk::hal::avclock::IAVClock::Id> clockIds;
     android::sp<com::rdk::hal::avclock::IAVClock> avClock;
+    android::sp<com::rdk::hal::avclock::IAVClockController> avClockController;
+    android::sp<com::rdk::hal::avclock::IAVClockControllerListener> controllerListener;
     ::android::binder::Status status;
 
     /* List of read only properties to test (all read-only) */
@@ -586,13 +588,17 @@ UT_ADD_TEST(VTS_L1_AVClock, setProperty_neg)
         /* Get AV Clock handle */
         AVCLOCK_MANAGER_GETAVCLOCK_SUCCESS(_clockId, avClock);
 
+        controllerListener = new AVClockControllerListener();
+        avClockController = nullptr;
+        AVCLOCK_OPEN_SUCCESS(avClock, controllerListener, avClockController, true);
+
         /* Test 1: Invalid property key */
         {
             com::rdk::hal::PropertyValue propertyValue;
             propertyValue.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(1);
             com::rdk::hal::avclock::Property invalidProperty = static_cast<com::rdk::hal::avclock::Property>(-1);
             bool result = false;
-            AVCLOCK_SET_PROPERTY_FAILURE(avClock, invalidProperty, propertyValue, result,Status::EX_ILLEGAL_ARGUMENT);
+            AVCLOCK_SET_PROPERTY_FAILURE(avClockController, invalidProperty, propertyValue, result,Status::EX_ILLEGAL_ARGUMENT);
 
             UT_LOG_INFO("setProperty for invalid property %d, clock ID %d: result=%s",
                         invalidProperty, _clockId.value, result ? "true" : "false");
@@ -605,7 +611,7 @@ UT_ADD_TEST(VTS_L1_AVClock, setProperty_neg)
             com::rdk::hal::PropertyValue propertyValue;
             propertyValue.value = com::rdk::hal::PropertyValue::Value::make<com::rdk::hal::PropertyValue::Value::intValue>(1); // Example value
             bool result = false;
-            AVCLOCK_SET_PROPERTY_FAILURE(avClock, _property, propertyValue, result,Status::EX_UNSUPPORTED_OPERATION);
+            AVCLOCK_SET_PROPERTY_FAILURE(avClockController, _property, propertyValue, result,Status::EX_UNSUPPORTED_OPERATION);
 
             /* Validate the result (false for read-only properties) */
             UT_LOG_INFO("setProperty for property %s, clock ID %d: result=%s",
@@ -614,6 +620,8 @@ UT_ADD_TEST(VTS_L1_AVClock, setProperty_neg)
                         result ? "true" : "false");
             UT_ASSERT_FALSE(result); // Expect false for read-only properties
         }
+
+        AVCLOCK_CLOSE_SUCCESS(avClock, avClockController, true);
     }
 }
 /**
