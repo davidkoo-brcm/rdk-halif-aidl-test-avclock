@@ -116,6 +116,7 @@ void vts_avclock_helper_validateCapabilities(int avClockId, const avclock::Capab
     UT_ASSERT_TRUE(true); // Placeholder
 }
 
+
 #if 0
 bool vts_avclock_helper_validatePropertyValue(int avClockId, const std::optional<PropertyValue>& propertyValue, avclock::Property property) {
     if (!propertyValue.has_value()) {
