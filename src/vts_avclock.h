@@ -175,8 +175,6 @@ struct PcrConfig {
 
 bool isClkSinkUsable(const com::rdk::hal::audiosink::IAudioSink::Id &maudioSinkId);
 bool isClkDecoderUsable(const com::rdk::hal::audiodecoder::IAudioDecoder::Id &maudioDecoderId);
-bool isClkVideoSinkUsable(const com::rdk::hal::videosink::IVideoSink::Id &videoSinkId);
-bool isClkVideoDecoderUsable(const com::rdk::hal::videodecoder::IVideoDecoder::Id &videoDecoderId);
 int getAVClockService();
 
 // Generic function to return selected elements from a tuple at index

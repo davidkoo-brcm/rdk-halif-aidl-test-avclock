@@ -733,12 +733,6 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig& videoCfg,
   try {
     UT_LOG_INFO("%s", __FUNCTION__);
 
-    if (!isClkVideoSinkUsable(videoCfg.sinkId))
-    return;
-
-    if (!isClkVideoDecoderUsable(videoCfg.decId))
-    return;
-
     bool isVideoSinkAttached = (videoCfg.sinkHandle != nullptr);
     bool isClockInUse = true;
 

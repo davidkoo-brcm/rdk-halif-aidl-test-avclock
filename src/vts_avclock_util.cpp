@@ -101,22 +101,6 @@ int getAVClockService()
     return UT_STATUS_OK;
 }
 
-bool isClkVideoSinkUsable(const IVideoSink::Id& sinkId)
-{
-    const auto& availableVideoSinks = gVideosinks_hfp.availableVideoSinks_hfp;
-    return std::find(availableVideoSinks.begin(),
-                     availableVideoSinks.end(),
-                     sinkId.value) != availableVideoSinks.end();
-}
-
-bool isClkVideoDecoderUsable(const IVideoDecoder::Id& decoderId)
-{
-    const auto& availableVideoDecoders = gVideosinks_hfp.availableVideodecoders_hfp;
-    return std::find(availableVideoDecoders.begin(),
-                     availableVideoDecoders.end(),
-                     decoderId.value) != availableVideoDecoders.end();
-}
-
 bool vts_avclock_helper_areElementsUnique(const std::vector<int32_t>& ids)
 {
     std::unordered_set<int32_t> unique(ids.begin(), ids.end());
