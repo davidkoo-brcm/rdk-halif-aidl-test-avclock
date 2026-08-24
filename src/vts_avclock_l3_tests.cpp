@@ -470,44 +470,6 @@ static void isAVClockSupportsConcurrency() {
     }
 }
 
-bool AVClockPrimeTest::waitForPrimedEvent(
-    std::condition_variable& cv,
-    std::mutex& mtx,
-    bool& primedFlag,
-    int timeoutSec,
-    contentprimetype primetype)
-{
-    UT_LOG_INFO("Called %s", __func__);
-
-    std::string tag = [&]() {
-        switch (primetype) {
-            case contentprimetype::primeaudio: return "Audio";
-            case contentprimetype::primevideo: return "Video";
-            case contentprimetype::primeaudiobeforevideo: return "AudioBeforeVideo";
-            case contentprimetype::primevideobeforeaudio: return "VideoBeforeAudio";
-            case contentprimetype::primepcr: return "PCR";
-            default: return "Unknown";
-        }
-    }();
-
-    std::unique_lock<std::mutex> lock(mtx);
-    UT_LOG_INFO("Waiting for the primedFlag Status");
-
-    bool received = cv.wait_for(
-        lock,
-        std::chrono::seconds(timeoutSec),
-        [&] { return primedFlag; }
-    );
-
-    if (!received) {
-        UT_LOG_WARNING("%s: Timeout waiting for PRIMED event", tag.c_str());
-        return false;
-    }
-
-    UT_LOG_INFO("%s: PRIMED event received", tag.c_str());
-    return true;
-}
-
 void AVClockPrimeTest::validateClockTime(
     sp<IAVClock> clockHandle,
     sp<IAVClockController>& avClockController,
@@ -521,14 +483,7 @@ void AVClockPrimeTest::validateClockTime(
     std::optional<com::rdk::hal::avclock::ClockTime> t1;
     std::optional<com::rdk::hal::avclock::ClockTime> t2;
 
-    bool onPrimeEvent{false};
-    bool firstFrameRendered{false};
-
     double mNormalPlay = 1.0, mFastForward = 2.0, mPause = 0.0;
-
-    auto& primedCv   = clockControlListener->getPrimedCV();
-    auto& primedMtx  = clockControlListener->getPrimedMutex();
-    auto& primedFlag = clockControlListener->getPrimedFlag();
 
     // Decide which thread should wait based on clock mode ownership.
     bool shouldWait = false;
@@ -577,24 +532,7 @@ void AVClockPrimeTest::validateClockTime(
 
     if (shouldWait)
     {
-        UT_LOG_INFO("[WAIT FOR THE ON PRIMED EVENT]");
-
-        {
-            std::lock_guard<std::mutex> lock(primedMtx);
-            primedFlag = false;
-        }
-
-        onPrimeEvent = waitForPrimedEvent(
-            primedCv, primedMtx, primedFlag, 2, primetype
-        );
-
-        if (!onPrimeEvent)
-        {
-            UT_LOG_INFO("[WAIT FOR THE FIRST FRAME RENDERED EVENT]");
-            firstFrameRendered = waitForPrimedEvent(
-                primedCv, primedMtx, primedFlag, 2, primetype
-            );
-        }
+      UT_LOG_INFO("Waiting up to 5 seconds for mOnPrimeEventAvailable");
     }
     else
     {
@@ -610,9 +548,9 @@ void AVClockPrimeTest::validateClockTime(
         return;
     }
 
-    // Proceed only if any event received
-    if (onPrimeEvent || firstFrameRendered)
+      if (clockControlListener->waitForPrimedEvent(std::chrono::seconds(5)))
     {
+        UT_LOG_INFO("PRIMED event received");
         // Capture t1 immediately — audio stream is short, no delay allowed here.
         AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(
             clockHandle, avClockController, &t1
@@ -680,13 +618,9 @@ void AVClockPrimeTest::validateClockTime(
     }
     else
     {
-        // shouldWait was true but both onPrimed and firstFrameRendered timed out.
-        // This means the prime source DID NOT deliver any event within the timeout.
-        // Per spec the clock MUST fire onPrimed once primed — this is a failure.
-        UT_LOG_ERROR("Prime event AND first frame rendered event both timed out — clock was not primed within timeout");
-
+      UT_LOG_ERROR("Timed out waiting for mOnPrimeEventAvailable");
         UT_LOG_ERROR("Expected prime source [%s] did not produce a prime event", expectedSource);
-        UT_ASSERT_TRUE(false);  // explicit failure — prime event must be received
+      UT_ASSERT_TRUE(false);
     }
 }
 
@@ -716,8 +650,10 @@ void AVClockPrimeTest::runAudioTest(const AudioConfig& audioCfg,
         audioCfg.decId, mClockId, audioCfg.secureDecode, audioCfg.tunnelMode,
         audioCfg.testConfig, isClockInUse);
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    sinkTest.run();
+    std::thread sinkThread(&AudioSinkTest::run, &sinkTest);
 
+    if (sinkThread.joinable())
+      sinkThread.join();
     if (decodeThread.joinable())
       decodeThread.join();
 
@@ -757,10 +693,14 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig& videoCfg,
                  videoCfg.decCtrlListener, mBufferManager,
                  videoCfg.decId, mClockId, videoCfg.sinkTestConfig, isClockInUse);
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    sinkTest.run(videoCfg.tunnelMode);
+    std::thread sinkThread(&VideoSinkTest::run, &sinkTest, videoCfg.tunnelMode);
 
-    if (decodeThread.joinable())
+    if (sinkThread.joinable())
+      sinkThread.join();
+    if (decodeThread.joinable()) {
+      decodeTest.closeDecoderSession();
       decodeThread.join();
+    }
 
   } catch (...) {
     UT_LOG_ERROR("Exception in runVideoTest");
@@ -1233,6 +1173,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
       // Setup and start clock
       auto clockController = storedClockTest->setupAndStartClock();
       clockControllerList.push_back(clockController);
+      controlListener->resetPrimedEvent();
 
       // Prime Audio Only
       if (primetype == primeaudio) {
@@ -1430,6 +1371,7 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
       // Call the method on the instance
       auto avclockController = clockTest->setupAndStartClock();
+      controlListener->resetPrimedEvent();
 
       // Prime Audio Only
       if (primetype == primeaudio) {
