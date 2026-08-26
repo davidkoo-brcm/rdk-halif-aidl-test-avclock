@@ -282,6 +282,20 @@ class AVClockControllerListener : public BnAVClockControllerListener {
             return Status::ok();
         }
 
+        void resetPrimedEvent()
+        {
+            std::lock_guard<std::mutex> lock(mOnPrimeMutex);
+            mIsPrimedEventReceived = false;
+        }
+
+        bool waitForPrimedEvent(std::chrono::seconds timeout)
+        {
+            std::unique_lock<std::mutex> lock(mOnPrimeMutex);
+            return mOnPrimeEventAvailable.wait_for(lock, timeout, [this]() {
+                return mIsPrimedEventReceived;
+            });
+        }
+
         bool checkStateTransition(::com::rdk::hal::avclock::State expOldState, ::com::rdk::hal::avclock::State expNewState)
         {
             std::lock_guard<std::mutex> lock(mMutex);
@@ -295,21 +309,6 @@ class AVClockControllerListener : public BnAVClockControllerListener {
                 }
             }
             return foundClosedToOpening;
-        }
-
-        // Getter for CV
-        std::condition_variable& getPrimedCV() {
-            return mOnPrimeEventAvailable;
-        }
-
-        // Getter for mutex
-        std::mutex& getPrimedMutex() {
-            return mOnPrimeMutex;
-        }
-
-        //  Getter for flag
-        bool& getPrimedFlag() {
-            return mIsPrimedEventReceived;
         }
 
         // Getter for clock time
@@ -1027,7 +1026,6 @@ public:
     void runPcrTest(const PcrConfig& pcrCfg, sp<IAVClockController> &avClockController);
     android::sp<com::rdk::hal::avclock::IAVClockController> setupAndStartClock();
     void shutdownClock(android::sp<com::rdk::hal::avclock::IAVClockController> clockcontroller);
-    bool waitForPrimedEvent(std::condition_variable& cv, std::mutex& mtx, bool& primedFlag, int timeoutSec, contentprimetype primetype);
     int64_t getMonotonicRawTimestamp();
 
 private:
