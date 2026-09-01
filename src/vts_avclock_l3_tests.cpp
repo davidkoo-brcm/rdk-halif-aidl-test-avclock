@@ -899,6 +899,7 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                                  videoSinkEventListener,
                                  isSecure,
                                  isTunnel,
+                                 sinkTestConfig,
                                  sinkTestConfig};
 
         UT_LOG_INFO("Concurrent mode: Using video decoder %d and sink %d for "
@@ -929,6 +930,7 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                                videoSinkEventListener,
                                isSecure,
                                isTunnel,
+                               sinkTestConfig,
                                sinkTestConfig};
 
       UT_LOG_INFO(
