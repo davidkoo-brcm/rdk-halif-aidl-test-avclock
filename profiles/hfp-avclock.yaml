@@ -28,7 +28,3 @@ avclock:                # Component object begins
     - 0
     - 1
     - 2
-  availableClocks:
-    - 0
-    - 1
-    - 2

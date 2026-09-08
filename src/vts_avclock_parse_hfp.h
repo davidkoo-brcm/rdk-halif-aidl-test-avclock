@@ -83,6 +83,7 @@ extern std::vector<avclockmanager> gAVClock_hfp;
 #define AVCLOCKMGR_IAVCLOCK "avclock.IAVClock"
 
 UT_status_t vts_avclock_parseAVClockHFP();
+void vts_avclock_get_available_id(std::vector<int32_t> &availableIds);
 
 #endif //__VTS_AVCLOCK_PARSE_HFP_H__
 

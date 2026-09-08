@@ -61,12 +61,25 @@
  * @file vts_avclock_parse_hfp.cpp
  *
  */
-
+#include "vts_avclock.h"
 #include "vts_avclock_parse_hfp.h"
 
 using namespace std;
 
 vector<avclockmanager> gAVClock_hfp;
+
+void vts_avclock_get_available_id(std::vector<int32_t> &availableIds)
+{
+    string avclockpath = AVCLOCKMGR_IAVCLOCK;
+    int32_t number_of_avclockinst = UT_KVP_PROFILE_GET_LIST_COUNT(avclockpath.c_str());
+    availableIds.clear();
+    for (int32_t i = 0; i < number_of_avclockinst; ++i)
+    {
+        string avclockidpath = avclockpath + "." + std::to_string(i);
+        int32_t avclock_id = UT_KVP_PROFILE_GET_UINT32(avclockidpath.c_str());
+        availableIds.push_back(avclock_id);
+    }
+}
 
 UT_status_t vts_avclock_parseAVClockHFP()
 {
@@ -88,9 +101,9 @@ UT_status_t vts_avclock_parseAVClockHFP()
         temporary.ids.push_back(avclock_id);
     }
 
-
     gAVClock_hfp.push_back(temporary);
     temporary.ids.clear();
+
     return UT_STATUS_OK;
 }
 
