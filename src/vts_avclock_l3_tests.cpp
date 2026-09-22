@@ -1044,7 +1044,6 @@ void runAudioPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 
   for (auto &test : testConfiguration) {
     std::thread audioclockthread([&, test = std::move(test)] {
-      UT_LOG_INFO("Input string %s", test.input);
       runAudioClockTest(clockTest, test, isSecureMode, isTunnel,
                         isConcurrentMode, primetype, clockController);
     });
@@ -1078,7 +1077,6 @@ void runVideoPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
     auto &sinkConfig = sinkConfigs[i];
 
     std::thread videoclockthread([&, sinkConfig] {
-      UT_LOG_INFO("Video Input string %s", sinkConfig.input);
       runVideoClockTest(clockTest, sinkConfig, isSecureMode,
                         isTunnel, isConcurrentMode, primetype,
                         clockController);
@@ -1104,7 +1102,6 @@ void runPcrPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
 
   for (auto &_pcrValue : pcrValues) {
     std::thread pcrclockthread([&, _pcrValue] {
-      UT_LOG_INFO(" PCR Input Value %d", _pcrValue);
       runPCRClockTest(clockTest, _pcrValue, primetype, clockController);
     });
 
