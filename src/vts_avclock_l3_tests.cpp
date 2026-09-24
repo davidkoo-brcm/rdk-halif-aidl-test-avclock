@@ -532,6 +532,7 @@ void AVClockPrimeTest::validateClockTime(
 
     if (shouldWait)
     {
+      clockControlListener->resetPrimedEvent();
       UT_LOG_INFO("Waiting up to 5 seconds for mOnPrimeEventAvailable");
     }
     else
@@ -548,7 +549,7 @@ void AVClockPrimeTest::validateClockTime(
         return;
     }
 
-      if (clockControlListener->waitForPrimedEvent(std::chrono::seconds(5)))
+      if (clockControlListener->waitForPrimedEvent(std::chrono::seconds(5), threadType))
     {
         UT_LOG_INFO("PRIMED event received");
         // Capture t1 immediately — audio stream is short, no delay allowed here.
@@ -847,6 +848,10 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
         primeAudioThread.join();
       }
 
+      // Stop and start the clock to ensure it handles the audio test correctly
+      AVCLOCK_STOP_SUCCESS(clockTest->getClockHandle(), avClockController, true);
+      AVCLOCK_START_SUCCESS(clockTest->getClockHandle(), avClockController, true);
+
       UT_LOG_INFO("Audio Clock Test completed.");
     } else {
       UT_LOG_WARNING("AudioConfig could not be initialized.");
@@ -973,6 +978,10 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
       if (primeVideoThread.joinable()) {
         primeVideoThread.join();
       }
+
+      // Stop and start the clock to ensure it handles the video test correctly
+      AVCLOCK_STOP_SUCCESS(clockTest->getClockHandle(), avClockController, true);
+      AVCLOCK_START_SUCCESS(clockTest->getClockHandle(), avClockController, true);
 
       UT_LOG_INFO("Video Clock Test completed.");
     } else {
