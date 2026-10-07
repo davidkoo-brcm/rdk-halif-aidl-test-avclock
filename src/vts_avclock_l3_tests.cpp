@@ -532,7 +532,6 @@ void AVClockPrimeTest::validateClockTime(
 
     if (shouldWait)
     {
-      clockControlListener->resetPrimedEvent();
       UT_LOG_INFO("Waiting up to 5 seconds for mOnPrimeEventAvailable");
     }
     else
@@ -558,21 +557,25 @@ void AVClockPrimeTest::validateClockTime(
         );
 
         if (!t1.has_value()) {
-            UT_LOG_WARNING("getCurrentClockTime() returned null at t1 — audio stream ended before measurement; skipping rate check");
+            UT_LOG_WARNING("getCurrentClockTime() returned null at t1 — stream ended before measurement; skipping rate check");
             return;
         }
 
         UT_LOG_INFO("t1 clock: %lld at system time: %lld",
                     t1.value().clockTimeNs,
                     t1.value().sampleTimestampNs);
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
         AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(
             clockHandle, avClockController, &t2
         );
 
+        UT_LOG_INFO("t2 clock: %lld at system time: %lld",
+                      t2.value().clockTimeNs,
+                      t2.value().sampleTimestampNs);
+
         if (!t2.has_value()) {
-            UT_LOG_WARNING("getCurrentClockTime() returned null at t2 — audio stream ended during measurement window; skipping rate check");
+            UT_LOG_WARNING("getCurrentClockTime() returned null at t2 — stream ended during measurement window; skipping rate check");
             return;
         }
 
@@ -679,6 +682,10 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig& videoCfg,
     bool isVideoSinkAttached = (videoCfg.sinkHandle != nullptr);
     bool isClockInUse = true;
 
+    UT_LOG_INFO("Resetting video decoder listener state for the next prime phase");
+    videoCfg.decCtrlListener->resetQueues();
+    videoCfg.decEventListener->resetQueues();
+
     UT_LOG_INFO("VideoDecoder Thread about to start");
     videoDecoderTest decodeTest(
         videoCfg.decId, videoCfg.decHandle, videoCfg.decCtrlListener,
@@ -699,8 +706,8 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig& videoCfg,
     if (sinkThread.joinable())
       sinkThread.join();
     if (decodeThread.joinable()) {
-      decodeTest.closeDecoderSession();
       decodeThread.join();
+      decodeTest.closeDecoderSession();
     }
 
   } catch (...) {
@@ -730,6 +737,172 @@ void AVClockPrimeTest::runPcrTest(
     UT_LOG_ERROR("Exception in runPcrTest");
     UT_ASSERT_TRUE(false);
   }
+}
+
+static const char *primeStreamName(threadtype streamType) {
+  return streamType == threadtype::audio ? "audio"
+       : streamType == threadtype::video ? "video"
+                                         : "pcr";
+}
+
+static const char *primeTypeName(contentprimetype primetype) {
+  return primetype == primeaudio ? "primeaudio"
+       : primetype == primevideo ? "primevideo"
+       : primetype == primeaudiobeforevideo ? "primeaudiobeforevideo"
+       : primetype == primevideobeforeaudio ? "primevideobeforeaudio"
+                                            : "primepcr";
+}
+
+PrimePhaseSynchronizer::PrimePhaseSynchronizer(
+    sp<IAVClock> clockHandle, sp<IAVClockController> clockController,
+    sp<AVClockControllerListener> controlListener, size_t participantCount)
+    : mClockHandle(std::move(clockHandle)),
+      mClockController(std::move(clockController)),
+      mControlListener(std::move(controlListener)),
+      mParticipantCount(participantCount) {
+  UT_LOG_INFO("Prime phase synchronizer created: participants=%zu",
+              mParticipantCount);
+}
+
+void PrimePhaseSynchronizer::beginConfiguration(
+    threadtype streamType, contentprimetype primetype) {
+  UT_LOG_INFO("Prime phase begin requested: stream=%s primetype=%s",
+              primeStreamName(streamType), primeTypeName(primetype));
+  arriveAtStart(false, streamType);
+  UT_LOG_INFO("Prime phase start barrier released: stream=%s primetype=%s",
+              primeStreamName(streamType), primeTypeName(primetype));
+
+  bool waitForLeader = false;
+  threadtype leaderType = streamType;
+  if (primetype == primeaudiobeforevideo && streamType == threadtype::video) {
+    waitForLeader = true;
+    leaderType = threadtype::audio;
+  } else if (primetype == primevideobeforeaudio &&
+             streamType == threadtype::audio) {
+    waitForLeader = true;
+    leaderType = threadtype::video;
+  } else if (primetype == primepcr && streamType != threadtype::pcr) {
+    waitForLeader = true;
+    leaderType = threadtype::pcr;
+  }
+
+  const bool leaderActive = !waitForLeader || isStreamActive(leaderType);
+  if (waitForLeader && leaderActive) {
+    UT_LOG_INFO("Prime phase follower waiting: stream=%s leader=%s",
+                primeStreamName(streamType), primeStreamName(leaderType));
+  }
+
+  if (waitForLeader && leaderActive &&
+      !mControlListener->waitForPrimedEvent(std::chrono::seconds(1),
+                                            leaderType)) {
+    UT_LOG_ERROR("Timed out waiting for the leading stream to prime");
+    UT_ASSERT_TRUE(false);
+  } else if (waitForLeader && leaderActive) {
+    UT_LOG_INFO("Prime phase follower released: stream=%s leader=%s",
+                primeStreamName(streamType), primeStreamName(leaderType));
+  } else if (waitForLeader) {
+    UT_LOG_INFO("Prime phase leader inactive; follower continues: stream=%s leader=%s",
+                primeStreamName(streamType), primeStreamName(leaderType));
+  }
+}
+
+void PrimePhaseSynchronizer::drop(threadtype streamType) {
+  UT_LOG_INFO("Prime phase participant dropping: stream=%s",
+              primeStreamName(streamType));
+  arriveAtStart(true, streamType);
+  UT_LOG_INFO("Prime phase participant dropped: stream=%s",
+              primeStreamName(streamType));
+}
+
+void PrimePhaseSynchronizer::finishConfiguration() {
+  std::unique_lock<std::mutex> lock(mMutex);
+  const size_t generation = mFinishGeneration;
+
+  ++mFinishArrivals;
+  UT_LOG_INFO("Prime phase finish arrival: generation=%zu arrivals=%zu participants=%zu",
+              generation, mFinishArrivals, mParticipantCount);
+
+  if (mFinishArrivals == mParticipantCount) {
+    UT_LOG_INFO("Prime phase complete; restarting clock: generation=%zu participants=%zu",
+                generation, mParticipantCount);
+    AVCLOCK_STOP_SUCCESS(mClockHandle, mClockController, true);
+    AVCLOCK_START_SUCCESS(mClockHandle, mClockController, true);
+    mFinishArrivals = 0;
+    ++mFinishGeneration;
+    UT_LOG_INFO("Prime phase clock restarted: completedGeneration=%zu nextGeneration=%zu",
+                generation, mFinishGeneration);
+    lock.unlock();
+    mCV.notify_all();
+    return;
+  }
+
+  UT_LOG_INFO("Prime phase finish waiting: generation=%zu arrivals=%zu participants=%zu",
+              generation, mFinishArrivals, mParticipantCount);
+  mCV.wait(lock, [&] { return mFinishGeneration != generation; });
+  UT_LOG_INFO("Prime phase finish released: completedGeneration=%zu nextGeneration=%zu",
+              generation, mFinishGeneration);
+}
+
+void PrimePhaseSynchronizer::arriveAtStart(bool isDropping,
+                                           threadtype streamType) {
+  std::unique_lock<std::mutex> lock(mMutex);
+  const size_t generation = mStartGeneration;
+
+  // A drop is an arrival for this generation and a withdrawal from later ones.
+  ++mStartArrivals;
+  if (isDropping) {
+    ++mDrops;
+    if (streamType == threadtype::audio) {
+      mAudioActive = false;
+    } else if (streamType == threadtype::video) {
+      mVideoActive = false;
+    } else {
+      mPcrActive = false;
+    }
+  } else {
+    mPhaseHasWork = true;
+  }
+
+  UT_LOG_INFO("Prime phase start arrival: generation=%zu stream=%s dropping=%s arrivals=%zu participants=%zu pendingDrops=%zu",
+              generation, primeStreamName(streamType),
+              isDropping ? "true" : "false", mStartArrivals,
+              mParticipantCount, mDrops);
+
+  if (mStartArrivals == mParticipantCount) {
+    if (mPhaseHasWork) {
+      UT_LOG_INFO("Prime phase resetting primed event: generation=%zu",
+                  generation);
+      mControlListener->resetPrimedEvent();
+    }
+    mParticipantCount -= mDrops;
+    mStartArrivals = 0;
+    mDrops = 0;
+    mPhaseHasWork = false;
+    ++mStartGeneration;
+    UT_LOG_INFO("Prime phase start released: completedGeneration=%zu nextGeneration=%zu remainingParticipants=%zu",
+                generation, mStartGeneration, mParticipantCount);
+    lock.unlock();
+    mCV.notify_all();
+    return;
+  }
+
+  UT_LOG_INFO("Prime phase start waiting: generation=%zu stream=%s arrivals=%zu participants=%zu",
+              generation, primeStreamName(streamType), mStartArrivals,
+              mParticipantCount);
+  mCV.wait(lock, [&] { return mStartGeneration != generation; });
+  UT_LOG_INFO("Prime phase start wait released: completedGeneration=%zu stream=%s nextGeneration=%zu",
+              generation, primeStreamName(streamType), mStartGeneration);
+}
+
+bool PrimePhaseSynchronizer::isStreamActive(threadtype streamType) {
+  std::lock_guard<std::mutex> lock(mMutex);
+  if (streamType == threadtype::audio) {
+    return mAudioActive;
+  }
+  if (streamType == threadtype::video) {
+    return mVideoActive;
+  }
+  return mPcrActive;
 }
 
 void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
@@ -847,10 +1020,6 @@ void runAudioClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
       if (primeAudioThread.joinable()) {
         primeAudioThread.join();
       }
-
-      // Stop and start the clock to ensure it handles the audio test correctly
-      AVCLOCK_STOP_SUCCESS(clockTest->getClockHandle(), avClockController, true);
-      AVCLOCK_START_SUCCESS(clockTest->getClockHandle(), avClockController, true);
 
       UT_LOG_INFO("Audio Clock Test completed.");
     } else {
@@ -979,10 +1148,6 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
         primeVideoThread.join();
       }
 
-      // Stop and start the clock to ensure it handles the video test correctly
-      AVCLOCK_STOP_SUCCESS(clockTest->getClockHandle(), avClockController, true);
-      AVCLOCK_START_SUCCESS(clockTest->getClockHandle(), avClockController, true);
-
       UT_LOG_INFO("Video Clock Test completed.");
     } else {
       UT_LOG_WARNING("VideoConfig could not be initialized.");
@@ -1041,7 +1206,8 @@ void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest, long pcrValue,
 
 void runAudioPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                        bool isSecureMode, bool isTunnel, bool isConcurrentMode,
-                       contentprimetype primetype, android::sp<IAVClockController> &clockController) {
+                       contentprimetype primetype, android::sp<IAVClockController> &clockController,
+                       const std::shared_ptr<PrimePhaseSynchronizer>& phaseSynchronizer) {
   UT_LOG_INFO("Started Thread : %s", __func__);
 
   vector<testConfiguration_t> testConfiguration;
@@ -1052,6 +1218,7 @@ void runAudioPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                                     testConfiguration);
 
   for (auto &test : testConfiguration) {
+    phaseSynchronizer->beginConfiguration(threadtype::audio, primetype);
     std::thread audioclockthread([&, test = std::move(test)] {
       runAudioClockTest(clockTest, test, isSecureMode, isTunnel,
                         isConcurrentMode, primetype, clockController);
@@ -1061,13 +1228,17 @@ void runAudioPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
     if (audioclockthread.joinable())
       audioclockthread.join();
 
+    phaseSynchronizer->finishConfiguration();
+
     UT_LOG_INFO("runAudioPrimeTest Completed");
   }
+  phaseSynchronizer->drop(threadtype::audio);
 }
 
 void runVideoPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                        bool isSecureMode, bool isTunnel, bool isConcurrentMode,
-                       contentprimetype primetype, android::sp<IAVClockController> &clockController) {
+                       contentprimetype primetype, android::sp<IAVClockController> &clockController,
+                       const std::shared_ptr<PrimePhaseSynchronizer>& phaseSynchronizer) {
   UT_LOG_INFO("Started Thread : %s", __func__);
 
   vector<videoDecoderTestConfiguration_t> sinkConfigs;
@@ -1079,12 +1250,14 @@ void runVideoPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
   if (sinkConfigs.empty()) {
     std::string errorMsg = std::string("No valid test configurations found - missing test streams or invalid configuration for test: ") + DecodeStreams;
     UT_FAIL_FATAL(errorMsg.c_str());
+    phaseSynchronizer->drop(threadtype::video);
     return;
   }
 
   for (size_t i = 0; i < sinkConfigs.size(); ++i) {
     auto &sinkConfig = sinkConfigs[i];
 
+    phaseSynchronizer->beginConfiguration(threadtype::video, primetype);
     std::thread videoclockthread([&, sinkConfig] {
       runVideoClockTest(clockTest, sinkConfig, isSecureMode,
                         isTunnel, isConcurrentMode, primetype,
@@ -1095,13 +1268,17 @@ void runVideoPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
     if (videoclockthread.joinable())
       videoclockthread.join();
 
+    phaseSynchronizer->finishConfiguration();
+
     UT_LOG_INFO("runVideoPrimeTest Completed");
   }
+  phaseSynchronizer->drop(threadtype::video);
 }
 
 void runPcrPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                      bool isConcurrentMode, contentprimetype primetype,
-                     android::sp<IAVClockController> &clockController) {
+                     android::sp<IAVClockController> &clockController,
+                     const std::shared_ptr<PrimePhaseSynchronizer>& phaseSynchronizer) {
   UT_LOG_INFO("Started Thread : %s", __func__);
   std::vector<int64_t> pcrValues;
   const char *ParsePCR = "ParsePCR";
@@ -1110,6 +1287,7 @@ void runPcrPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
                                gTestGroup, ParsePCR, pcrValues);
 
   for (auto &_pcrValue : pcrValues) {
+    phaseSynchronizer->beginConfiguration(threadtype::pcr, primetype);
     std::thread pcrclockthread([&, _pcrValue] {
       runPCRClockTest(clockTest, _pcrValue, primetype, clockController);
     });
@@ -1118,8 +1296,22 @@ void runPcrPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
     if (pcrclockthread.joinable())
       pcrclockthread.join();
 
+    phaseSynchronizer->finishConfiguration();
+
     UT_LOG_INFO("runPcrPrimeTest Completed");
   }
+  phaseSynchronizer->drop(threadtype::pcr);
+}
+
+static size_t getPrimePhaseParticipantCount(contentprimetype primetype) {
+  if (primetype == primeaudiobeforevideo ||
+      primetype == primevideobeforeaudio) {
+    return 2;
+  }
+  if (primetype == primepcr) {
+    return 3;
+  }
+  return 1;
 }
 
 void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
@@ -1181,18 +1373,20 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
       // Setup and start clock
       auto clockController = storedClockTest->setupAndStartClock();
       clockControllerList.push_back(clockController);
-      controlListener->resetPrimedEvent();
+        auto phaseSynchronizer = std::make_shared<PrimePhaseSynchronizer>(
+          clockHandle, clockController, controlListener,
+          getPrimePhaseParticipantCount(primetype));
 
       // Prime Audio Only
       if (primetype == primeaudio) {
-        runaudioprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
+        runaudioprimethread = std::thread([&, storedClockTest, phaseSynchronizer, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
             audioReady = true;
           }
           cv.notify_all();
           runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, primetype, ctrl);
+                            isConcurrentMode, primetype, ctrl, phaseSynchronizer);
         });
 
         if (!waitForReady(audioReady, "Audio")) {
@@ -1205,13 +1399,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
       // Prime Video Only
       else if (primetype == primevideo) {
-        runvideoprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
+        runvideoprimethread = std::thread([&, storedClockTest, phaseSynchronizer, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
             videoReady = true;
           }
           runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, primetype, ctrl);
+                            isConcurrentMode, primetype, ctrl, phaseSynchronizer);
           cv.notify_all();
         });
 
@@ -1225,13 +1419,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
       // Audio Before Video
       else if (primetype == primeaudiobeforevideo) {
-        runaudioprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
+        runaudioprimethread = std::thread([&, storedClockTest, phaseSynchronizer, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
             audioReady = true;
           }
           runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, primetype, ctrl);
+                            isConcurrentMode, primetype, ctrl, phaseSynchronizer);
           cv.notify_all();
         });
 
@@ -1243,13 +1437,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
         primeThreads.push_back(std::move(runaudioprimethread));
 
-        runvideoprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
+        runvideoprimethread = std::thread([&, storedClockTest, phaseSynchronizer, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
             videoReady = true;
           }
           runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, primetype, ctrl);
+                            isConcurrentMode, primetype, ctrl, phaseSynchronizer);
           cv.notify_all();
         });
 
@@ -1263,13 +1457,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
       // Video Before Audio
       else if (primetype == primevideobeforeaudio) {
-        runvideoprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
+        runvideoprimethread = std::thread([&, storedClockTest, phaseSynchronizer, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
             videoReady = true;
           }
           runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, primetype, ctrl);
+                            isConcurrentMode, primetype, ctrl, phaseSynchronizer);
           cv.notify_all();
         });
 
@@ -1281,13 +1475,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
         primeThreads.push_back(std::move(runvideoprimethread));
 
-        runaudioprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
+        runaudioprimethread = std::thread([&, storedClockTest, phaseSynchronizer, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
             audioReady = true;
           }
           runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, primetype, ctrl);
+                            isConcurrentMode, primetype, ctrl, phaseSynchronizer);
           cv.notify_all();
         });
 
@@ -1302,13 +1496,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
       // PCR Case
       else if (primetype == primepcr) {
-        runaudioprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
+        runaudioprimethread = std::thread([&, storedClockTest, phaseSynchronizer, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
              audioReady = true;
           }
           runAudioPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, primetype, ctrl);
+                            isConcurrentMode, primetype, ctrl, phaseSynchronizer);
           cv.notify_all();
         });
 
@@ -1320,13 +1514,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
         primeThreads.push_back(std::move(runaudioprimethread));
 
-        runvideoprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
+        runvideoprimethread = std::thread([&, storedClockTest, phaseSynchronizer, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
             videoReady = true;
           }
           runVideoPrimeTest(storedClockTest, isSecureMode, isTunnel,
-                            isConcurrentMode, primetype, ctrl);
+                            isConcurrentMode, primetype, ctrl, phaseSynchronizer);
           cv.notify_all();
         });
 
@@ -1338,13 +1532,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
         primeThreads.push_back(std::move(runvideoprimethread));
 
-        runpcrprimethread = std::thread([&, storedClockTest, ctrl = clockControllerList.back()]() mutable {
+        runpcrprimethread = std::thread([&, storedClockTest, phaseSynchronizer, ctrl = clockControllerList.back()]() mutable {
           {
             std::lock_guard<std::mutex> lock(mtx);
             pcrReady = true;
           }
           runPcrPrimeTest(storedClockTest, isConcurrentMode, primetype,
-                          ctrl);
+                          ctrl, phaseSynchronizer);
           cv.notify_all();
         });
 
@@ -1379,17 +1573,19 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
       // Call the method on the instance
       auto avclockController = clockTest->setupAndStartClock();
-      controlListener->resetPrimedEvent();
+        auto phaseSynchronizer = std::make_shared<PrimePhaseSynchronizer>(
+          clockHandle, avclockController, controlListener,
+          getPrimePhaseParticipantCount(primetype));
 
       // Prime Audio Only
       if (primetype == primeaudio) {
-        runaudioprimethread = std::thread([&, clockTest] {
+        runaudioprimethread = std::thread([&, clockTest, phaseSynchronizer] {
           {
             std::lock_guard<std::mutex> lock(mtx);
             audioReady = true;
           }
           runAudioPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode, primetype,
-                            avclockController);
+                            avclockController, phaseSynchronizer);
           cv.notify_all();
         });
 
@@ -1402,13 +1598,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
       // Prime Video Only
       else if (primetype == primevideo) {
-        runvideoprimethread = std::thread([&, clockTest] {
+        runvideoprimethread = std::thread([&, clockTest, phaseSynchronizer] {
           {
             std::lock_guard<std::mutex> lock(mtx);
             videoReady = true;
           }
           runVideoPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode, primetype,
-                            avclockController);
+                            avclockController, phaseSynchronizer);
           cv.notify_all();
         });
 
@@ -1421,13 +1617,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
       // Audio Before Video
       else if (primetype == primeaudiobeforevideo) {
-        runaudioprimethread = std::thread([&, clockTest] {
+        runaudioprimethread = std::thread([&, clockTest, phaseSynchronizer] {
           {
             std::lock_guard<std::mutex> lock(mtx);
             audioReady = true;
           }
           runAudioPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode, primetype,
-                            avclockController);
+                            avclockController, phaseSynchronizer);
           cv.notify_all();
         });
 
@@ -1437,13 +1633,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
           return;
         }
 
-        runvideoprimethread = std::thread([&, clockTest] {
+        runvideoprimethread = std::thread([&, clockTest, phaseSynchronizer] {
           {
             std::lock_guard<std::mutex> lock(mtx);
             videoReady = true;
           }
           runVideoPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode, primetype,
-                            avclockController);
+                            avclockController, phaseSynchronizer);
           cv.notify_all();
         });
 
@@ -1456,13 +1652,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
       // Video Before Audio
       else if (primetype == primevideobeforeaudio) {
-        runvideoprimethread = std::thread([&, clockTest] {
+        runvideoprimethread = std::thread([&, clockTest, phaseSynchronizer] {
           {
             std::lock_guard<std::mutex> lock(mtx);
             videoReady = true;
           }
           runVideoPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode, primetype,
-                            avclockController);
+                            avclockController, phaseSynchronizer);
           cv.notify_all();
         });
 
@@ -1472,13 +1668,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
           return;
         }
 
-        runaudioprimethread = std::thread([&, clockTest] {
+        runaudioprimethread = std::thread([&, clockTest, phaseSynchronizer] {
           {
             std::lock_guard<std::mutex> lock(mtx);
             audioReady = true;
           }
           runAudioPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode, primetype,
-                            avclockController);
+                            avclockController, phaseSynchronizer);
           cv.notify_all();
         });
 
@@ -1491,13 +1687,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
 
       // PCR Case
       else if (primetype == primepcr) {
-        runaudioprimethread = std::thread([&, clockTest] {
+        runaudioprimethread = std::thread([&, clockTest, phaseSynchronizer] {
           {
             std::lock_guard<std::mutex> lock(mtx);
             audioReady = true;
           }
           runAudioPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode, primetype,
-                            avclockController);
+                            avclockController, phaseSynchronizer);
           cv.notify_all();
         });
 
@@ -1507,13 +1703,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
           return;
         }
 
-        runvideoprimethread = std::thread([&, clockTest] {
+        runvideoprimethread = std::thread([&, clockTest, phaseSynchronizer] {
           {
             std::lock_guard<std::mutex> lock(mtx);
             videoReady = true;
           }
           runVideoPrimeTest(clockTest, isSecureMode, isTunnel, isConcurrentMode, primetype,
-                            avclockController);
+                            avclockController, phaseSynchronizer);
           cv.notify_all();
         });
 
@@ -1523,12 +1719,13 @@ void runAVClockPrimeTest(const char *testName, bool isSecureMode, bool isTunnel,
           return;
         }
 
-        runpcrprimethread = std::thread([&, clockTest] {
+        runpcrprimethread = std::thread([&, clockTest, phaseSynchronizer] {
           {
             std::lock_guard<std::mutex> lock(mtx);
             pcrReady = true;
           }
-          runPcrPrimeTest(clockTest, isConcurrentMode, primetype, avclockController);
+          runPcrPrimeTest(clockTest, isConcurrentMode, primetype, avclockController,
+                          phaseSynchronizer);
           cv.notify_all();
         });
 

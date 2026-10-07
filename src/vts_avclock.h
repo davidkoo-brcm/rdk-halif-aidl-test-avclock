@@ -337,6 +337,39 @@ class AVClockControllerListener : public BnAVClockControllerListener {
         ClockTime mPrimedClockTime;
         std::vector<std::pair< ::com::rdk::hal::avclock::State, ::com::rdk::hal::avclock::State>> mStateChanges;
     };
+
+class PrimePhaseSynchronizer {
+public:
+    PrimePhaseSynchronizer(sp<IAVClock> clockHandle,
+                           sp<IAVClockController> clockController,
+                           sp<AVClockControllerListener> controlListener,
+                           size_t participantCount);
+
+    void beginConfiguration(threadtype streamType, contentprimetype primetype);
+    void drop(threadtype streamType);
+    void finishConfiguration();
+
+private:
+    void arriveAtStart(bool isDropping, threadtype streamType);
+    bool isStreamActive(threadtype streamType);
+
+    sp<IAVClock> mClockHandle;
+    sp<IAVClockController> mClockController;
+    sp<AVClockControllerListener> mControlListener;
+    std::mutex mMutex;
+    std::condition_variable mCV;
+    size_t mParticipantCount;
+    size_t mStartArrivals = 0;
+    size_t mFinishArrivals = 0;
+    size_t mDrops = 0;
+    size_t mStartGeneration = 0;
+    size_t mFinishGeneration = 0;
+    bool mPhaseHasWork = false;
+    bool mAudioActive = true;
+    bool mVideoActive = true;
+    bool mPcrActive = true;
+};
+
 class AVClockEventListener : public BnAVClockEventListener {
     public:
         AVClockEventListener(int32_t clockID)
