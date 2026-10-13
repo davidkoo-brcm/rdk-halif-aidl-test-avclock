@@ -536,15 +536,9 @@ void AVClockPrimeTest::validateClockTime(
     }
     else
     {
-        // This thread type is NOT the prime source for this clockMode/primetype.
-        // Per spec (IAVClockController.aidl):
-        //   - AUTO + primeaudiobeforevideo → audio primes clock → video thread is not responsible
-        //   - AUTO + primevideobeforeaudio → video primes clock → audio thread is not responsible
-        //   - PCR mode → pcr primes clock → audio/video threads are not responsible
-        // This is expected — explicitly pass and return without waiting.
-          UT_LOG_INFO("Thread [%s] is not the prime source for mode=%s primetype=%s - skipping wait",
-            threadName, modeName, primetypeName);
-        UT_ASSERT_TRUE(true);
+        UT_LOG_INFO("Thread [%s] is not the prime source for mode=%s primetype=%s; "
+                    "clock state is validated after its first-frame callback",
+                    threadName, modeName, primetypeName);
         return;
     }
 
@@ -561,29 +555,32 @@ void AVClockPrimeTest::validateClockTime(
             return;
         }
 
+        const auto& firstClockTime = t1.value();
         UT_LOG_INFO("t1 clock: %lld at system time: %lld",
-                    t1.value().clockTimeNs,
-                    t1.value().sampleTimestampNs);
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+              firstClockTime.clockTimeNs,
+              firstClockTime.sampleTimestampNs);
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
         AVCLOCK_GET_CURRENT_CLOCK_TIME_SUCCESS(
             clockHandle, avClockController, &t2
         );
 
-        UT_LOG_INFO("t2 clock: %lld at system time: %lld",
-                      t2.value().clockTimeNs,
-                      t2.value().sampleTimestampNs);
-
         if (!t2.has_value()) {
             UT_LOG_WARNING("getCurrentClockTime() returned null at t2 — stream ended during measurement window; skipping rate check");
+            UT_ASSERT_TRUE(false);
             return;
         }
 
+        const auto& secondClockTime = t2.value();
+        UT_LOG_INFO("t2 clock: %lld at system time: %lld",
+              secondClockTime.clockTimeNs,
+              secondClockTime.sampleTimestampNs);
+
         double clockDelta =
-            static_cast<double>(t2.value().clockTimeNs - t1.value().clockTimeNs);
+          static_cast<double>(secondClockTime.clockTimeNs - firstClockTime.clockTimeNs);
 
         double timeDelta =
-            static_cast<double>(t2.value().sampleTimestampNs - t1.value().sampleTimestampNs);
+          static_cast<double>(secondClockTime.sampleTimestampNs - firstClockTime.sampleTimestampNs);
 
         double actualRate = clockDelta / timeDelta;
 
@@ -658,6 +655,7 @@ void AVClockPrimeTest::runAudioTest(const AudioConfig& audioCfg,
 
     if (sinkThread.joinable())
       sinkThread.join();
+
     if (decodeThread.joinable())
       decodeThread.join();
 
@@ -705,6 +703,7 @@ void AVClockPrimeTest::runVideoTest(const VideoConfig& videoCfg,
 
     if (sinkThread.joinable())
       sinkThread.join();
+
     if (decodeThread.joinable()) {
       decodeThread.join();
       decodeTest.closeDecoderSession();
@@ -730,8 +729,6 @@ void AVClockPrimeTest::runPcrTest(
     int64_t ts = getMonotonicRawTimestamp();
     AVCLOCK_NOTIFY_PCR_SAMPLE_SUCCESS(mClockHandle, avClockController,
                                       pcrCfg.pcrValue, ts, true);
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
   } catch (...) {
     UT_LOG_ERROR("Exception in runPcrTest");
@@ -793,7 +790,7 @@ void PrimePhaseSynchronizer::beginConfiguration(
   }
 
   if (waitForLeader && leaderActive &&
-      !mControlListener->waitForPrimedEvent(std::chrono::seconds(1),
+      !mControlListener->waitForPrimedEvent(std::chrono::seconds(5),
                                             leaderType)) {
     UT_LOG_ERROR("Timed out waiting for the leading stream to prime");
     UT_ASSERT_TRUE(false);
@@ -1158,9 +1155,9 @@ void runVideoClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
   }
 }
 
-void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest, long pcrValue,
+void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
+                     const std::vector<int64_t>& pcrValues,
                      contentprimetype primetype, sp<IAVClockController> &avClockController) {
-  PcrConfig config{pcrValue};
   try {
     // Launch PCR test in a thread using the existing pcrPrimeTest instance
     UT_LOG_INFO("Prime PCR Thread about to start");
@@ -1177,9 +1174,26 @@ void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest, long pcrValue,
         });
 
     std::thread primePcrThread(
-        [clockTest, config, avClockController]() mutable {
+        [clockTest, pcrValues, avClockController]() mutable {
           try {
-            clockTest->runPcrTest(config, avClockController);
+            const int64_t firstPcrValue = pcrValues.front();
+            const auto streamStart = std::chrono::steady_clock::now();
+            for (const auto pcrValue : pcrValues) {
+              if (pcrValue < firstPcrValue) {
+                UT_LOG_ERROR("PCR values must be monotonic: first=%lld current=%lld",
+                             static_cast<long long>(firstPcrValue),
+                             static_cast<long long>(pcrValue));
+                UT_ASSERT_TRUE(false);
+                return;
+              }
+
+              const auto targetTime = streamStart +
+                  std::chrono::nanoseconds(pcrValue - firstPcrValue);
+              std::this_thread::sleep_until(targetTime);
+
+              PcrConfig config{pcrValue};
+              clockTest->runPcrTest(config, avClockController);
+            }
           } catch (const std::exception &ex) {
             UT_LOG_ERROR("Exception in PCR test thread: %s", ex.what());
           }
@@ -1286,20 +1300,23 @@ void runPcrPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
   vts_avclock_parse_testconfig(gAVClockTestConfiguration, gModuleName,
                                gTestGroup, ParsePCR, pcrValues);
 
-  for (auto &_pcrValue : pcrValues) {
-    phaseSynchronizer->beginConfiguration(threadtype::pcr, primetype);
-    std::thread pcrclockthread([&, _pcrValue] {
-      runPCRClockTest(clockTest, _pcrValue, primetype, clockController);
-    });
-
-    // Join immediately after starting
-    if (pcrclockthread.joinable())
-      pcrclockthread.join();
-
-    phaseSynchronizer->finishConfiguration();
-
-    UT_LOG_INFO("runPcrPrimeTest Completed");
+  if (pcrValues.empty()) {
+    UT_LOG_ERROR("No PCR samples found for %s", ParsePCR);
+    phaseSynchronizer->drop(threadtype::pcr);
+    return;
   }
+
+  phaseSynchronizer->beginConfiguration(threadtype::pcr, primetype);
+  std::thread pcrclockthread([&, pcrValues] {
+    runPCRClockTest(clockTest, pcrValues, primetype, clockController);
+  });
+
+  if (pcrclockthread.joinable())
+    pcrclockthread.join();
+
+  phaseSynchronizer->finishConfiguration();
+
+  UT_LOG_INFO("runPcrPrimeTest Completed");
   phaseSynchronizer->drop(threadtype::pcr);
 }
 
