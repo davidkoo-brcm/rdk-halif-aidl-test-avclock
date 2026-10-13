@@ -1177,15 +1177,17 @@ void runPCRClockTest(std::shared_ptr<AVClockPrimeTest> clockTest,
         [clockTest, pcrValues, avClockController]() mutable {
           try {
             const int64_t firstPcrValue = pcrValues.front();
+            int64_t previousPcrValue = firstPcrValue;
             const auto streamStart = std::chrono::steady_clock::now();
             for (const auto pcrValue : pcrValues) {
               if (pcrValue < firstPcrValue) {
                 UT_LOG_ERROR("PCR values must be monotonic: first=%lld current=%lld",
-                             static_cast<long long>(firstPcrValue),
+                             static_cast<long long>(previousPcrValue),
                              static_cast<long long>(pcrValue));
                 UT_ASSERT_TRUE(false);
                 return;
               }
+              previousPcrValue = pcrValue;
 
               const auto targetTime = streamStart +
                   std::chrono::nanoseconds(pcrValue - firstPcrValue);
@@ -1262,9 +1264,9 @@ void runVideoPrimeTest(std::shared_ptr<AVClockPrimeTest> clockTest,
   vts_videodecoder_parse_testconfig(gVideoPrimeTestConfiguration, VIDEOSINKMGR,
                                     gTestGroup, DecodeStreams, sinkConfigs);
   if (sinkConfigs.empty()) {
+    phaseSynchronizer->drop(threadtype::video);
     std::string errorMsg = std::string("No valid test configurations found - missing test streams or invalid configuration for test: ") + DecodeStreams;
     UT_FAIL_FATAL(errorMsg.c_str());
-    phaseSynchronizer->drop(threadtype::video);
     return;
   }
 
