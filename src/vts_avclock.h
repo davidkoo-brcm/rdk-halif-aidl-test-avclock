@@ -1071,6 +1071,9 @@ public:
     int64_t getMonotonicRawTimestamp();
 
 private:
+    void validateUnprimedClock(sp<IAVClockController>& avClockController,
+                               threadtype streamType);
+
     // Common members
     IAVClock::Id mClockId;
     sp<IAVClock> mClockHandle;
