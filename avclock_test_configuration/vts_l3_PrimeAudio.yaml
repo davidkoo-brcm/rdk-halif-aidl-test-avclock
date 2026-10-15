@@ -514,9 +514,9 @@ audiodecoder:
               - 0 #End
             decode_time_threshold: 100000 #Time budget per frame for decoding, in microseconds
             rms_diff_threshold: 0.5 #Maximum allowed `rms` difference for output validation
- ####### AC3 Streams ##############
+####### AC3 Streams ##############
           - Name: tones_48k_6_512_11sec
-            pts:
+            PTS:
               - 0
               - 2880
               - 5760
