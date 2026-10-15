@@ -32,28 +32,14 @@ videosink:
       Inputs:
         Streams:
           - codec: H264_AVC
-            Name: H264_HIGH_1920x1080_DR_SDR_DR_BT709_60p_PIXEL_FORMAT_YCBCR420_734
+            Name: H264_HIGH_1920x1080_DR_SDR_DR_BT709_30p_PIXEL_FORMAT_YCBCR420_8M_10SEC
             rms_diff_threshold: 0.5
             decode_time_threshold: 10000000
             sink_backpressure: false # Enable backpressure to the sink
             sink_discardFramesUntilPts: -1
             sink_underflow_pts: -1
           - codec: H265_HEVC
-            Name: H265_HIGH_1920x1080_DR_SDR_DR_BT709_30p_PIXEL_FORMAT_YCBCR420_734
-            rms_diff_threshold: 0.5
-            decode_time_threshold: 10000000
-            sink_backpressure: false # Enable backpressure to the sink
-            sink_discardFramesUntilPts: -1
-            sink_underflow_pts: -1
-          - codec: H265_HEVC
-            Name: H265_MAIN10_1920x1080_DR_DOLBY_VISION_300NITS_BT2020_23976p_PIXEL_FORMAT_YCBCR420
-            rms_diff_threshold: 0.5
-            decode_time_threshold: 10000000
-            sink_backpressure: false # Enable backpressure to the sink
-            sink_discardFramesUntilPts: -1
-            sink_underflow_pts: -1
-          - codec: VP9
-            Name: VP9_HIGH_1920x1080_DR_SDR_DR_BT709_30p_PIXEL_FORMAT_YCBCR420_734
+            Name: H265_MAIN_3840x2160_DR_HDR10_DR_BT2020_60p_PIXEL_FORMAT_YCBCR420_12M_10SEC
             rms_diff_threshold: 0.5
             decode_time_threshold: 10000000
             sink_backpressure: false # Enable backpressure to the sink
@@ -63,14 +49,11 @@ videosink:
 # Ensure PrimeVideo-selected fixed-resolution streams provide this key
 # expected by videodecoder parser.
 VideoStreams:
-  H264_HIGH_1920x1080_DR_SDR_DR_BT709_60p_PIXEL_FORMAT_YCBCR420_734:
+  H264_HIGH_1920x1080_DR_SDR_DR_BT709_30p_PIXEL_FORMAT_YCBCR420_8M_10SEC:
     resolution_changes: []
-  H265_HIGH_1920x1080_DR_SDR_DR_BT709_30p_PIXEL_FORMAT_YCBCR420_734:
+  H265_MAIN_3840x2160_DR_HDR10_DR_BT2020_60p_PIXEL_FORMAT_YCBCR420_12M_10SEC:
     resolution_changes: []
-  H265_MAIN10_1920x1080_DR_DOLBY_VISION_300NITS_BT2020_23976p_PIXEL_FORMAT_YCBCR420:
-    resolution_changes: []
-  VP9_HIGH_1920x1080_DR_SDR_DR_BT709_30p_PIXEL_FORMAT_YCBCR420_734:
-    resolution_changes: []
+
 
 
 
