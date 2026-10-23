@@ -270,9 +270,11 @@ class AVClockControllerListener : public BnAVClockControllerListener {
             {
                 std::lock_guard<std::mutex> lock(mOnPrimeMutex);
                 mPrimedClockTime = currentClockTime;
-                mIsPrimedEventReceived = true;   //
+                mIsPrimedEventReceived = true;
+                ++mPrimedEventCount;
 
-                UT_LOG_INFO("clockTimeNs = %lld, sampleTimestampNs = %lld",
+                UT_LOG_INFO("Primed event #%zu: clockTimeNs = %lld, sampleTimestampNs = %lld",
+                                 mPrimedEventCount,
                                  static_cast<long long>(currentClockTime.clockTimeNs),
                                  static_cast<long long>(currentClockTime.sampleTimestampNs));
             }
@@ -286,14 +288,20 @@ class AVClockControllerListener : public BnAVClockControllerListener {
         {
             std::lock_guard<std::mutex> lock(mOnPrimeMutex);
             mIsPrimedEventReceived = false;
+            mPrimedEventCount = 0;
         }
 
-        bool waitForPrimedEvent(std::chrono::seconds timeout)
+        bool waitForPrimedEvent(std::chrono::seconds timeout, threadtype streamType)
         {
             std::unique_lock<std::mutex> lock(mOnPrimeMutex);
-            return mOnPrimeEventAvailable.wait_for(lock, timeout, [this]() {
+            const bool eventReceived = mOnPrimeEventAvailable.wait_for(lock, timeout, [this]() {
                 return mIsPrimedEventReceived;
             });
+            const char* streamName = (streamType == threadtype::audio) ? "audio"
+                                   : (streamType == threadtype::video) ? "video" : "pcr";
+            UT_LOG_INFO("Primed event count for %s stream: %zu (event received: %s)",
+                        streamName, mPrimedEventCount, eventReceived ? "true" : "false");
+            return eventReceived;
         }
 
         bool checkStateTransition(::com::rdk::hal::avclock::State expOldState, ::com::rdk::hal::avclock::State expNewState)
@@ -325,9 +333,43 @@ class AVClockControllerListener : public BnAVClockControllerListener {
         mutable std::mutex mOnPrimeMutex;
         std::condition_variable mOnPrimeEventAvailable;
         bool mIsPrimedEventReceived{false};
+        size_t mPrimedEventCount{0};
         ClockTime mPrimedClockTime;
         std::vector<std::pair< ::com::rdk::hal::avclock::State, ::com::rdk::hal::avclock::State>> mStateChanges;
     };
+
+class PrimePhaseSynchronizer {
+public:
+    PrimePhaseSynchronizer(sp<IAVClock> clockHandle,
+                           sp<IAVClockController> clockController,
+                           sp<AVClockControllerListener> controlListener,
+                           size_t participantCount);
+
+    void beginConfiguration(threadtype streamType, contentprimetype primetype);
+    void drop(threadtype streamType);
+    void finishConfiguration();
+
+private:
+    void arriveAtStart(bool isDropping, threadtype streamType);
+    bool isStreamActive(threadtype streamType);
+
+    sp<IAVClock> mClockHandle;
+    sp<IAVClockController> mClockController;
+    sp<AVClockControllerListener> mControlListener;
+    std::mutex mMutex;
+    std::condition_variable mCV;
+    size_t mParticipantCount;
+    size_t mStartArrivals = 0;
+    size_t mFinishArrivals = 0;
+    size_t mDrops = 0;
+    size_t mStartGeneration = 0;
+    size_t mFinishGeneration = 0;
+    bool mPhaseHasWork = false;
+    bool mAudioActive = true;
+    bool mVideoActive = true;
+    bool mPcrActive = true;
+};
+
 class AVClockEventListener : public BnAVClockEventListener {
     public:
         AVClockEventListener(int32_t clockID)
@@ -1029,6 +1071,9 @@ public:
     int64_t getMonotonicRawTimestamp();
 
 private:
+    void validateUnprimedClock(sp<IAVClockController>& avClockController,
+                               threadtype streamType);
+
     // Common members
     IAVClock::Id mClockId;
     sp<IAVClock> mClockHandle;
