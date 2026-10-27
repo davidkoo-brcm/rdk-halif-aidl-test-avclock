@@ -1062,17 +1062,38 @@ public:
         return mClockController;
     }
 
-    void validateClockTime(sp<IAVClock> clockHandle, sp<IAVClockController>& avClockController, double playbackrate, contentprimetype primetype, sp<AVClockControllerListener>& clockControlListener, threadtype threadType);
+    void setAudioProperties(
+    const sp<AudioDecoderControllerListener>& listener,
+    bool tunnelMode)
+    {
+        mDecCtrlListener = listener;
+        mAudioTunnelMode = tunnelMode;
+    }
+
+    sp<AudioDecoderControllerListener>& getDecCtrlListener()
+    {
+        return mDecCtrlListener;
+    }
+
+    bool getTunnelMode() const
+    {
+        return mAudioTunnelMode;
+    }
+
+    void validateClockTime(std::shared_ptr<AVClockPrimeTest>& clockTest, sp<IAVClock> clockHandle, sp<IAVClockController>& avClockController, double playbackrate, contentprimetype primetype, sp<AVClockControllerListener>& clockControlListener, threadtype threadType);
     void runAudioTest(const AudioConfig& audioCfg, sp<IAVClockController> &avClockController);
     void runVideoTest(const VideoConfig& videoCfg, sp<IAVClockController> &avClockController);
     void runPcrTest(const PcrConfig& pcrCfg, sp<IAVClockController> &avClockController);
     android::sp<com::rdk::hal::avclock::IAVClockController> setupAndStartClock();
     void shutdownClock(android::sp<com::rdk::hal::avclock::IAVClockController> clockcontroller);
     int64_t getMonotonicRawTimestamp();
+    void setDecCtrlListener(const sp<AudioDecoderControllerListener>& listener);
 
 private:
     void validateUnprimedClock(sp<IAVClockController>& avClockController,
                                threadtype streamType);
+     sp<AudioDecoderControllerListener> mDecCtrlListener;
+     bool mAudioTunnelMode = false;
 
     // Common members
     IAVClock::Id mClockId;
