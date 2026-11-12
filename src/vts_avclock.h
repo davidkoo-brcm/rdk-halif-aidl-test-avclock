@@ -75,6 +75,7 @@
 #include <vector>
 #include <optional>
 #include <thread>
+#include <future>
 #include <chrono>
 #include <mutex>
 #include <condition_variable>
@@ -346,6 +347,7 @@ public:
                            size_t participantCount);
 
     void beginConfiguration(threadtype streamType, contentprimetype primetype);
+    bool beginPcrConfiguration(contentprimetype primetype);
     void drop(threadtype streamType);
     void finishConfiguration();
 
@@ -1081,7 +1083,8 @@ public:
     }
 
     void validateClockTime(std::shared_ptr<AVClockPrimeTest>& clockTest, sp<IAVClock> clockHandle, sp<IAVClockController>& avClockController, double playbackrate, contentprimetype primetype, sp<AVClockControllerListener>& clockControlListener, threadtype threadType);
-    void runAudioTest(const AudioConfig& audioCfg, sp<IAVClockController> &avClockController);
+    void runAudioTest(const AudioConfig& audioCfg, sp<IAVClockController> &avClockController,
+                      const std::shared_future<void>& validationDone);
     void runVideoTest(const VideoConfig& videoCfg, sp<IAVClockController> &avClockController);
     void runPcrTest(const PcrConfig& pcrCfg, sp<IAVClockController> &avClockController);
     android::sp<com::rdk::hal::avclock::IAVClockController> setupAndStartClock();
