@@ -2,14 +2,16 @@
 
 ## Latest test results
 
-Platform: Broadcom Xione. Profile: `profiles/hfp-unified_xione.yaml`.
+Platform: Broadcom Xione. Profile: `profiles/hfp-unified_xione.yaml`. Run date: 2026-11-12.
 
-| Check | Latest result |
-| --- | --- |
-| AVClock regression with DSOLA off | PASS — confirmed by the user |
-| `seq_tun_nonsec_AutoAudioBeforeVideo` (2026-11-12) | PASS — 81.119 s |
+| Level | Total | PASS | FAIL | SKIP | Duration (s) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| L1 | 32 | 32 | 0 | 0 | 2.334 |
+| L2 | 5 | 5 | 0 | 0 | 0.447 |
+| L3 | 120 | 21 | 0 | 99 | 1421.244 |
+| Total | 157 | 58 | 0 | 99 | 1424.025 |
 
-An AVClock PASS verifies priming and clock progression, not simultaneous audible output or pitch-corrected trick playback.
+All executed cases pass. These tests verify clock priming, mode transitions and progression. PASS does not establish simultaneous audible playback or pitch-corrected trick audio.
 
 ## Prepare audio routing before decoder start
 
@@ -107,7 +109,7 @@ Reject unsupported video operational modes before constructing phase participant
 
 ## Make rate failures explicit
 
-A primed clock returning no t1 is an assertion failure. Keep the 0.15 absolute rate tolerance and report raw interval and clock interval in a failed rate assertion. PRIMED is followed immediately by t1, a 500 ms wait and t2; progression uses the returned sample timestamps.
+A primed clock returning no t1 or t2 is an assertion failure. Keep the 0.15 absolute rate tolerance and report raw interval and clock interval in a failed rate assertion. PRIMED is followed immediately by t1, a 500 ms wait and t2; progression uses the returned sample timestamps.
 
 [`src/vts_avclock_l3_tests.cpp:617`](../../src/vts_avclock_l3_tests.cpp#L617)
 
